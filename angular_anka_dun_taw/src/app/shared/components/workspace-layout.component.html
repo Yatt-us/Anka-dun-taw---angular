@@ -1,0 +1,48 @@
+<div class="app-frame" [class.admin]="actor().id === 'admin'" [class.menu-open]="menuOpen()">
+  @if (menuOpen()) {
+    <button class="scrim" aria-label="Fermer le menu" (click)="menuOpen.set(false)"></button>
+  }
+  <aside class="sidebar">
+    <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, choisir un espace"
+      ><span class="brand-emblem"><app-icon name="leaf" /></span><strong>Anka Dùn Taw</strong
+      ><small>Bien manger, mieux vivre</small></a
+    >
+    <nav [attr.aria-label]="actor().shortTitle">
+      @for (item of actor().navigation; track item.path) {
+        <a
+          [routerLink]="['/espaces', actor().id, item.path]"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="menuOpen.set(false)"
+          ><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a
+        >
+      }
+    </nav>
+    <div class="sidebar-bottom">
+      <button mat-button class="change-space" [matMenuTriggerFor]="spaceMenu">
+        <app-icon name="logout" />Changer d’espace
+      </button>
+      <mat-menu #spaceMenu="matMenu" aria-label="Choisir un espace">
+        <a mat-menu-item routerLink="/espaces/admin/tableau-de-bord">Administrateur</a>
+        <a mat-menu-item routerLink="/espaces/dieteticien/tableau-de-bord">Diététicien(ne)</a>
+        <a mat-menu-item routerLink="/espaces/nutritionniste/tableau-de-bord">Nutritionniste</a>
+        <a mat-menu-item routerLink="/espaces">Tous les espaces</a>
+      </mat-menu>
+      <div class="profile">
+        <span class="avatar">{{ profileInitials() }}</span>
+        <div>
+          <strong>{{ profileName() }}</strong
+          ><small>{{ actor().id === 'admin' ? 'Super Admin' : actor().shortTitle }}</small>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <main>
+    <div class="mobile-top">
+      <button mat-icon-button (click)="menuOpen.set(true)" aria-label="Ouvrir le menu">☰</button
+      ><span>{{ actor().title }}</span>
+    </div>
+    <section class="page-area"><router-outlet /></section>
+    <footer>Données de démonstration · Anka Dùn Taw</footer>
+  </main>
+</div>

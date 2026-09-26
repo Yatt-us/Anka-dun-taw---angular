@@ -1,0 +1,75 @@
+<header class="dashboard-header">
+  <div>
+    <h1>Bonjour, Dr. Mamadou Coulibaly</h1>
+    <p>
+      Bienvenue sur votre portail nutritionnel. Voici le point sur l’état de santé de votre
+      communauté aujourd’hui.
+    </p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" />Lundi, 23 octobre 2023</span>
+</header>
+<div class="metrics four">
+  @for (metric of metrics; track metric.label) {
+    <mat-card appearance="outlined" class="metric">
+      <span
+        class="metric-icon"
+        [class.orange]="metric.tone === 'orange'"
+        [class.yellow]="metric.tone === 'yellow'"
+        ><app-icon [name]="metric.icon"
+      /></span>
+      <div>
+        <span class="metric-label">{{ metric.label }}</span
+        ><strong>{{ metric.value }}</strong
+        ><small>{{ metric.detail }}</small>
+      </div>
+    </mat-card>
+  }
+</div>
+<div class="columns">
+  <mat-card appearance="outlined" class="panel">
+    <div class="panel-heading">
+      <h2>Demandes d’adaptation urgentes</h2>
+      <a mat-button class="text-link" routerLink="../demandes-adaptation">Voir tout (5)</a>
+    </div>
+    @if (!ignored()) {
+      <article class="request">
+        <div class="request-top">
+          <span class="avatar">FD</span><strong>Fatoumata Diarra</strong
+          ><span class="tag yellow">Petit budget</span>
+        </div>
+        <h3>Le prix du mil a augmenté de 150 FCFA au marché de Niaréla.</h3>
+        <p>
+          Demande de remplacement du mil par du sorgho local pour rester dans le budget quotidien de
+          1 200 FCFA.
+        </p>
+        <div class="actions">
+          <a mat-flat-button class="button primary" routerLink="../demandes-adaptation"
+            >Adapter le menu</a
+          ><button mat-stroked-button class="button" (click)="ignored.set(true)">Ignorer</button>
+        </div>
+      </article>
+    } @else {
+      <p class="subtle" role="status">
+        Demande masquée dans cette démonstration.
+        <button mat-stroked-button class="button" (click)="ignored.set(false)">Annuler</button>
+      </p>
+    }
+    <article class="request">
+      <div class="request-top">
+        <span class="avatar">MK</span><strong>Moussa Keita</strong
+        ><span class="tag orange">Diabète de type 2</span>
+      </div>
+      <h3>Glycémie élevée constatée après le dîner (riz au gras).</h3>
+      <p>
+        Demande d’adaptation du menu : remplacement du riz blanc par du fonio précuit. À examiner
+        dans le dossier du patient.
+      </p>
+      <div class="actions">
+        <a mat-flat-button class="button primary" routerLink="../demandes-adaptation"
+          >Adapter le menu</a
+        ><a mat-stroked-button class="button" routerLink="../patients">Consulter le dossier</a>
+      </div>
+    </article>
+  </mat-card>
+  <app-appointments [count]="4" destination="../rendez-vous" />
+</div>

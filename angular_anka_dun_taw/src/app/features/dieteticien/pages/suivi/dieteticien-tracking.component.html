@@ -1,0 +1,89 @@
+<header class="dashboard-header">
+  <div>
+    <h1>Suivi des habitudes & évolution nutritionnelle</h1>
+    <p>Analysez le comportement alimentaire, le respect des budgets et l’atteinte des objectifs.</p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" />24 octobre 2023</span>
+</header>
+<div class="metrics four">
+  @for (metric of metrics; track metric.label) {
+    <mat-card appearance="outlined" class="metric">
+      <span
+        class="metric-icon"
+        [class.orange]="metric.tone === 'orange'"
+        [class.yellow]="metric.tone === 'yellow'"
+        ><app-icon name="pie"
+      /></span>
+      <div>
+        <span class="metric-label">{{ metric.label }}</span
+        ><strong>{{ metric.value }}</strong
+        ><small>{{ metric.detail }}</small>
+      </div>
+    </mat-card>
+  }
+</div>
+<mat-card appearance="outlined" class="panel consumption">
+  <div class="panel-heading">
+    <h2>Consommation moyenne des céréales locales (en % des repas)</h2>
+  </div>
+  @for (cereal of cereals; track cereal.name) {
+    <div class="cereal-row">
+      <span>{{ cereal.name }}</span
+      ><meter
+        min="0"
+        max="100"
+        [value]="cereal.value"
+        [style.--meter-color]="cereal.color"
+        [attr.aria-label]="cereal.name"
+      >
+        {{ cereal.value }} %</meter
+      ><strong>{{ cereal.value }} %</strong>
+    </div>
+  }
+</mat-card>
+<mat-card appearance="outlined" class="panel">
+  <div class="panel-heading"><h2>Fiches de suivi & adhérence par patient</h2></div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Objectif principal</th>
+          <th>Respect du plan<br />(adhérence)</th>
+          <th>Dépenses<br />hebdomadaires</th>
+          <th>Évolution & remarques</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (patient of patients; track patient.name) {
+          <tr>
+            <td>
+              <div class="patient">
+                <span class="avatar">{{ patient.initials }}</span
+                ><strong>{{ patient.name }}</strong>
+              </div>
+            </td>
+            <td>{{ patient.goal }}</td>
+            <td>
+              <div class="adherence">
+                <meter
+                  min="0"
+                  max="100"
+                  [value]="patient.adherence"
+                  [style.--meter-color]="patient.color"
+                  [attr.aria-label]="'Adhérence de ' + patient.name"
+                >
+                  {{ patient.adherence }} %</meter
+                ><strong>{{ patient.adherence }} %</strong>
+              </div>
+            </td>
+            <td>
+              <strong>{{ patient.budget }} FCFA</strong>
+            </td>
+            <td>{{ patient.note }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</mat-card>

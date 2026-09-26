@@ -1,0 +1,78 @@
+@if (actor().id === 'dieteticien' && section() === 'suivi-utilisateurs') {
+  <app-dieteticien-tracking />
+} @else {
+  <header class="page-heading">
+    <div>
+      <h1>{{ sectionTitle() }}</h1>
+      <p>{{ sectionDescription() }}</p>
+    </div>
+    <span class="demo-label">Aperçu · données fictives</span>
+  </header>
+  <div class="section-toolbar">
+    <span aria-live="polite"
+      >{{ filteredRows().length }} {{ filteredRows().length > 1 ? 'éléments' : 'élément' }}</span
+    ><mat-form-field appearance="outline" subscriptSizing="dynamic"
+      ><mat-label>Rechercher dans cette page</mat-label
+      ><input matInput type="search" [value]="searchQuery()" (input)="updateSearch($event)"
+    /></mat-form-field>
+  </div>
+  <mat-card appearance="outlined" class="panel"
+    ><div class="table-wrap">
+      <table mat-table [dataSource]="pagedRows()">
+        <ng-container matColumnDef="record"
+          ><th mat-header-cell *matHeaderCellDef>
+            {{ actor().id === 'admin' ? 'Élément' : 'Dossier' }}
+          </th>
+          <td mat-cell *matCellDef="let row">
+            <div class="person-cell">
+              <span class="avatar">{{ initials(row.title) }}</span>
+              <div>
+                <strong>{{ row.title }}</strong
+                ><small>{{ row.subtitle }}</small>
+              </div>
+            </div>
+          </td></ng-container
+        >
+        <ng-container matColumnDef="information"
+          ><th mat-header-cell *matHeaderCellDef>Information</th>
+          <td mat-cell *matCellDef="let row">{{ row.value }}</td></ng-container
+        >
+        <ng-container matColumnDef="status"
+          ><th mat-header-cell *matHeaderCellDef>Statut</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class]="'status ' + row.badgeTone">{{ row.badge }}</span>
+          </td></ng-container
+        >
+        <ng-container matColumnDef="actions"
+          ><th mat-header-cell *matHeaderCellDef><span class="sr-only">Actions</span></th>
+          <td mat-cell *matCellDef="let row">
+            <button
+              mat-button
+              (click)="openDetail(row)"
+              [attr.aria-label]="'Consulter ' + row.title"
+            >
+              Consulter →
+            </button>
+          </td></ng-container
+        >
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        <tr *matNoDataRow>
+          <td colspan="4" class="empty">Aucun résultat pour cette recherche.</td>
+        </tr>
+      </table>
+    </div>
+    <mat-paginator
+      [length]="filteredRows().length"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[5, 10, 20]"
+      (page)="changePage($event)"
+      showFirstLastButtons
+      aria-label="Pagination des dossiers"
+  /></mat-card>
+  <p class="section-hint">
+    Données de démonstration. Ouvrez une fiche pour consulter ses détails et ajouter une note
+    personnelle.
+  </p>
+}

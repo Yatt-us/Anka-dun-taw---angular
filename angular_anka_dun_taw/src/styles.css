@@ -1,1 +1,85 @@
-/* You can add global styles to this file, and also import other style files */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/poppins-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/poppins-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/poppins-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/poppins-700.woff2') format('woff2');
+}
+:root {
+  color-scheme: light;
+  --green: #2e7d5b;
+  --green-dark: #205d43;
+  --soft-green: #f0f7f2;
+  --yellow: #f4b942;
+  --orange: #e8894a;
+  --red: #d9534f;
+  --cream: #f9f6f0;
+  --canvas: #fff9f0;
+  --ink: #26332d;
+  --muted: #6b756f;
+  --line: #e8ece7;
+  --white: #fff;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100%;
+}
+body {
+  min-height: 100vh;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2e7d5b45;
+  outline-offset: 2px;
+}
+::selection {
+  background: #cfe4d5;
+  color: var(--ink);
+}

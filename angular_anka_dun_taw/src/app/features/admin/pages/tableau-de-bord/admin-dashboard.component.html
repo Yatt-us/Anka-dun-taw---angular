@@ -1,0 +1,68 @@
+<header class="dashboard-header">
+  <div>
+    <h1>Bonjour, Administrateur</h1>
+    <p>Voici le résumé de l’activité nutritionnelle au Mali aujourd’hui.</p>
+  </div>
+  <a class="approval" routerLink="../professionnels"
+    ><app-icon name="pro" />3 nouvelles demandes d’approbation<app-icon name="arrow"
+  /></a>
+</header>
+<div class="metrics three">
+  @for (metric of metrics; track metric.label) {
+    <mat-card appearance="outlined" class="metric">
+      <div>
+        <span class="metric-label">{{ metric.label }}</span
+        ><strong>{{ metric.value }}</strong
+        ><small>{{ metric.detail }}</small>
+      </div>
+      <span
+        class="metric-icon"
+        [class.orange]="metric.tone === 'orange'"
+        [class.yellow]="metric.tone === 'yellow'"
+        ><app-icon [name]="metric.icon"
+      /></span>
+    </mat-card>
+  }
+</div>
+<div class="charts">
+  <mat-card appearance="outlined" class="panel">
+    <div class="panel-heading">
+      <h2>Inscriptions mensuelles <span>(6 derniers mois)</span></h2>
+    </div>
+    <app-registration-chart />
+  </mat-card>
+  <mat-card appearance="outlined" class="panel">
+    <div class="panel-heading"><h2>Répartition utilisateurs</h2></div>
+    <app-user-distribution-chart />
+  </mat-card>
+</div>
+<mat-card appearance="outlined" class="panel activity">
+  <div class="panel-heading">
+    <h2>Activité récente sur la plateforme</h2>
+    <a mat-button class="text-link" routerLink="../historique">Voir tout</a>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Action</th>
+          <th>Rôle</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of activities; track item.name) {
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.action }}</td>
+            <td>
+              <span class="tag" [class.orange]="item.role === 'Pro'">{{ item.role }}</span>
+            </td>
+            <td>{{ item.time }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</mat-card>

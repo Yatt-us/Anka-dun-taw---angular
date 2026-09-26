@@ -1,0 +1,48 @@
+<header class="dashboard-header">
+  <div>
+    <h1>Bonjour, Dr. Aminata Traoré</h1>
+    <p>
+      Bienvenue sur votre portail nutritionnel. Voici le point sur l’état de santé de votre
+      communauté aujourd’hui.
+    </p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" />Lundi, 23 octobre 2023</span>
+</header>
+<div class="metrics three">
+  @for (metric of metrics; track metric.label) {
+    <mat-card appearance="outlined" class="metric">
+      <span
+        class="metric-icon"
+        [class.orange]="metric.tone === 'orange'"
+        [class.yellow]="metric.tone === 'yellow'"
+        ><app-icon [name]="metric.icon"
+      /></span>
+      <div>
+        <span class="metric-label">{{ metric.label }}</span
+        ><strong>{{ metric.value }}</strong>
+      </div>
+    </mat-card>
+  }
+</div>
+<div class="columns">
+  <mat-card appearance="outlined" class="panel">
+    <div class="panel-heading">
+      <h2>Questions récentes</h2>
+      <a mat-button class="text-link" routerLink="../questions">Voir toutes (8)</a>
+    </div>
+    @for (question of questions; track question.name) {
+      <a class="question" routerLink="../questions"
+        ><span class="avatar">{{ question.initials }}</span>
+        <div class="question-content">
+          <div class="question-top">
+            <strong>{{ question.name }}</strong
+            ><time>{{ question.time }}</time>
+          </div>
+          <p>{{ question.title }}</p>
+          <small>{{ question.text }}</small>
+        </div></a
+      >
+    }
+  </mat-card>
+  <app-appointments />
+</div>
