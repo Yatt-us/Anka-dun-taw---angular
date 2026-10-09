@@ -1,4 +1,4 @@
-<div class="app-frame" [class.admin]="actor().id === 'admin'" [class.menu-open]="menuOpen()">
+<div class="app-frame" [class.admin]="actor().id === 'admin'" [class.dieteticien]="actor().id === 'dieteticien'" [class.nutritionniste]="actor().id === 'nutritionniste'" [class.menu-open]="menuOpen()">
   @if (menuOpen()) {
     <button class="scrim" aria-label="Fermer le menu" (click)="menuOpen.set(false)"></button>
   }
@@ -19,20 +19,18 @@
       }
     </nav>
     <div class="sidebar-bottom">
-      <button mat-button class="change-space" [matMenuTriggerFor]="spaceMenu">
-        <app-icon name="logout" />Changer d’espace
+      <a class="change-space" routerLink="/espaces"><app-icon name="grid" />Mon espace</a>
+      <button mat-button class="change-space" type="button" (click)="logout()">
+        <app-icon name="logout" />Se déconnecter
       </button>
-      <mat-menu #spaceMenu="matMenu" aria-label="Choisir un espace">
-        <a mat-menu-item routerLink="/espaces/admin/tableau-de-bord">Administrateur</a>
-        <a mat-menu-item routerLink="/espaces/dieteticien/tableau-de-bord">Diététicien(ne)</a>
-        <a mat-menu-item routerLink="/espaces/nutritionniste/tableau-de-bord">Nutritionniste</a>
-        <a mat-menu-item routerLink="/espaces">Tous les espaces</a>
-      </mat-menu>
+      @if (logoutError()) {
+        <small class="logout-error" role="alert">{{ logoutError() }}</small>
+      }
       <div class="profile">
         <span class="avatar">{{ profileInitials() }}</span>
         <div>
           <strong>{{ profileName() }}</strong
-          ><small>{{ actor().id === 'admin' ? 'Super Admin' : actor().shortTitle }}</small>
+          ><small>{{ actor().shortTitle }}</small>
         </div>
       </div>
     </div>
@@ -43,6 +41,6 @@
       ><span>{{ actor().title }}</span>
     </div>
     <section class="page-area"><router-outlet /></section>
-    <footer>Données de démonstration · Anka Dùn Taw</footer>
+    <footer>Anka Dùn Taw · Votre espace de travail</footer>
   </main>
 </div>

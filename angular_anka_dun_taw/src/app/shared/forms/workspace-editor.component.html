@@ -1,0 +1,110 @@
+<section class="editor" id="workspace-editor" aria-label="Formulaire de saisie">
+  <header>
+    <div>
+      <span class="eyebrow">{{ entityId() || kind() === 'profile' ? 'MODIFICATION' : 'NOUVEL ÉLÉMENT' }}</span>
+      <h2>
+        @switch (kind()) {
+          @case ('category') { Catégorie alimentaire }
+          @case ('food') { Aliment local }
+          @case ('price') { Prix de l’aliment par zone }
+          @case ('recipe') { Recette }
+          @case ('menu') { Menu personnalisé }
+          @case ('advice') { Conseil nutritionnel }
+          @case ('article') { Article éducatif }
+          @case ('profile') { Profil professionnel }
+          @case ('badge') { Badge }
+          @case ('challenge') { Défi }
+          @case ('quiz') { Quiz }
+        }
+      </h2>
+      <p class="editor-description">{{ entityId() || kind() === 'profile' ? 'Modifiez les informations puis enregistrez vos changements.' : 'Remplissez les champs requis. La liste reste visible sous ce formulaire.' }}</p>
+    </div>
+    <button class="close-form" mat-button type="button" (click)="cancelled.emit()">Afficher la liste</button>
+  </header>
+  @if (loading()) {
+    <p aria-live="polite">Chargement du formulaire…</p>
+  } @else {
+    <form #editorForm="ngForm" (ngSubmit)="submit(editorForm)" novalidate>
+      <div class="field-grid">
+        @for (field of fields(); track field.key) {
+          <label [class.wide]="field.type === 'textarea'">
+            <span>{{ field.label }} @if (field.required) { <b aria-hidden="true">*</b> }</span>
+            @if (field.type === 'textarea') {
+              <textarea [name]="field.key" [(ngModel)]="model[field.key]" [required]="!!field.required" rows="4"></textarea>
+            } @else if (field.type === 'checkbox') {
+              <input type="checkbox" [name]="field.key" [(ngModel)]="model[field.key]" />
+            } @else if (field.type === 'select') {
+              <select [name]="field.key" [(ngModel)]="model[field.key]" [required]="!!field.required">
+                <option value="">Choisir…</option>
+                @for (option of options(field); track option.value) { <option [ngValue]="option.value">{{ option.label }}</option> }
+              </select>
+            } @else {
+              <input [name]="field.key" [type]="field.type" [(ngModel)]="model[field.key]"
+                [required]="!!field.required" [attr.min]="field.min ?? null" [attr.max]="field.max ?? null" [attr.step]="field.type === 'number' ? 'any' : null" />
+            }
+          </label>
+        }
+      </div>
+      @if (kind() === 'recipe') {
+        <div class="repeat-head"><h3>Ingrédients</h3><button mat-button type="button" (click)="addIngredient()">+ Ajouter</button></div>
+        @for (ingredient of ingredients; track $index; let i = $index) {
+          <div class="repeat-row">
+            <label><span>Aliment</span><select [name]="'aliment-' + i" [(ngModel)]="ingredient.alimentId" required>
+              <option [ngValue]="null">Choisir…</option>
+              @for (food of foods(); track food.id) { <option [ngValue]="food.id">{{ food.nom }}</option> }
+              @if (ingredient.alimentId && !foodListed(ingredient.alimentId)) { <option [ngValue]="ingredient.alimentId">Aliment n° {{ ingredient.alimentId }}</option> }
+            </select></label>
+            <label><span>Quantité</span><input type="number" [name]="'quantite-' + i" [(ngModel)]="ingredient.quantite" min="0.001" step="any" required /></label>
+            <label><span>Unité</span><input [name]="'unite-' + i" [(ngModel)]="ingredient.unite" required /></label>
+            <button mat-button type="button" (click)="removeIngredient(i)" [disabled]="ingredients.length === 1" [attr.aria-label]="'Retirer ingrédient ' + (i + 1)">Retirer</button>
+          </div>
+        }
+      }
+      @if (kind() === 'menu') {
+        <div class="repeat-head"><h3>Repas du menu</h3><button mat-button type="button" (click)="addMeal()">+ Ajouter</button></div>
+        @for (meal of meals; track $index; let i = $index) {
+          <div class="repeat-row meal-row">
+            <label><span>Recette</span><select [name]="'recette-' + i" [(ngModel)]="meal.recetteId" required>
+              <option [ngValue]="null">Choisir…</option>
+              @for (recipe of recipes(); track recipe.id) { <option [ngValue]="recipe.id">{{ recipe.nom }}</option> }
+              @if (meal.recetteId && !recipeListed(meal.recetteId)) { <option [ngValue]="meal.recetteId">Recette n° {{ meal.recetteId }}</option> }
+            </select></label>
+            <label><span>Jour</span><input type="number" [name]="'jour-' + i" [(ngModel)]="meal.jour" min="1" required /></label>
+            <label><span>Moment</span><select [name]="'moment-' + i" [(ngModel)]="meal.typeRepas" required>
+              <option value="PETIT_DEJEUNER">Petit déjeuner</option><option value="DEJEUNER">Déjeuner</option>
+              <option value="DINER">Dîner</option><option value="COLLATION">Collation</option>
+            </select></label>
+            <label><span>Portions</span><input type="number" [name]="'portions-' + i" [(ngModel)]="meal.nombrePortions" min="0.001" step="any" required /></label>
+            <button mat-button type="button" (click)="removeMeal(i)" [disabled]="meals.length === 1" [attr.aria-label]="'Retirer repas ' + (i + 1)">Retirer</button>
+          </div>
+        }
+      }
+      @if (kind() === 'quiz') {
+        <div class="repeat-head"><h3>Questions et réponses</h3><button mat-button type="button" (click)="addQuestion()">+ Ajouter une question</button></div>
+        @for (question of quizQuestions; track $index; let i = $index) {
+          <section class="question-block">
+            <div class="repeat-head"><strong>Question {{ i + 1 }}</strong><button mat-button type="button" [disabled]="quizQuestions.length === 1" (click)="removeQuestion(i)">Retirer</button></div>
+            <div class="field-grid">
+              <label class="wide"><span>Énoncé *</span><input [name]="'enonce-' + i" [(ngModel)]="question.enonce" required /></label>
+              <label><span>Points *</span><input type="number" [name]="'points-' + i" [(ngModel)]="question.points" min="1" required /></label>
+              <label><span>Explication</span><input [name]="'explication-' + i" [(ngModel)]="question.explication" /></label>
+            </div>
+            @for (proposition of question.propositions; track $index; let p = $index) {
+              <div class="proposition-row"><label><span>Réponse {{ p + 1 }} *</span><input [name]="'reponse-' + i + '-' + p" [(ngModel)]="proposition.texte" required /></label>
+                <label class="correct"><input type="checkbox" [name]="'correcte-' + i + '-' + p" [(ngModel)]="proposition.correcte" /> Bonne réponse</label>
+                <button mat-button type="button" [disabled]="question.propositions.length === 2" (click)="removeProposition(question, p)">Retirer</button></div>
+            }
+            <button mat-button type="button" (click)="addProposition(question)">+ Ajouter une réponse</button>
+          </section>
+        }
+      }
+      @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+      <footer>
+        <button mat-button type="button" (click)="cancelled.emit()">Annuler</button>
+        <button class="submit" type="submit" [disabled]="busy() || loading()">
+          {{ busy() ? 'Enregistrement…' : entityId() ? 'Enregistrer les modifications' : kind() === 'profile' ? 'Enregistrer le profil' : 'Ajouter à la liste' }}
+        </button>
+      </footer>
+    </form>
+  }
+</section>

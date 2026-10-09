@@ -1,0 +1,5 @@
+    @if (available()) {
+      <div class="google-signin" #button aria-label="Continuer avec Google"></div>
+    }
+    @if (error()) { <p class="google-error" role="alert">{{ error() }}</p> }
+    @else if (information()) { <p class="google-info" role="status">{{ information() }}</p> }

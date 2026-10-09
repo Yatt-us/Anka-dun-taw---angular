@@ -1,19 +1,24 @@
-<header class="dashboard-header">
+<header class="dashboard-header" animate.enter="adt-admin-enter">
   <div>
     <h1>Bonjour, Administrateur</h1>
-    <p>Voici le résumé de l’activité nutritionnelle au Mali aujourd’hui.</p>
+    <p>Voici les données actuelles de la plateforme.</p>
   </div>
-  <a class="approval" routerLink="../professionnels"
-    ><app-icon name="pro" />3 nouvelles demandes d’approbation<app-icon name="arrow"
-  /></a>
+  @if (statistics()?.professionnelsEnAttente; as pending) {
+    <a class="approval" routerLink="../professionnels"
+      ><app-icon name="pro" />{{ pending }} demande{{ pending > 1 ? 's' : '' }} de
+      vérification<app-icon name="arrow"
+    /></a>
+  }
 </header>
 <div class="metrics three">
-  @for (metric of metrics; track metric.label) {
+  @for (metric of metrics(); track metric.label) {
     <mat-card appearance="outlined" class="metric">
       <div>
         <span class="metric-label">{{ metric.label }}</span
-        ><strong>{{ metric.value }}</strong
-        ><small>{{ metric.detail }}</small>
+        ><strong>{{ metric.value }}</strong>
+        @if (metric.detail) {
+          <small>{{ metric.detail }}</small>
+        }
       </div>
       <span
         class="metric-icon"
@@ -29,40 +34,133 @@
     <div class="panel-heading">
       <h2>Inscriptions mensuelles <span>(6 derniers mois)</span></h2>
     </div>
-    <app-registration-chart />
+    @if (months(); as data) {
+      @if (hasRegistrations()) {
+        <figure class="monthly-chart" aria-label="Inscriptions des six derniers mois">
+          <div class="month-columns">
+            @for (month of data; track month.key) {
+              <div class="month-column">
+                <strong>{{ month.value }}</strong>
+                <div class="month-bar-track">
+                  <span class="month-bar" [style.height.%]="month.height"></span>
+                </div>
+                <span>{{ month.label }}</span>
+              </div>
+            }
+          </div>
+        </figure>
+      } @else {
+        <p class="empty">Aucune inscription sur cette période.</p>
+      }
+    } @else {
+      <p class="empty" role="status">
+        {{
+          reportError()
+            ? 'Inscriptions indisponibles pour le moment.'
+            : 'Chargement des inscriptions…'
+        }}
+      </p>
+    }
   </mat-card>
   <mat-card appearance="outlined" class="panel">
-    <div class="panel-heading"><h2>Répartition utilisateurs</h2></div>
-    <app-user-distribution-chart />
+    <div class="panel-heading"><h2>Utilisateurs et professionnels actifs</h2></div>
+    @if (distribution(); as dist) {
+      @if (dist.rawTotal > 0) {
+        <figure class="distribution-chart">
+          <svg
+            viewBox="0 0 240 210"
+            role="img"
+            aria-labelledby="distributionTitle distributionDesc"
+          >
+            <title id="distributionTitle">Répartition des comptes actifs</title>
+            <desc id="distributionDesc">
+              {{ dist.users }} utilisateurs et {{ dist.professionals }} professionnels vérifiés.
+            </desc>
+            <circle cx="120" cy="104" r="76" fill="none" stroke="var(--green)" stroke-width="22" />
+            <circle
+              cx="120"
+              cy="104"
+              r="76"
+              fill="none"
+              stroke="var(--yellow)"
+              stroke-width="22"
+              pathLength="100"
+              [attr.stroke-dasharray]="
+                dist.professionalPercentage + ' ' + (100 - dist.professionalPercentage)
+              "
+              transform="rotate(-90 120 104)"
+            />
+            <text x="120" y="105" class="total" text-anchor="middle">{{ dist.total }}</text>
+            <text x="120" y="127" text-anchor="middle">Total</text>
+          </svg>
+          <figcaption>
+            <span><i></i>Utilisateurs ({{ dist.users }})</span>
+            <span><i class="yellow"></i>Pros ({{ dist.professionals }})</span>
+          </figcaption>
+        </figure>
+      } @else {
+        <p class="empty">Aucun compte actif à répartir.</p>
+      }
+    } @else {
+      <p class="empty" role="status">
+        {{
+          statisticsError()
+            ? 'Répartition indisponible pour le moment.'
+            : 'Chargement de la répartition…'
+        }}
+      </p>
+    }
   </mat-card>
 </div>
 <mat-card appearance="outlined" class="panel activity">
   <div class="panel-heading">
     <h2>Activité récente sur la plateforme</h2>
-    <a mat-button class="text-link" routerLink="../historique">Voir tout</a>
+    <div class="activity-actions">
+      <button mat-button type="button" class="text-link" [attr.aria-expanded]="showActivityList()" (click)="toggleActivityList()">{{ showActivityList() ? 'Masquer la liste' : 'Afficher la liste' }}</button>
+      <a mat-button class="text-link" routerLink="../historique">Voir tout</a>
+    </div>
   </div>
-  <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th>Utilisateur</th>
-          <th>Action</th>
-          <th>Rôle</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of activities; track item.name) {
-          <tr>
-            <td>{{ item.name }}</td>
-            <td>{{ item.action }}</td>
-            <td>
-              <span class="tag" [class.orange]="item.role === 'Pro'">{{ item.role }}</span>
-            </td>
-            <td>{{ item.time }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+  @if (activities(); as entries) {
+    @if (entries.length) {
+      <div class="activity-list-wrap">
+      <div class="table-scroll" [class.dashboard-list-blurred]="!showActivityList()" [attr.aria-hidden]="!showActivityList()">
+        <table>
+          <thead>
+            <tr>
+              <th>Acteur</th>
+              <th>Action</th>
+              <th>Entité</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of entries; track item.id) {
+              <tr>
+                <td>
+                  {{ item.acteurId === null ? 'Compte inconnu' : 'Compte #' + item.acteurId }}
+                </td>
+                <td>{{ item.description || item.action }}</td>
+                <td>
+                  <span class="tag">{{ item.typeEntite || '—' }}</span>
+                </td>
+                <td>{{ item.dateHeure | date: 'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (!showActivityList()) {
+        <div class="dashboard-list-overlay"><button mat-button type="button" (click)="toggleActivityList()">Afficher les activités récentes</button></div>
+      }
+      </div>
+    } @else {
+      <p class="empty">Aucune activité enregistrée.</p>
+    }
+  } @else {
+    <p class="empty" role="status">
+      {{
+        activitiesError() ? 'Activité indisponible pour le moment.' : 'Chargement de l’activité…'
+      }}
+    </p>
+  }
 </mat-card>

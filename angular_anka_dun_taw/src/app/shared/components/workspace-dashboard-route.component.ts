@@ -9,13 +9,7 @@ import { NutritionnisteDashboardComponent } from '../../features/nutritionniste/
 @Component({
   selector: 'app-workspace-dashboard-route',
   imports: [AdminDashboardComponent, DieteticienDashboardComponent, NutritionnisteDashboardComponent],
-  template: `
-    @switch (actor()) {
-      @case ('admin') { <app-admin-dashboard /> }
-      @case ('dieteticien') { <app-dieteticien-dashboard /> }
-      @default { <app-nutritionniste-dashboard /> }
-    }
-  `,
+  templateUrl: './workspace-dashboard-route.component.html',
 })
 export class WorkspaceDashboardRouteComponent {
   private readonly route = inject(ActivatedRoute);

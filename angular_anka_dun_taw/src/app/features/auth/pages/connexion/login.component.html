@@ -1,0 +1,72 @@
+<main class="login-page" animate.enter="adt-screen-enter">
+      <section class="intro" aria-label="Anka Dùn Taw">
+        <div class="brand">
+          <span class="brand-mark"><app-icon name="leaf" /></span>
+          <span
+            ><strong>Anka Dùn Taw</strong><small>PLATEFORME DE SANTÉ NUTRITIONNELLE</small></span
+          >
+        </div>
+        <div class="intro-copy">
+          <span class="eyebrow">ESPACE DE GESTION</span>
+          <h1>Ensemble, pour une<br /><em>meilleure nutrition.</em></h1>
+          <p>
+            Administrateur, diététicien ou nutritionniste : retrouvez les outils adaptés à votre rôle.
+          </p>
+        </div>
+        <span class="intro-footer">Une alimentation locale, personnalisée et accessible</span>
+      </section>
+
+      <section class="form-panel">
+        <div class="form-wrap">
+          <span class="panel-kicker">BIENVENUE</span>
+          <h2>Connexion à votre espace</h2>
+          <p class="panel-copy">Utilisez votre adresse e-mail ou votre numéro de téléphone.</p>
+
+          @if (error()) {
+            <div class="feedback" role="alert">{{ error() }}</div>
+          }
+          @if (notice) { <div class="success-notice" role="status">{{ notice }}</div> }
+
+          <form [formGroup]="form" (ngSubmit)="submit()">
+            <label for="identifiant">E-mail ou téléphone</label>
+            <input
+              id="identifiant"
+              type="text"
+              formControlName="identifiant"
+              autocomplete="username"
+              placeholder="vous@exemple.com ou +223…"
+              [attr.aria-invalid]="
+                form.controls.identifiant.touched && form.controls.identifiant.invalid
+              "
+            />
+            @if (form.controls.identifiant.touched && form.controls.identifiant.invalid) {
+              <small class="field-error">Saisissez votre e-mail ou votre téléphone.</small>
+            }
+
+            <label for="mot-de-passe">Mot de passe</label>
+            <input
+              id="mot-de-passe"
+              type="password"
+              formControlName="motDePasse"
+              autocomplete="current-password"
+              placeholder="Votre mot de passe"
+              [attr.aria-invalid]="
+                form.controls.motDePasse.touched && form.controls.motDePasse.invalid
+              "
+            />
+            @if (form.controls.motDePasse.touched && form.controls.motDePasse.invalid) {
+              <small class="field-error">Saisissez votre mot de passe.</small>
+            }
+
+            <button class="submit" type="submit" [disabled]="submitting()">
+              {{ submitting() ? 'Connexion en cours…' : 'Se connecter' }}
+              <span aria-hidden="true">→</span>
+            </button>
+          </form>
+          <app-google-button (credential)="loginWithGoogle($event)" />
+          <p class="account-links"><a routerLink="/compte">Créer un compte professionnel</a><a routerLink="/compte" [queryParams]="{action: 'oubli'}">Mot de passe oublié ?</a></p>
+          <p class="help">Accès réservé aux comptes administrateur, diététicien et nutritionniste. Les comptes grand public utilisent l’application mobile.</p>
+        </div>
+        <span class="panel-footer">© 2026 Anka Dùn Taw</span>
+      </section>
+    </main>

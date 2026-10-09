@@ -1,0 +1,58 @@
+<header class="heading"><h1>Demandes d’adaptation</h1><p>Choisissez un menu pour voir les demandes de ses bénéficiaires.</p></header>
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    @if (success()) { <p class="success" role="status">{{ success() }}</p> }
+    <section class="panel"><h2>Mes menus</h2>
+      @if (loadingMenus()) { <p>Chargement…</p> }
+      @else if (!menus().length) { <p>Aucun menu disponible.</p> }
+      @else { <div class="menu-grid">@for (menu of menus(); track menu.id) {
+        <button type="button" class="menu-choice" [class.chosen]="selectedMenu()?.id === menu.id" (click)="selectMenu(menu)">{{ menu.titre }} <small>n° {{ menu.id }}</small></button>
+      }</div> }
+      <div class="pager"><button type="button" [disabled]="menuPage() === 0" (click)="changeMenuPage(-1)">Précédent</button>
+        <span>Page {{ menuPage() + 1 }}</span><button type="button" [disabled]="(menuPage() + 1) * 20 >= menuTotal()" (click)="changeMenuPage(1)">Suivant</button></div>
+    </section>
+    @if (selectedMenu(); as menu) {
+      <section class="panel"><h2>Demandes pour « {{ menu.titre }} »</h2>
+        @if (loadingRequests()) { <p>Chargement…</p> }
+        @else if (!requests().length) { <p>Aucune demande pour ce menu.</p> }
+        @else { @for (request of requests(); track request.id) {
+          <article class="request"><div><strong>Patient n° {{ request.demandeurId }}</strong><small>{{ request.statut }}</small><p>{{ request.motif }}</p>
+            @if (request.reponse) { <p>Réponse : {{ request.reponse }}</p> }</div>
+            @if (request.statut === 'EN_ATTENTE' || request.statut === 'EN_COURS') {
+              <div class="actions"><button type="button" (click)="choose(request, 'accept')">Adapter le menu</button>
+                <button type="button" class="secondary" (click)="choose(request, 'refuse')">Refuser</button></div>
+            }
+          </article>
+        } }
+        <div class="pager"><button type="button" [disabled]="requestPage() === 0" (click)="changeRequestPage(-1)">Précédent</button>
+          <span>Page {{ requestPage() + 1 }}</span><button type="button" [disabled]="(requestPage() + 1) * 20 >= requestTotal()" (click)="changeRequestPage(1)">Suivant</button></div>
+      </section>
+    }
+    @if (selectedRequest(); as request) {
+      <div class="modal-backdrop" role="presentation" (click)="closeDecision()" (keydown.escape)="closeDecision()">
+      <section class="panel decision" role="dialog" aria-modal="true" aria-labelledby="decision-title"
+        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()" animate.enter="adt-panel-enter" animate.leave="adt-panel-leave">
+        <header class="modal-heading"><div><small>DEMANDE N° {{ request.id }}</small><h2 id="decision-title">{{ decision() === 'accept' ? 'Préparer le menu révisé' : 'Répondre à la demande' }}</h2></div>
+          <button type="button" class="close" (click)="closeDecision()" aria-label="Fermer la fenêtre">✕</button></header>
+        <p>Demande n° {{ request.id }} · {{ request.motif }}</p>
+        <label>Réponse au patient *<textarea rows="3" [(ngModel)]="response" placeholder="Expliquez votre décision"></textarea></label>
+        @if (decision() === 'accept') {
+          <div class="fields"><label>Titre du nouveau menu *<input [(ngModel)]="revisionTitle" /></label>
+            <label>Début *<input type="date" [(ngModel)]="revisionStart" /></label>
+            <label>Fin<input type="date" [(ngModel)]="revisionEnd" /></label></div>
+          <label>Recommandations<textarea rows="3" [(ngModel)]="revisionNotes"></textarea></label>
+          <h3>Repas à adapter</h3>
+          @for (meal of revisionMeals; track $index; let i = $index) {
+            <div class="meal"><label>Recette<select [(ngModel)]="meal.recetteId"><option [ngValue]="0">Choisir…</option>
+              @for (recipe of recipes(); track recipe.id) { <option [ngValue]="recipe.id">{{ recipe.nom }}</option> }
+              @if (meal.recetteId && !recipeListed(meal.recetteId)) { <option [ngValue]="meal.recetteId">Recette n° {{ meal.recetteId }}</option> }
+            </select></label><label>Jour<input type="number" min="1" [(ngModel)]="meal.jour" /></label>
+              <label>Moment<select [(ngModel)]="meal.typeRepas"><option value="PETIT_DEJEUNER">Petit déjeuner</option><option value="DEJEUNER">Déjeuner</option><option value="DINER">Dîner</option><option value="COLLATION">Collation</option></select></label>
+              <label>Portions<input type="number" min="0.01" step="0.01" [(ngModel)]="meal.nombrePortions" /></label>
+              <button type="button" class="secondary" [disabled]="revisionMeals.length === 1" (click)="revisionMeals.splice(i, 1)">Retirer</button></div>
+          }
+          <button type="button" class="secondary" (click)="revisionMeals.push({recetteId: 0, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1})">+ Ajouter un repas</button>
+        }
+        <div class="actions"><button type="button" [disabled]="saving()" (click)="submit()">{{ saving() ? 'Enregistrement…' : 'Envoyer la réponse' }}</button>
+          <button type="button" class="secondary" (click)="closeDecision()">Annuler</button></div>
+      </section></div>
+    }

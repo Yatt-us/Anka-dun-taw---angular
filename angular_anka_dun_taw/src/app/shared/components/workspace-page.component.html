@@ -1,78 +1,213 @@
-@if (actor().id === 'dieteticien' && section() === 'suivi-utilisateurs') {
-  <app-dieteticien-tracking />
-} @else {
-  <header class="page-heading">
+<header class="page-heading" animate.enter="adt-page-enter">
     <div>
       <h1>{{ sectionTitle() }}</h1>
       <p>{{ sectionDescription() }}</p>
     </div>
-    <span class="demo-label">Aperçu · données fictives</span>
+    @if (loadState() === 'unavailable') {
+      <span class="source-label">Section indisponible</span>
+    }
   </header>
-  <div class="section-toolbar">
-    <span aria-live="polite"
-      >{{ filteredRows().length }} {{ filteredRows().length > 1 ? 'éléments' : 'élément' }}</span
-    ><mat-form-field appearance="outline" subscriptSizing="dynamic"
-      ><mat-label>Rechercher dans cette page</mat-label
-      ><input matInput type="search" [value]="searchQuery()" (input)="updateSearch($event)"
-    /></mat-form-field>
-  </div>
-  <mat-card appearance="outlined" class="panel"
-    ><div class="table-wrap">
-      <table mat-table [dataSource]="pagedRows()">
-        <ng-container matColumnDef="record"
-          ><th mat-header-cell *matHeaderCellDef>
-            {{ actor().id === 'admin' ? 'Élément' : 'Dossier' }}
-          </th>
-          <td mat-cell *matCellDef="let row">
-            <div class="person-cell">
-              <span class="avatar">{{ initials(row.title) }}</span>
-              <div>
-                <strong>{{ row.title }}</strong
-                ><small>{{ row.subtitle }}</small>
-              </div>
-            </div>
-          </td></ng-container
-        >
-        <ng-container matColumnDef="information"
-          ><th mat-header-cell *matHeaderCellDef>Information</th>
-          <td mat-cell *matCellDef="let row">{{ row.value }}</td></ng-container
-        >
-        <ng-container matColumnDef="status"
-          ><th mat-header-cell *matHeaderCellDef>Statut</th>
-          <td mat-cell *matCellDef="let row">
-            <span [class]="'status ' + row.badgeTone">{{ row.badge }}</span>
-          </td></ng-container
-        >
-        <ng-container matColumnDef="actions"
-          ><th mat-header-cell *matHeaderCellDef><span class="sr-only">Actions</span></th>
-          <td mat-cell *matCellDef="let row">
-            <button
-              mat-button
-              (click)="openDetail(row)"
-              [attr.aria-label]="'Consulter ' + row.title"
-            >
-              Consulter →
-            </button>
-          </td></ng-container
-        >
-        <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns"></tr>
-        <tr *matNoDataRow>
-          <td colspan="4" class="empty">Aucun résultat pour cette recherche.</td>
-        </tr>
-      </table>
+
+  @if (successMessage()) { <p class="success-banner" role="status" animate.enter="adt-alert-enter" animate.leave="adt-alert-leave">✓ {{ successMessage() }}</p> }
+  @if (createdDraft(); as draft) {
+    <div class="draft-banner" animate.enter="adt-alert-enter" animate.leave="adt-alert-leave"><span>{{ draft.kind === 'quiz' ? 'Quiz' : 'Défi' }} n° {{ draft.id }} enregistré comme brouillon.</span>
+      <button class="create-button" type="button" (click)="openEditor(draft.kind, draft.id, undefined, draft.data)">Modifier le brouillon</button>
+      <button class="create-button" type="button" [disabled]="actionBusy()"
+        (click)="executeAction({ label: 'Publier', path: draft.kind === 'quiz' ? '/admin/quiz/' + draft.id + '/publier' : '/admin/defis/' + draft.id + '/publier' })">Publier maintenant</button>
     </div>
-    <mat-paginator
-      [length]="filteredRows().length"
-      [pageSize]="pageSize()"
-      [pageIndex]="pageIndex()"
-      [pageSizeOptions]="[5, 10, 20]"
-      (page)="changePage($event)"
-      showFirstLastButtons
-      aria-label="Pagination des dossiers"
-  /></mat-card>
-  <p class="section-hint">
-    Données de démonstration. Ouvrez une fiche pour consulter ses détails et ajouter une note
-    personnelle.
-  </p>
-}
+  }
+
+  @if (editorKind(); as kind) {
+    <div class="editor-backdrop" role="presentation" (click)="closeEditor()" (keydown.escape)="closeEditor()"
+      animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+      <section class="editor-modal" role="dialog" aria-modal="true" aria-label="Formulaire de gestion"
+        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+        <app-workspace-editor class="editor-panel" [kind]="kind" [entityId]="editorId()" [relatedId]="relatedId()" [initialData]="editorData()"
+          (saved)="editorSaved($event)" (cancelled)="closeEditor()" />
+      </section>
+    </div>
+  }
+
+  @if (loadState() === 'unavailable') {
+    <mat-card appearance="outlined" class="panel state-panel">
+      <h2>Liste indisponible</h2>
+      <p>Cette rubrique n’est pas encore disponible dans votre espace.</p>
+    </mat-card>
+  } @else if (loadState() === 'loading') {
+    <mat-card appearance="outlined" class="panel state-panel" aria-live="polite">
+      <p>Chargement des données…</p>
+    </mat-card>
+  } @else if (loadState() === 'error') {
+    <mat-card appearance="outlined" class="panel state-panel" role="alert">
+      <h2>Chargement impossible</h2>
+      <p>{{ errorMessage() }}</p>
+      <button mat-button (click)="retry()">Réessayer</button>
+    </mat-card>
+  } @else {
+    <div class="section-toolbar">
+      <span aria-live="polite">
+        {{ filteredRows().length }} affiché(s) sur cette page · {{ result().total }} au total
+      </span>
+      <div class="toolbar-actions">
+        <button class="create-button secondary-button" type="button" [attr.aria-expanded]="showList()"
+          (click)="toggleList()">{{ showList() ? 'Masquer la liste' : 'Afficher la liste' }}</button>
+        @for (kind of createKinds(); track kind) {
+          <button class="create-button" type="button" [attr.aria-expanded]="editorKind() === kind"
+            aria-controls="workspace-editor" (click)="toggleEditor(kind)">
+            {{ editorKind() === kind ? 'Fermer le formulaire' : '+ ' + editorLabel(kind) }}
+          </button>
+        }
+      </div>
+      @if (showList() && supportsStatusFilter()) {
+        <label class="comment-label">Statut
+          <select [value]="adminStatus()" (change)="updateAdminStatus($event)">
+            @for (option of statusFilterOptions(); track option.value) { <option [value]="option.value">{{ option.label }}</option> }
+          </select>
+        </label>
+      }
+      @if (showList()) {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Rechercher dans cette page</mat-label>
+          <input matInput type="search" [value]="searchQuery()" (input)="updateSearch($event)" />
+        </mat-form-field>
+      }
+    </div>
+    <mat-card appearance="outlined" class="panel list-panel">
+      <div class="list-heading">
+        <div><span class="detail-kicker">GESTION</span><h2>Liste des {{ sectionTitle().toLowerCase() }}</h2>
+          <p>Consultez les éléments enregistrés et ouvrez une fiche pour voir les détails.</p></div>
+        <span class="list-count">{{ result().total }} élément(s)</span>
+      </div>
+      <div class="list-content" [class.list-content-blurred]="!showList()" [attr.aria-hidden]="!showList()">
+      <div class="table-wrap">
+        <table mat-table [dataSource]="filteredRows()">
+          <ng-container matColumnDef="record">
+            <th mat-header-cell *matHeaderCellDef>{{ recordLabel() }}</th>
+            <td mat-cell *matCellDef="let row">
+              <div class="person-cell">
+                <span class="avatar">{{ initials(row.title) }}
+                  @if (row.imageUrl) { <img class="avatar-image" [src]="row.imageUrl" [alt]="'Image de ' + row.title" loading="lazy" (error)="hideBrokenImage($event)" /> }
+                </span>
+                <div><strong>{{ row.title }}</strong><small>{{ row.subtitle }}</small></div>
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="information">
+            <th mat-header-cell *matHeaderCellDef>Information</th>
+            <td mat-cell *matCellDef="let row">{{ row.value }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let row">
+              <span [class]="'status ' + row.badgeTone">{{ row.badge }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef><span class="sr-only">Actions</span></th>
+            <td mat-cell *matCellDef="let row">
+              <button mat-button (click)="openDetail(row)" [attr.aria-label]="'Consulter ' + row.title">
+                Consulter →
+              </button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+          <tr *matNoDataRow>
+            <td colspan="4" class="empty">
+              {{ searchQuery() ? 'Aucun résultat sur cette page pour cette recherche.' : 'Aucun élément enregistré.' }}
+            </td>
+          </tr>
+        </table>
+      </div>
+      <mat-paginator
+        [length]="result().total"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[5, 10, 20, 50, 100]"
+        (page)="changePage($event)"
+        showFirstLastButtons
+        aria-label="Pagination des dossiers"
+      />
+      </div>
+      @if (!showList()) {
+        <div class="list-preview-overlay">
+          <button class="create-button" type="button" (click)="toggleList()">Afficher la liste · {{ result().total }} élément(s)</button>
+        </div>
+      }
+    </mat-card>
+    @if (selectedRow(); as row) {
+      <div class="detail-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()">
+        <mat-card appearance="outlined" class="panel detail" role="dialog" aria-modal="true" aria-labelledby="record-detail-title"
+          cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()"
+          animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+        <div class="detail-heading">
+          <div><span class="detail-kicker">DÉTAILS</span><h2 id="record-detail-title">{{ row.title }}</h2></div>
+          <button mat-icon-button type="button" (click)="closeDetail()" aria-label="Fermer le détail">✕</button>
+        </div>
+        @if (row.imageUrl) { <img class="detail-image" [src]="row.imageUrl" [alt]="'Image de ' + row.title" loading="lazy" (error)="hideBrokenImage($event)" /> }
+        <p>{{ row.subtitle }}</p>
+        <p>{{ row.value }}</p>
+        <span [class]="'status ' + row.badgeTone">{{ row.badge }}</span>
+        <div class="detail-actions">
+          @if (row.detail?.editKind; as editKind) {
+            <button class="create-button" type="button" (click)="openEditor(editKind, rowId(row))">{{ editLabel(editKind) }}</button>
+          }
+          @if (row.detail?.showPriceCreate) {
+            <button class="create-button" type="button" (click)="openEditor('price', undefined, rowId(row))">Ajouter un prix par zone</button>
+          }
+          @for (action of actionsFor(row); track action.path) {
+            <button class="create-button" type="button" [disabled]="actionBusy()" (click)="executeAction(action)">{{ actionBusy() ? 'Veuillez patienter…' : action.label }}</button>
+          }
+        </div>
+        @if (row.detail?.showAppointmentComment) {
+          <label class="comment-label">{{ row.detail?.commentLabel || 'Commentaire' }}
+            <textarea rows="2" [value]="actionComment()" (input)="updateComment($event)"></textarea>
+          </label>
+        }
+        @if (row.detail?.showBadgeAssignment) {
+          <label class="comment-label">Numéro de l’utilisateur à récompenser
+            <input type="number" min="1" (input)="updateRecipient($event)" />
+          </label>
+          <div class="detail-actions"><button class="create-button" type="button" [disabled]="actionBusy() || !recipientId()" (click)="assignBadge(row)">Attribuer le badge</button></div>
+        }
+        @if (row.detail?.showChallengeProgress) {
+          <label class="comment-label">Numéro du participant
+            <input type="number" min="1" (input)="updateRecipient($event)" />
+          </label>
+          <label class="comment-label">Progression à ajouter
+            <input type="number" min="1" (input)="updateProgression($event)" />
+          </label>
+          <div class="detail-actions"><button class="create-button" type="button" [disabled]="actionBusy() || !recipientId() || !progression()" (click)="advanceChallenge(row)">Enregistrer la progression</button></div>
+        }
+        @if (row.detail?.showPriceList) {
+          <div class="messages-history" aria-label="Prix locaux de cet aliment">
+            <h3>Prix par zone</h3>
+            @if (foodPricesLoading()) { <p>Chargement des prix…</p> }
+            @else if (!foodPrices().length) { <p>Aucun prix enregistré.</p> }
+            @else { @for (price of foodPrices(); track price.id) {
+              <p>{{ price.zone }} : {{ price.prix }} {{ price.devise || 'F CFA' }} pour {{ price.quantiteReference }} {{ price.unite }} · depuis {{ price.dateDebut }}</p>
+            } }
+          </div>
+        }
+        @if (row.detail?.showConversation) {
+          <div class="messages-history" aria-label="Messages de la conversation">
+            @if (messagesLoading()) { <p>Chargement des messages…</p> }
+            @else if (!messages().length) { <p>Aucun message.</p> }
+            @else { @for (message of messages(); track message.id) {
+              <div class="message"><strong>{{ message.auteurPrenom }} {{ message.auteurNom }}</strong><p>{{ message.contenu }}</p><small>{{ message.dateEnvoi }}</small></div>
+            } }
+            <div class="message-pager"><button mat-button type="button" [disabled]="messagePage() === 0" (click)="changeMessagePage(row, -1)">Précédent</button>
+              <span>Page {{ messagePage() + 1 }}</span><button mat-button type="button" [disabled]="(messagePage() + 1) * 50 >= messageTotal()" (click)="changeMessagePage(row, 1)">Suivant</button></div>
+          </div>
+          <label class="comment-label">Répondre au patient
+            <textarea rows="3" [value]="replyText()" (input)="updateReply($event)" placeholder="Écrivez votre réponse…"></textarea>
+          </label>
+          <div class="detail-actions"><button class="create-button" type="button" [disabled]="actionBusy() || !replyText().trim()" (click)="sendReply(row)">Envoyer la réponse</button></div>
+        }
+        @if (actionError()) { <p class="action-error" role="alert">{{ actionError() }}</p> }
+        </mat-card>
+      </div>
+    }
+    <p class="section-hint">{{ result().hint || 'La recherche porte sur la page actuellement affichée.' }}</p>
+  }
+  @if (canEditProfile()) { <app-security /> }

@@ -374,3 +374,9 @@
     margin-left: 0;
   }
 }
+
+.dashboard-list-panel, .activity-list-wrap { position: relative; }
+.dashboard-list-content { position: relative; }
+.dashboard-list-blurred { filter: blur(6px); opacity: .45; user-select: none; pointer-events: none; }
+.dashboard-list-overlay { position: absolute; inset: 62px 0 0; display: grid; place-items: center; background: rgb(255 255 255 / 24%); }
+.activity-actions { display: flex; align-items: center; gap: 8px; }

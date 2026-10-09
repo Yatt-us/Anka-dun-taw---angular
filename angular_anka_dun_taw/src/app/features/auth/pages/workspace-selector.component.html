@@ -1,0 +1,111 @@
+<main class="chooser-page" animate.enter="adt-screen-enter">
+      <header class="chooser-header">
+        <a class="brand" routerLink="/espaces"
+          ><span class="brand-mark"><app-icon name="leaf" /></span
+          ><span
+            ><strong>Anka Dùn Taw</strong><small>PLATEFORME DE SANTÉ NUTRITIONNELLE</small></span
+          ></a
+        >
+        <div class="account-actions">
+          <span class="demo-chip"><i></i> {{ displayName() }}</span>
+          <button class="logout-action" type="button" (click)="logout()">Se déconnecter</button>
+        </div>
+      </header>
+      <section class="chooser-content">
+        <div class="welcome-copy">
+          <span class="kicker">BIENVENUE SUR VOTRE ESPACE DE TRAVAIL</span>
+          <h1>Bienvenue dans votre<br /><em>espace de travail</em></h1>
+          <p>Retrouvez les outils adaptés à votre rôle dans l’accompagnement nutritionnel.</p>
+        </div>
+        <div class="role-grid">
+          @if (ownActor() === 'admin') {
+            <a
+              class="role-card admin-card"
+              [class.locked]="!canOpen('admin')"
+              [routerLink]="canOpen('admin') ? '/espaces/admin/tableau-de-bord' : null"
+              [attr.aria-disabled]="!canOpen('admin')"
+            >
+              <div class="role-card-top">
+                <span class="role-icon">AD</span
+                ><span class="card-arrow" aria-hidden="true">↗</span>
+              </div>
+              <span class="role-label">ESPACE 01</span>
+              <h2>Administrateur</h2>
+              <p>
+                Gérez les comptes, les professionnels, les aliments et les contenus de la
+                plateforme.
+              </p>
+              <span class="role-action"
+                >{{ canOpen('admin') ? 'Ouvrir l’espace' : 'Accès réservé' }}
+                <b aria-hidden="true">→</b></span
+              >
+            </a>
+          }
+          @if (ownActor() === 'dieteticien') {
+            <a
+              class="role-card diet-card"
+              [class.locked]="!canOpen('dieteticien')"
+              [routerLink]="canOpen('dieteticien') ? '/espaces/dieteticien/tableau-de-bord' : null"
+              [attr.aria-disabled]="!canOpen('dieteticien')"
+            >
+              <div class="role-card-top">
+                <span class="role-icon">DT</span
+                ><span class="card-arrow" aria-hidden="true">↗</span>
+              </div>
+              <span class="role-label">ESPACE 02</span>
+              <h2>Diététicien(ne)</h2>
+              <p>
+                Suivez vos patients et composez des menus adaptés à leurs objectifs et à leur
+                budget.
+              </p>
+              <span class="role-action"
+                >{{ canOpen('dieteticien') ? 'Ouvrir l’espace' : 'Accès réservé' }}
+                <b aria-hidden="true">→</b></span
+              >
+            </a>
+          }
+          @if (ownActor() === 'nutritionniste') {
+            <a
+              class="role-card nutrition-card"
+              [class.locked]="!canOpen('nutritionniste')"
+              [routerLink]="
+                canOpen('nutritionniste') ? '/espaces/nutritionniste/tableau-de-bord' : null
+              "
+              [attr.aria-disabled]="!canOpen('nutritionniste')"
+            >
+              <div class="role-card-top">
+                <span class="role-icon">NT</span
+                ><span class="card-arrow" aria-hidden="true">↗</span>
+              </div>
+              <span class="role-label">ESPACE 03</span>
+              <h2>Nutritionniste</h2>
+              <p>
+                Organisez les consultations, répondez aux questions et partagez vos recommandations.
+              </p>
+              <span class="role-action"
+                >{{ canOpen('nutritionniste') ? 'Ouvrir l’espace' : 'Accès réservé' }}
+                <b aria-hidden="true">→</b></span
+              >
+            </a>
+          }
+        </div>
+        @if (notice() || logoutError()) {
+          <div class="notice" role="status">
+            <span class="notice-icon">i</span
+            ><span
+              ><strong>{{
+                logoutError() ? 'Déconnexion impossible' : 'Accès à votre espace'
+              }}</strong
+              ><small>{{ logoutError() || notice() }}</small></span
+            >
+            @if (auth.professionalStatusError()) {
+              <button type="button" class="retry" (click)="retryVerification()">Réessayer</button>
+            }
+          </div>
+        }
+      </section>
+      <footer class="chooser-footer">
+        <span>ANKA DÙN TAW</span><span>Une alimentation locale, personnalisée et accessible</span
+        ><span>© 2026</span>
+      </footer>
+    </main>

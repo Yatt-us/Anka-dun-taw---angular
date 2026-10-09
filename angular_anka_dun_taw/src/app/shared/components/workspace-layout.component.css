@@ -74,6 +74,9 @@ nav a,
 nav a:hover {
   background: #f4f7f3;
 }
+nav a { transition: background-color .2s ease, color .2s ease, transform .2s ease; }
+nav a:hover { transform: translateX(4px); }
+nav a:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 nav a.active {
   background: #e9f2e9;
   color: var(--green);
@@ -90,6 +93,13 @@ nav app-icon {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 10px;
+}
+.logout-error {
+  display: block;
+  color: #b3473f;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 0 16px 10px;
 }
 .profile {
   display: flex;
@@ -177,6 +187,16 @@ main {
   width: 100%;
   margin: auto;
 }
+.admin .page-area { animation: admin-reveal .36s ease-out both; }
+.dieteticien .page-area { animation: dieteticien-reveal .4s cubic-bezier(.2,.7,.2,1) both; }
+.nutritionniste .page-area { animation: nutritionniste-reveal .45s ease-out both; }
+.dieteticien nav a.active { background: #fff0e3; color: #a35420; }
+.nutritionniste nav a.active { background: #fff7da; color: #725a0a; }
+.dieteticien .brand-emblem { background: #fff0e3; }
+.nutritionniste .brand-emblem { background: #fff7da; }
+@keyframes admin-reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes dieteticien-reveal { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes nutritionniste-reveal { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
 .admin .page-area {
   padding: 32px;
 }
@@ -184,6 +204,11 @@ footer {
   font-size: 10px;
   color: #727b70;
   padding: 0 32px 18px;
+}
+@media (prefers-reduced-motion: reduce) {
+  nav a { transition: none; }
+  nav a:hover { transform: none; }
+  .admin .page-area, .dieteticien .page-area, .nutritionniste .page-area { animation: none; }
 }
 .mobile-top,
 .scrim {

@@ -1,0 +1,46 @@
+<header class="heading"><h1>{{ actor() === 'dieteticien' ? 'Mes bénéficiaires' : 'Patients en contact' }}</h1>
+      <p>Consultez les patients liés à vos rendez-vous acceptés ou terminés.</p></header>
+    <div class="panel lookup"><label>Numéro du patient
+      <input type="number" min="1" [(ngModel)]="searchedId" placeholder="Ex. 12" />
+    </label><button type="button" [disabled]="!searchedId || searchedId < 1" (click)="selectById()">Ouvrir son dossier</button></div>
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    <section class="panel"><h2>Patients récemment liés à votre activité</h2>
+      @if (loading()) { <p>Chargement…</p> }
+      @else if (!patients().length) { <p>Aucun patient lié par un rendez-vous accepté ou terminé.</p> }
+      @else { <div class="patient-grid">@for (patient of patients(); track patient.id) {
+        <button type="button" class="patient" (click)="select(patient)"><strong>{{ patient.name }}</strong><small>Compte n° {{ patient.id }} →</small></button>
+      }</div>
+        <div class="pager"><button type="button" [disabled]="patientPage() === 0 || loading()" (click)="changePatientPage(-1)">Précédent</button>
+          <span>Page {{ patientPage() + 1 }} · {{ patientTotal() }} patient(s)</span>
+          <button type="button" [disabled]="(patientPage() + 1) * patientPageSize >= patientTotal() || loading()" (click)="changePatientPage(1)">Suivant</button></div>
+      }
+    </section>
+    @if (selected(); as patient) {
+      <div class="modal-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()">
+      <section class="panel detail" role="dialog" aria-modal="true" aria-labelledby="patient-detail-title"
+        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()" animate.enter="adt-panel-enter" animate.leave="adt-panel-leave">
+        <div class="modal-heading"><div><small>DOSSIER PATIENT · N° {{ patient.id }}</small><h2 id="patient-detail-title">{{ patient.name }}</h2></div>
+          <button type="button" class="close" (click)="closeDetail()" aria-label="Fermer le dossier">✕</button></div>
+        @if (detailLoading()) { <p>Chargement du dossier…</p> }
+          @else {
+            @if (detailError()) { <p class="error" role="alert">{{ detailError() }}</p> }
+            @if (profile(); as data) {
+              <h3>Profil nutritionnel</h3>
+              <div class="stats"><span>Zone <strong>{{ data.zone || '—' }}</strong></span><span>Poids <strong>{{ data.poidsKg ?? '—' }} kg</strong></span>
+                <span>IMC <strong>{{ data.imc ?? '—' }}</strong></span><span>Activité <strong>{{ data.niveauActivite || '—' }}</strong></span>
+                <span>Mode budget <strong>{{ data.modeBudget || '—' }}</strong></span></div>
+              <p>Allergies : {{ data.allergies?.join(', ') || 'aucune déclarée' }}</p>
+              @if (data.commentaireSante) { <p>{{ data.commentaireSante }}</p> }
+            }
+            <h3>Objectifs</h3>
+            @for (goal of goals(); track goal.id) { <p class="item">{{ goal.description || goal.type }} · {{ goal.statut }} · {{ goal.progressionPourcentage ?? 0 }} %</p> }
+            @if (!goals().length) { <p>Aucun objectif enregistré.</p> }
+            <h3>Budgets</h3>
+            @for (budget of budgets(); track budget.id) { <p class="item">{{ budget.montant }} {{ budget.devise || 'XOF' }} / {{ budget.periode }} {{ budget.actif ? '· actif' : '' }}</p> }
+            @if (!budgets().length) { <p>Aucun budget enregistré.</p> }
+            <div class="day"><label>Budget petit montant du jour <input type="date" [(ngModel)]="selectedDate" /></label>
+              <button type="button" (click)="loadDay(patient.id)">Consulter</button></div>
+            @if (dailyBudget(); as budget) { <p class="item">{{ budget.date }} : {{ budget.montantDisponible }} {{ budget.devise || 'XOF' }} disponibles sur {{ budget.plafond }}.</p> }
+          }
+      </section></div>
+    }
