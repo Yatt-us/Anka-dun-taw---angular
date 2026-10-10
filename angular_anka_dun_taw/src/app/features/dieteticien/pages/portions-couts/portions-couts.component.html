@@ -1,0 +1,40 @@
+<header class="heading">
+      <div><span class="eyebrow">GESTION DES MENUS</span><h1>Portions & coûts</h1>
+        <p>Vérifiez le nombre de portions et le coût calculé avec les prix locaux de la zone du menu.</p></div>
+      <button type="button" class="refresh" (click)="load()" [disabled]="loading()">Actualiser</button>
+    </header>
+    @if (loading()) { <div class="state" aria-live="polite">Calcul des prix locaux…</div> }
+    @else if (error()) { <div class="state error-state" role="alert"><strong>Chargement impossible</strong><p>{{ error() }}</p><button type="button" class="refresh" (click)="load()">Réessayer</button></div> }
+    @else if (!menus().length) { <div class="state"><strong>Aucun menu à afficher</strong><p>Créez un menu pour consulter le coût estimé de ses repas.</p></div> }
+    @else {
+      <section class="menu-list" aria-label="Coûts des menus">
+        @for (menu of menus(); track menu.menuId) {
+          <article class="menu-card">
+            <header class="menu-heading">
+              <div><div class="title-line"><h2>{{ menu.titre }}</h2><span class="badge">{{ label(menu.statut) }}</span></div>
+                <p>{{ menu.zone || 'Zone non définie' }} · {{ dateRange(menu.dateDebut, menu.dateFin) }}</p></div>
+              <div class="total"><small>COÛT ESTIMÉ DU MENU</small>
+                @if (menu.prixDisponibles && menu.coutTotalEstime !== null) { <strong>{{ money(menu.coutTotalEstime, menu.devise) }}</strong> }
+                @else { <strong class="missing">Prix incomplets</strong> }
+              </div>
+            </header>
+            @if (!menu.prixDisponibles) { <p class="hint">Certains prix locaux manquent pour {{ menu.zone || 'cette zone' }}. Ajoutez les prix des aliments concernés pour obtenir un total complet.</p> }
+            @if (!menu.repas.length) { <p class="empty">Aucun repas dans ce menu.</p> }
+            @else {
+              <div class="table-scroll"><table><thead><tr><th>Jour / repas</th><th>Recette</th><th>Portions</th><th>Coût / portion</th><th>Total du repas</th></tr></thead>
+                <tbody>@for (meal of menu.repas; track meal.repasId) {
+                  <tr><td><strong>Jour {{ meal.jour }}</strong><small>{{ label(meal.typeRepas) }} · {{ meal.dateEstimation || 'date non définie' }}</small></td>
+                    <td>{{ meal.recetteNom }}</td><td>{{ meal.nombrePortions }}</td>
+                    <td>{{ meal.coutParPortion === null ? 'Prix manquant' : money(meal.coutParPortion, menu.devise) }}</td>
+                    <td class="meal-total">{{ meal.coutTotalEstime === null ? 'À compléter' : money(meal.coutTotalEstime, menu.devise) }}</td></tr>
+                }</tbody></table></div>
+            }
+          </article>
+        }
+      </section>
+      <nav class="pager" aria-label="Pagination des menus">
+        <button type="button" [disabled]="page() === 0 || loading()" (click)="changePage(-1)">← Précédent</button>
+        <span>Page {{ page() + 1 }} sur {{ totalPages() }} · {{ totalMenus() }} menu(s)</span>
+        <button type="button" [disabled]="page() + 1 >= totalPages() || loading()" (click)="changePage(1)">Suivant →</button>
+      </nav>
+    }

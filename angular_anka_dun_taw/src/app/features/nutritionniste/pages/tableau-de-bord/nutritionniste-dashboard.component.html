@@ -1,0 +1,110 @@
+<header class="dashboard-header" animate.enter="adt-nutrition-enter">
+  <div>
+    <h1>Bonjour</h1>
+    <p>Voici vos conversations, demandes de consultation et rendez-vous.</p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" />{{ dateLabel }}</span>
+</header>
+<div class="metrics three">
+  @for (metric of metrics(); track metric.label) {
+    <mat-card appearance="outlined" class="metric">
+      <span
+        class="metric-icon"
+        [class.orange]="metric.tone === 'orange'"
+        [class.yellow]="metric.tone === 'yellow'"
+        ><app-icon [name]="metric.icon"
+      /></span>
+      <div>
+        <span class="metric-label">{{ metric.label }}</span
+        ><strong>{{ metric.value }}</strong>
+        @if (metric.detail) {
+          <small>{{ metric.detail }}</small>
+        }
+      </div>
+    </mat-card>
+  }
+</div>
+<div class="columns">
+  <mat-card appearance="outlined" class="panel dashboard-list-panel">
+    <div class="panel-heading">
+      <h2>Conversations récentes</h2>
+      <button mat-button type="button" (click)="toggleConversationsList()">{{ showConversationsList() ? 'Masquer' : 'Afficher' }}</button>
+      <div class="dashboard-list-content" [class.dashboard-list-blurred]="!showConversationsList()" [attr.aria-hidden]="!showConversationsList()">
+    @if (conversations(); as entries) {
+        <a mat-button class="text-link" routerLink="../questions"
+          >Voir toutes ({{ entries.length }})</a
+        >
+      }
+    </div>
+    @if (conversations(); as entries) {
+      @for (conversation of entries.slice(0, 3); track conversation.id) {
+        <a class="question" routerLink="../questions">
+          <span class="avatar">{{ initials(conversation) }}</span>
+          <div class="question-content">
+            <div class="question-top">
+              <strong>{{ conversationName(conversation) }}</strong>
+              @if (conversation.dernierMessageA) {
+                <time>{{ conversation.dernierMessageA | date: 'dd/MM HH:mm' }}</time>
+              }
+            </div>
+            <p>
+              {{ conversation.messagesNonLus }} message{{
+                conversation.messagesNonLus > 1 ? 's' : ''
+              }}
+              non lu{{ conversation.messagesNonLus > 1 ? 's' : '' }}
+            </p>
+            <small>{{ conversation.dernierMessage || 'Aucun message à afficher.' }}</small>
+          </div>
+        </a>
+      } @empty {
+        <p class="empty">Aucune conversation pour le moment.</p>
+      }
+    } @else {
+      <p class="empty" role="status">
+        {{
+          conversationsError()
+            ? 'Conversations indisponibles pour le moment.'
+            : 'Chargement des conversations…'
+        }}
+      </p>
+    }
+    </div>
+    @if (!showConversationsList()) { <div class="dashboard-list-overlay"><button mat-button type="button" (click)="toggleConversationsList()">Afficher les conversations</button></div> }
+  </mat-card>
+  <mat-card appearance="outlined" class="panel dashboard-list-panel">
+    <div class="panel-heading">
+      <h2>Rendez-vous du jour</h2>
+      <div><button mat-button type="button" (click)="toggleAppointmentsList()">{{ showAppointmentsList() ? 'Masquer' : 'Afficher' }}</button>
+      <a mat-button class="text-link" routerLink="../rendez-vous">Voir tout</a></div>
+    </div>
+    <div class="dashboard-list-content" [class.dashboard-list-blurred]="!showAppointmentsList()" [attr.aria-hidden]="!showAppointmentsList()">
+    @if (todayAppointments(); as meetings) {
+      @if (meetings.length) {
+        <div class="appointments">
+          @for (meeting of meetings.slice(0, 5); track meeting.id) {
+            <a class="appointment" routerLink="../rendez-vous">
+              <time>{{ appointmentTime(meeting.dateHeure) }}</time>
+              <div>
+                <strong>Utilisateur #{{ meeting.utilisateurId }}</strong>
+                <span class="tag">{{ meeting.motif || 'Rendez-vous accepté' }}</span>
+              </div>
+              <app-icon name="arrow" />
+            </a>
+          }
+        </div>
+      } @else {
+        <p class="empty">Aucun rendez-vous accepté aujourd’hui.</p>
+      }
+    } @else {
+      <p class="empty" role="status">
+        {{
+          appointmentsError()
+            ? 'Rendez-vous indisponibles pour le moment.'
+            : 'Chargement des rendez-vous…'
+        }}
+      </p>
+    }
+    </div>
+    @if (!showAppointmentsList()) { <div class="dashboard-list-overlay"><button mat-button type="button" (click)="toggleAppointmentsList()">Afficher les rendez-vous</button></div> }
+  </mat-card>
+</div>

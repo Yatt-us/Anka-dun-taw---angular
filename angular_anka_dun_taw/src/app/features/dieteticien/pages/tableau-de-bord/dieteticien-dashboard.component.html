@@ -1,0 +1,106 @@
+<header class="dashboard-header" animate.enter="adt-diet-enter">
+  <div>
+    <h1>Bonjour</h1>
+    <p>Voici le suivi de vos menus, demandes d’adaptation et rendez-vous.</p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" />{{ dateLabel }}</span>
+</header>
+<div class="metrics four">
+  @for (metric of metrics(); track metric.label) {
+    <mat-card appearance="outlined" class="metric">
+      <span
+        class="metric-icon"
+        [class.orange]="metric.tone === 'orange'"
+        [class.yellow]="metric.tone === 'yellow'"
+        ><app-icon [name]="metric.icon"
+      /></span>
+      <div>
+        <span class="metric-label">{{ metric.label }}</span
+        ><strong>{{ metric.value }}</strong
+        ><small>{{ metric.detail }}</small>
+      </div>
+    </mat-card>
+  }
+</div>
+<div class="columns">
+  <mat-card appearance="outlined" class="panel dashboard-list-panel">
+    <div class="panel-heading">
+      <h2>Demandes d’adaptation en attente</h2>
+      <button mat-button type="button" (click)="toggleAdaptationsList()">{{ showAdaptationsList() ? 'Masquer' : 'Afficher' }}</button>
+      @if (pendingAdaptations(); as requests) {
+        <a mat-button class="text-link" routerLink="../demandes-adaptation"
+          >Voir tout ({{ requests.length }})</a
+        >
+      }
+    </div>
+    <div class="dashboard-list-content" [class.dashboard-list-blurred]="!showAdaptationsList()" [attr.aria-hidden]="!showAdaptationsList()">
+    @if (pendingAdaptations(); as requests) {
+      @for (request of requests.slice(0, 2); track request.id) {
+        <article class="request">
+          <div class="request-top">
+            <span class="avatar">#</span>
+            <strong>Utilisateur #{{ request.demandeurId }}</strong>
+            <span class="tag yellow">En attente</span>
+          </div>
+          <h3>{{ menuTitle(request.menuId) }}</h3>
+          <p>{{ request.motif || 'Aucun motif renseigné.' }}</p>
+          <div class="actions">
+            <a mat-flat-button class="button primary" routerLink="../demandes-adaptation"
+              >Examiner la demande</a
+            >
+          </div>
+        </article>
+      } @empty {
+        <p class="empty">Aucune demande d’adaptation en attente.</p>
+      }
+    } @else {
+      <p class="empty" role="status">
+        {{
+          adaptationsError()
+            ? 'Demandes d’adaptation indisponibles pour le moment.'
+            : 'Chargement des demandes…'
+        }}
+      </p>
+    }
+    </div>
+    @if (!showAdaptationsList()) { <div class="dashboard-list-overlay"><button mat-button type="button" (click)="toggleAdaptationsList()">Afficher les demandes</button></div> }
+  </mat-card>
+  <mat-card appearance="outlined" class="panel dashboard-list-panel">
+    <div class="panel-heading">
+      <h2>Rendez-vous du jour</h2>
+      <div><button mat-button type="button" (click)="toggleAppointmentsList()">{{ showAppointmentsList() ? 'Masquer' : 'Afficher' }}</button>
+      <a mat-button class="text-link" routerLink="../rendez-vous">Voir tout</a></div>
+    </div>
+    <div class="dashboard-list-content" [class.dashboard-list-blurred]="!showAppointmentsList()" [attr.aria-hidden]="!showAppointmentsList()">
+    @if (todayAppointments(); as meetings) {
+      @if (meetings.length) {
+        <div class="appointments">
+          @for (meeting of meetings.slice(0, 5); track meeting.id) {
+            <a class="appointment" routerLink="../rendez-vous">
+              <time>{{ appointmentTime(meeting.dateHeure) }}</time>
+              <div>
+                <strong>Utilisateur #{{ meeting.utilisateurId }}</strong>
+                <span class="tag" [class.yellow]="meeting.statut === 'DEMANDE'">{{
+                  meeting.motif || 'Rendez-vous'
+                }}</span>
+              </div>
+              <app-icon name="arrow" />
+            </a>
+          }
+        </div>
+      } @else {
+        <p class="empty">Aucun rendez-vous prévu aujourd’hui.</p>
+      }
+    } @else {
+      <p class="empty" role="status">
+        {{
+          appointmentsError()
+            ? 'Rendez-vous indisponibles pour le moment.'
+            : 'Chargement des rendez-vous…'
+        }}
+      </p>
+    }
+    </div>
+    @if (!showAppointmentsList()) { <div class="dashboard-list-overlay"><button mat-button type="button" (click)="toggleAppointmentsList()">Afficher les rendez-vous</button></div> }
+  </mat-card>
+</div>

@@ -1,1 +1,137 @@
-/* You can add global styles to this file, and also import other style files */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/poppins-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/poppins-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/poppins-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/poppins-700.woff2') format('woff2');
+}
+:root {
+  color-scheme: light;
+  --green: #2e7d5b;
+  --green-dark: #205d43;
+  --soft-green: #f0f7f2;
+  --yellow: #f4b942;
+  --orange: #e8894a;
+  --red: #d9534f;
+  --cream: #f9f6f0;
+  --canvas: #fff9f0;
+  --ink: #26332d;
+  --muted: #6b756f;
+  --line: #e8ece7;
+  --white: #fff;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100%;
+}
+body {
+  min-height: 100vh;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2e7d5b45;
+  outline-offset: 2px;
+}
+::selection {
+  background: #cfe4d5;
+  color: var(--ink);
+}
+/* Les écrans insérés après un chargement entrent avec un mouvement propre à chaque espace. */
+.app-frame.admin .page-area .panel { animation: workspace-admin-card .3s ease-out both; }
+.app-frame.dieteticien .page-area .panel { animation: workspace-diet-card .34s cubic-bezier(.2,.7,.2,1) both; }
+.app-frame.nutritionniste .page-area .panel { animation: workspace-nutrition-card .36s ease-out both; }
+@keyframes workspace-admin-card { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes workspace-diet-card { from { opacity: 0; transform: translateX(9px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes workspace-nutrition-card { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .app-frame.admin .page-area .panel,
+  .app-frame.dieteticien .page-area .panel,
+  .app-frame.nutritionniste .page-area .panel { animation: none; }
+}
+
+/* Classes utilisées par les API Angular natives animate.enter / animate.leave. */
+.adt-screen-enter,
+.adt-page-enter,
+.adt-admin-enter,
+.adt-diet-enter,
+.adt-nutrition-enter,
+.adt-alert-enter,
+.adt-panel-enter,
+.adt-detail-enter {
+  animation-duration: 320ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(.2, .7, .2, 1);
+}
+.adt-screen-enter { animation-name: adt-fade-up; }
+.adt-page-enter { animation-name: adt-fade-up; }
+.adt-admin-enter { animation-name: adt-admin-enter; }
+.adt-diet-enter { animation-name: adt-diet-enter; }
+.adt-nutrition-enter { animation-name: adt-nutrition-enter; }
+.adt-alert-enter { animation-name: adt-alert-enter; animation-duration: 220ms; }
+.adt-panel-enter { animation-name: adt-panel-enter; }
+.adt-detail-enter { animation-name: adt-detail-enter; }
+.adt-alert-leave { animation: adt-alert-leave 160ms ease-in both; }
+.adt-panel-leave { animation: adt-panel-leave 180ms ease-in both; }
+.adt-detail-leave { animation: adt-detail-leave 160ms ease-in both; }
+@keyframes adt-fade-up { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes adt-admin-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes adt-diet-enter { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes adt-nutrition-enter { from { opacity: 0; transform: scale(.99); } to { opacity: 1; transform: scale(1); } }
+@keyframes adt-alert-enter { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes adt-panel-enter { from { opacity: 0; transform: translateY(12px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes adt-detail-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes adt-alert-leave { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes adt-panel-leave { to { opacity: 0; transform: translateY(8px) scale(.99); } }
+@keyframes adt-detail-leave { to { opacity: 0; transform: translateY(5px); } }
+@media (prefers-reduced-motion: reduce) {
+  .adt-screen-enter, .adt-page-enter, .adt-admin-enter, .adt-diet-enter,
+  .adt-nutrition-enter, .adt-alert-enter, .adt-panel-enter, .adt-detail-enter,
+  .adt-alert-leave, .adt-panel-leave, .adt-detail-leave { animation-duration: .01ms !important; }
+}

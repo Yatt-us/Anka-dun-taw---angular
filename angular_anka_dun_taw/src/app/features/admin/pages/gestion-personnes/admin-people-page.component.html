@@ -1,0 +1,126 @@
+<header class="page-heading" animate.enter="adt-page-enter">
+  <div>
+    <span class="eyebrow">ADMINISTRATION</span>
+    <h1>{{ title }}</h1>
+    <p>{{ description }}</p>
+  </div>
+  <span class="total">{{ result().totalElements }} compte(s)</span>
+</header>
+
+@if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+
+<section class="panel">
+  <div class="panel-heading">
+    <div><h2>{{ kind === 'professionnels' ? 'Dossiers professionnels' : 'Comptes inscrits' }}</h2>
+      <p>{{ kind === 'professionnels' ? 'Ouvrez un dossier pour consulter les justificatifs et statuer sur la validation.' : 'Recherchez un compte et consultez ses informations.' }}</p></div>
+    <button type="button" class="action-button secondary" [attr.aria-expanded]="listVisible()" (click)="toggleList()">
+      {{ listVisible() ? 'Masquer la liste' : 'Afficher la liste' }}
+    </button>
+  </div>
+
+  @if (state() === 'loading') {
+    <p class="state" aria-live="polite">Chargement des comptes…</p>
+  } @else if (state() === 'error') {
+    <div class="state error" role="alert"><p>{{ error() }}</p><button type="button" class="action-button" (click)="retry()">Réessayer</button></div>
+  } @else {
+    <div class="list-area" [class.blurred]="!listVisible()" [attr.aria-hidden]="!listVisible()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
+        <mat-label>Rechercher un compte</mat-label>
+        <input matInput type="search" [value]="search()" (input)="setSearch($event)" />
+      </mat-form-field>
+      <div class="table-wrap">
+        <table mat-table [dataSource]="filteredPeople()">
+          <ng-container matColumnDef="person">
+            <th mat-header-cell *matHeaderCellDef>Compte</th>
+            <td mat-cell *matCellDef="let person"><span class="person"><span class="avatar">{{ initials(person) }}
+              @if (person.photoProfilUrl) { <img [src]="person.photoProfilUrl" [alt]="'Photo de ' + fullName(person)" loading="lazy" (error)="hideBrokenImage($event)" /> }
+            </span>
+              <span><strong>{{ fullName(person) }}</strong><small>N° {{ person.id }}</small></span></span></td>
+          </ng-container>
+          <ng-container matColumnDef="contact">
+            <th mat-header-cell *matHeaderCellDef>Contact / spécialité</th>
+            <td mat-cell *matCellDef="let person"><span>{{ person.email || 'E-mail non renseigné' }}</span>
+              <small>{{ kind === 'professionnels' ? (person.specialite || 'Spécialité non renseignée') : (person.telephone || 'Téléphone non renseigné') }}</small></td>
+          </ng-container>
+          <ng-container matColumnDef="role">
+            <th mat-header-cell *matHeaderCellDef>Rôle</th>
+            <td mat-cell *matCellDef="let person">{{ roleLabel(person.role) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let person"><span class="badge" [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef><span class="sr-only">Actions</span></th>
+            <td mat-cell *matCellDef="let person"><button mat-button type="button" (click)="open(person)">Consulter →</button></td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+          <tr *matNoDataRow><td colspan="5" class="empty">Aucun compte ne correspond à la recherche.</td></tr>
+        </table>
+      </div>
+      <mat-paginator [length]="result().totalElements" [pageSize]="pageSize()" [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[10, 20, 50]" (page)="changePage($event)" showFirstLastButtons
+        aria-label="Pagination des comptes" />
+    </div>
+    @if (!listVisible()) {
+      <div class="list-overlay"><button type="button" class="action-button" (click)="toggleList()">Afficher la liste · {{ result().totalElements }} compte(s)</button></div>
+    }
+  }
+</section>
+
+@if (selected(); as person) {
+  <div class="backdrop" role="presentation" (click)="close()" (keydown.escape)="close()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="detail panel" role="dialog" aria-modal="true" aria-labelledby="person-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <header class="detail-heading"><div><span class="eyebrow">{{ kind === 'professionnels' ? 'VALIDATION PROFESSIONNELLE' : 'DOSSIER UTILISATEUR' }}</span>
+        <h2 id="person-title">{{ fullName(person) }}</h2><p>Compte n° {{ person.id }}</p>
+        @if (person.photoProfilUrl) { <img class="profile-photo" [src]="person.photoProfilUrl" [alt]="'Photo de ' + fullName(person)" loading="lazy" (error)="hideBrokenImage($event)" /> }
+      </div>
+        <button mat-icon-button type="button" (click)="close()" aria-label="Fermer">✕</button></header>
+
+      <section class="detail-section"><h3>Identité et coordonnées</h3><dl class="detail-grid">
+        <div><dt>Nom</dt><dd>{{ person.nom || 'Non renseigné' }}</dd></div><div><dt>Prénom</dt><dd>{{ person.prenom || 'Non renseigné' }}</dd></div>
+        <div><dt>E-mail</dt><dd>{{ person.email || 'Non renseigné' }}</dd></div><div><dt>Téléphone</dt><dd>{{ person.telephone || 'Non renseigné' }}</dd></div>
+        <div><dt>Rôle</dt><dd>{{ roleLabel(person.role) }}</dd></div><div><dt>Compte</dt><dd>{{ statusLabel(person) }}</dd></div>
+        <div><dt>Inscription</dt><dd>{{ formatDate(person.dateInscription) }}</dd></div>
+      </dl></section>
+
+      @if (kind === 'professionnels') {
+        <section class="detail-section"><h3>Informations professionnelles</h3><dl class="detail-grid">
+          <div><dt>Spécialité</dt><dd>{{ person.specialite || 'Non renseignée' }}</dd></div>
+          <div><dt>Numéro d’ordre</dt><dd>{{ person.numeroOrdre || 'Non renseigné' }}</dd></div>
+          <div><dt>Qualification / diplôme</dt><dd>{{ person.qualification || 'Non renseigné' }}</dd></div>
+          <div><dt>Expérience</dt><dd>{{ person.anneesExperience == null ? 'Non renseignée' : person.anneesExperience + ' an(s)' }}</dd></div>
+          <div><dt>État de vérification</dt><dd>{{ statusLabel(person) }}</dd></div>
+          <div><dt>Date de vérification</dt><dd>{{ formatDate(person.dateVerification) }}</dd></div>
+          <div><dt>Validé par le compte</dt><dd>{{ person.verifieParId ?? 'Non renseigné' }}</dd></div>
+        </dl><h4>Biographie et présentation</h4><p class="biography">{{ person.biographie || 'Aucune biographie fournie.' }}</p></section>
+      }
+
+      @if (kind === 'utilisateurs') {
+        <section class="detail-section"><h3>Gestion du compte</h3><label class="filter">Rôle
+          <select [value]="selectedRole()" (change)="setRole($event)">
+            <option value="UTILISATEUR">Utilisateur</option><option value="DIETETICIEN">Diététicien</option>
+            <option value="NUTRITIONNISTE">Nutritionniste</option><option value="ADMIN">Administrateur</option>
+          </select></label></section>
+      }
+
+      @if (actionError()) { <p class="error" role="alert">{{ actionError() }}</p> }
+      <footer class="detail-actions">
+        @if (kind === 'professionnels' && person.statutVerification === 'EN_ATTENTE') {
+          <button class="action-button secondary" type="button" [disabled]="busy()" (click)="refuse()">Refuser le dossier</button>
+          <button class="action-button" type="button" [disabled]="busy()" (click)="verify()">{{ busy() ? 'Traitement…' : 'Valider le professionnel' }}</button>
+        }
+        @if (kind === 'utilisateurs') {
+          <button class="action-button secondary" type="button" [disabled]="busy()" (click)="saveRole()">Enregistrer le rôle</button>
+          @if ((person.statutCompte || person.statut) === 'ACTIF') { <button class="action-button danger" type="button" [disabled]="busy()" (click)="deactivate()">Désactiver le compte</button> }
+        }
+      </footer>
+      @if (kind === 'professionnels' && person.statutVerification === 'EN_ATTENTE') {
+        <label class="refusal">Motif de refus (à renseigner si vous refusez)
+          <textarea rows="2" [value]="refusalComment()" (input)="setRefusalComment($event)" placeholder="Précisez les éléments manquants ou non conformes"></textarea>
+        </label>
+      }
+    </section>
+  </div>
+}

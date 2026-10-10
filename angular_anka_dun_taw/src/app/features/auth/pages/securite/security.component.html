@@ -1,0 +1,12 @@
+<section class="security"><h2>Sécurité du compte</h2><p>Changez votre mot de passe. Une nouvelle connexion sera nécessaire ensuite.</p>
+      <form #form="ngForm" (ngSubmit)="change(form.valid === true)">
+        <label>Mot de passe actuel<input type="password" name="actuel" [(ngModel)]="currentPassword" required autocomplete="current-password" /></label>
+        <label>Nouveau mot de passe<input type="password" name="nouveau" [(ngModel)]="newPassword" minlength="8" required autocomplete="new-password" /></label>
+        <button type="submit" [disabled]="busy()">{{ busy() ? 'Modification…' : 'Modifier le mot de passe' }}</button>
+      </form>
+      <div class="google-link"><h3>Compte Google</h3><p>Associez votre compte Google après vous être connecté avec votre mot de passe. Vous pourrez ensuite l’utiliser pour ouvrir cet espace.</p>
+        <app-google-button (credential)="linkGoogle($event)" />
+        @if (googleSuccess()) { <p class="success" role="status">Compte Google associé.</p> }
+      </div>
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    </section>

@@ -1,0 +1,56 @@
+<main class="account-page" animate.enter="adt-screen-enter"><section class="card">
+      <a routerLink="/connexion" class="back">← Retour à la connexion</a>
+      <h1>{{ title() }}</h1>
+      <p class="intro">{{ description() }}</p>
+      <nav aria-label="Actions du compte">
+        <button type="button" [class.active]="mode() === 'inscription'" (click)="setMode('inscription')">Compte professionnel</button>
+        <button type="button" [class.active]="mode() === 'oubli'" (click)="setMode('oubli')">Mot de passe oublié</button>
+        <button type="button" [class.active]="mode() === 'reinitialisation'" (click)="setMode('reinitialisation')">J’ai un code</button>
+      </nav>
+      @if (success()) { <p class="success" role="status">{{ success() }}</p> }
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+      @if (mode() === 'inscription') {
+        <form #signupForm="ngForm" (ngSubmit)="signup(signupForm.valid === true)">
+          <div class="signup-method" role="group" aria-label="Méthode d'inscription">
+            <button type="button" [class.active]="signupMethod() === 'password'" (click)="setSignupMethod('password')">Téléphone / e-mail</button>
+            <button type="button" [class.active]="signupMethod() === 'google'" (click)="setSignupMethod('google')">Continuer avec Google</button>
+          </div>
+          @if (signupMethod() === 'password') {
+            <div class="two"><label>Prénom *<input name="prenom" [(ngModel)]="prenom" required autocomplete="given-name" /></label>
+              <label>Nom *<input name="nom" [(ngModel)]="nom" required autocomplete="family-name" /></label></div>
+            <div class="two"><label>Adresse e-mail<input type="email" name="email" [(ngModel)]="email" autocomplete="email" /></label>
+              <label>Téléphone<input name="telephone" [(ngModel)]="telephone" autocomplete="tel" placeholder="+223…" /></label></div>
+          } @else {
+            <p class="google-note">Google fournit votre nom et votre adresse e-mail. Vous pouvez ajouter votre téléphone ci-dessous.</p>
+            <label>Téléphone (facultatif)<input name="telephoneGoogle" [(ngModel)]="telephone" autocomplete="tel" placeholder="+223…" /></label>
+          }
+          <div class="two"><label>Type de compte *<select name="role" [(ngModel)]="role" required><option value="DIETETICIEN">Diététicien</option><option value="NUTRITIONNISTE">Nutritionniste</option></select></label>
+            <label>Spécialité *<input name="specialite" [(ngModel)]="specialite" required maxlength="160" /></label></div>
+          <div class="two"><label>Qualification *<input name="qualification" [(ngModel)]="qualification" required /></label>
+            <label>Numéro d’ordre<input name="numeroOrdre" [(ngModel)]="numeroOrdre" /></label></div>
+          <div class="two"><label>Années d’expérience<input type="number" min="0" max="80" name="anneesExperience" [(ngModel)]="anneesExperience" /></label>
+            @if (signupMethod() === 'password') {
+              <label>Mot de passe *<input type="password" minlength="8" name="motDePasse" [(ngModel)]="motDePasse" required autocomplete="new-password" /></label>
+            }</div>
+          <label>Biographie<textarea rows="3" name="biographie" [(ngModel)]="biographie"></textarea></label>
+          @if (signupMethod() === 'password') {
+            <button class="submit" type="submit" [disabled]="busy()">{{ busy() ? 'Envoi…' : 'Créer mon compte' }}</button>
+          } @else {
+            <app-google-button (credential)="signupWithGoogle($event, signupForm.valid === true)" />
+            @if (busy()) { <p class="google-note" role="status">Création du profil professionnel…</p> }
+          }
+          <p class="note">Le profil sera examiné par l’administrateur avant l’accès aux outils professionnels.</p>
+        </form>
+      } @else if (mode() === 'oubli') {
+        <form #forgotForm="ngForm" (ngSubmit)="forgot(forgotForm.valid === true)">
+          <label>Adresse e-mail du compte *<input type="email" name="emailOubli" [(ngModel)]="recoveryEmail" required autocomplete="email" /></label>
+          <button class="submit" type="submit" [disabled]="busy()">Envoyer les instructions</button>
+        </form>
+      } @else {
+        <form #resetForm="ngForm" (ngSubmit)="reset(resetForm.valid === true)">
+          <label>Code de réinitialisation *<input name="jeton" [(ngModel)]="resetToken" required /></label>
+          <label>Nouveau mot de passe *<input type="password" name="nouveauMotDePasse" minlength="8" [(ngModel)]="newPassword" required autocomplete="new-password" /></label>
+          <button class="submit" type="submit" [disabled]="busy()">Changer le mot de passe</button>
+        </form>
+      }
+    </section></main>

@@ -1,59 +1,135 @@
-# AngularAnkaDunTaw
+# Anka Dùn Taw — interfaces web de gestion
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.0.
+Ce projet Angular contient les espaces **administrateur**, **diététicien** et **nutritionniste**. Il consomme l’API Spring Boot Anka Dùn Taw. L’application mobile destinée au grand public se trouve dans un autre projet.
 
-## Development server
+## Démarrer les deux applications
 
-To start a local development server, run:
+Prévoir Node.js 24, npm 11 et le JDK utilisé par le backend. La base MariaDB, le secret JWT et le compte administrateur se configurent **dans le backend**, jamais dans ce projet Angular.
 
-```bash
-ng serve
+1. Dans un premier terminal, à la racine du backend :
+
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+
+   Le profil de développement du backend charge sa configuration locale et démarre normalement sur `http://localhost:8080`.
+
+2. Dans un second terminal, à la racine de ce projet Angular :
+
+   ```bash
+   npm ci
+   npm start
+   ```
+
+3. Ouvrir [http://localhost:4200/connexion](http://localhost:4200/connexion), puis saisir **l’e-mail ou le téléphone** et le mot de passe d’un compte administrateur ou professionnel enregistré dans le backend.
+
+Le fichier `src/proxy.conf.json` relaie les requêtes `/api/**` vers `http://localhost:8080` pendant `npm start`. Le navigateur reste sur l’origine `localhost:4200`, ce qui permet au cookie de renouvellement `HttpOnly` de fonctionner. Il n’y a aucune clé JWT ni aucun mot de passe à placer dans Angular.
+
+### En production
+
+Les appels Angular utilisent le chemin relatif `/api/v1`. Le serveur qui publie le site doit donc faire suivre `/api/**` vers Spring Boot sous la **même origine** que le site. Le proxy Angular ne s’applique qu’au serveur de développement. Le backend doit être lancé avec son profil `prod` et ses variables d’environnement ; voir son README pour ces réglages.
+
+## Connexion et droits
+
+- `POST /api/v1/auth/connexion` reçoit l’identifiant et le mot de passe. Le JWT d’accès reste en mémoire dans Angular.
+- Le backend place le jeton de renouvellement dans le cookie `anka_refresh`, inaccessible au JavaScript. Au rechargement, Angular appelle `POST /api/v1/auth/rafraichir` pour restaurer la session.
+- L’intercepteur ajoute `Authorization: Bearer …` aux appels API et tente une fois le renouvellement après un `401`.
+- `POST /api/v1/auth/deconnexion` révoque la session côté serveur. L’interface ne signale une déconnexion réussie qu’après confirmation du serveur.
+- Si un identifiant client OAuth **Web** valide est configuré dans le backend, `GET /api/v1/auth/google/configuration` active le bouton Google. Le navigateur remet le jeton Google à `POST /api/v1/auth/google/connexion`, puis utilise la même session JWT et le même cookie de renouvellement. Un compte existant doit d’abord être lié depuis « Sécurité du compte » avec `POST /api/v1/auth/google/lier` après connexion locale ; une simple correspondance d’e-mail ne suffit pas. Un nouveau compte Google reçoit le rôle `UTILISATEUR` et n’ouvre donc aucun espace de gestion web.
+- Depuis `/compte`, un professionnel peut s’inscrire (`POST /auth/inscription-professionnel`), demander un code de récupération (`POST /auth/mot-de-passe/oublie`) et réinitialiser son mot de passe (`POST /auth/mot-de-passe/reinitialiser`).
+- Dans « Paramètres » ou « Mon profil », `POST /auth/mot-de-passe/changer` modifie le mot de passe puis renvoie vers la connexion.
+- Les routes Angular n’ouvrent que l’espace correspondant au rôle `ADMIN`, `DIETETICIEN` ou `NUTRITIONNISTE`. Les espaces professionnels exigent aussi un profil vérifié. Le backend reste responsable de l’autorisation de chaque requête.
+- Un compte `UTILISATEUR` n’a pas d’espace dans cette application web : il relève du projet mobile.
+
+Si un professionnel est encore en attente, refusé ou suspendu, l’écran d’espace affiche son état et bloque l’ouverture de ses pages.
+
+## Écrans reliés au backend
+
+| Espace | Écran | Sources principales |
+| --- | --- | --- |
+| Administrateur | Tableau de bord | `/admin/statistiques`, `/admin/rapports/activite`, `/admin/journal-activite` |
+| Administrateur | Utilisateurs, professionnels | `/admin/utilisateurs`, `/admin/professionnels` |
+| Administrateur | Aliments, catégories, recettes | `/aliments`, `/categories-aliments`, `/admin/recettes` |
+| Administrateur | Contenus publiés, historique | `/conseils`, `/articles`, `/quiz`, `/admin/journal-activite` |
+| Administrateur | Quiz, défis, badges | `/admin/quiz`, `/admin/defis`, `/badges` et routes d’écriture `/admin/quiz`, `/admin/defis`, `/admin/badges` |
+| Administrateur | Liste et archivage des menus | `/admin/menus`, `/admin/menus/{id}/archiver` |
+| Diététicien | Tableau de bord | `/professionnel/menus`, demandes d’adaptation de chaque menu, `/professionnel/rendez-vous` |
+| Diététicien | Menus, adaptations, patients, rendez-vous, disponibilités, messagerie, profil | `/professionnel/menus`, `/professionnel/beneficiaires/{id}/…`, `/professionnel/rendez-vous`, `/professionnel/disponibilites`, `/professionnel/messagerie/conversations`, `/professionnels/me` |
+| Nutritionniste | Tableau de bord | Conversations, rendez-vous, articles et conseils rédigés |
+| Nutritionniste | Conseils et articles, conversations, rendez-vous, disponibilités, profil | `/conseils/mes-conseils`, `/articles/mes-articles`, `/professionnel/messagerie/conversations`, `/professionnel/rendez-vous`, `/professionnel/disponibilites`, `/professionnels/me` |
+| Trois rôles | Notifications | `/me/notifications`, `/me/notifications/{id}/lire` |
+
+Toutes ces routes sont préfixées par `/api/v1`. La recherche filtre uniquement la page affichée ; la pagination lit les pages du serveur. Un chargement, une erreur, une liste vide et une rubrique indisponible sont présentés séparément. Aucune valeur fictive n’est utilisée pour les tableaux de bord en service.
+
+Les patients du diététicien sont retrouvés depuis ses menus et ses rendez-vous récents ; ceux du nutritionniste depuis ses conversations et rendez-vous. Le diététicien peut consulter le profil nutritionnel, les objectifs et les budgets d’un bénéficiaire autorisé. Le backend ne fournit pas encore de liste globale paginée de patients professionnels ni de lecture du profil nutritionnel pour le nutritionniste. Les consultations du nutritionniste affichent les rendez-vous demandés et ses questions affichent les conversations. La rubrique « Portions & coûts » n’a pas encore de liste API dédiée.
+
+## Formulaires et actions disponibles
+
+| Espace | Saisie | Autres actions |
+| --- | --- | --- |
+| Administrateur | Créer des catégories, aliments, recettes, quiz, défis et badges ; modifier une catégorie, un aliment ou une recette brouillon ; ajouter un prix par zone | Vérifier/refuser un professionnel, changer le rôle ou désactiver un utilisateur, publier/archiver une recette, publier/archiver quiz et défis, attribuer un badge, enregistrer une progression de défi, consulter les prix locaux et archiver un menu par numéro |
+| Diététicien | Créer/modifier un menu avec bénéficiaires et repas, adapter un menu à la demande d’un patient, gérer ses créneaux, modifier son profil, répondre aux messages | Valider/publier un menu, accepter/refuser/terminer un rendez-vous, consulter les données nutritionnelles autorisées |
+| Nutritionniste | Rédiger/modifier un conseil ou un article brouillon, gérer ses créneaux, modifier son profil, répondre aux messages | Valider/publier/archiver un conseil, publier/archiver un article, accepter/refuser/terminer un rendez-vous |
+
+Les formulaires transmettent les champs attendus par les DTO Spring Boot. Les listes d’aliments, catégories et recettes alimentent les sélecteurs, tandis que les numéros des bénéficiaires du menu sont à renseigner depuis les dossiers connus du professionnel. Les actions affichent le message d’erreur du backend et actualisent la liste après succès. Une réponse refusant un rendez-vous peut contenir un commentaire.
+
+Le formulaire de menu exige au moins un bénéficiaire et un repas. Une recette exige au moins un ingrédient. Une adaptation acceptée soumet un **menu révisé complet** avec le demandeur comme bénéficiaire ; une demande refusée reçoit une réponse. Le conseil reste au statut `BROUILLON` après sa validation dans le backend ; la liste l’affiche « Validé » grâce à `validateurId`, afin de rendre ensuite l’action « Publier » disponible.
+
+Les listes administratives de quiz, défis et menus affichent aussi les brouillons et proposent un filtre de statut. Un brouillon de quiz ou de défi peut être rouvert et modifié. Les réponses correctes d’un quiz ne sont renvoyées que par l’API administrative protégée. Un menu publié peut être archivé depuis sa liste. Les routes `/me/**` réservées à `UTILISATEUR` appartiennent à Flutter, sauf les notifications autorisées à tout compte connecté.
+
+### Activer « Continuer avec Google »
+
+Le flux Angular et ses endpoints backend sont présents : Angular affiche le bouton si la configuration backend est valide, transmet le jeton d’identité Google au backend, puis utilise la session JWT habituelle. Le backend vérifie ce jeton avec le client OAuth configuré. Le bouton et la liaison de compte sont dans `features/auth/`.
+
+1. Dans Google Cloud Console, configure l’écran de consentement puis crée un identifiant client OAuth de type **Application Web**. Google documente ces étapes dans son [guide de configuration Google Identity Services](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
+2. Ajoute les origines JavaScript autorisées : `http://localhost:4200` pour le développement et l’origine HTTPS réelle du site en production. L’identifiant client Web est public; ne mets jamais de clé privée dans Angular.
+3. Dans l’environnement du backend Spring Boot, renseigne `ANKA_GOOGLE_CLIENT_ID` avec l’identifiant client Web puis redémarre le serveur. Ne le mets pas dans un fichier Angular.
+4. Vérifie la configuration avec `GET http://localhost:8080/api/v1/auth/google/configuration`. Elle doit renvoyer `{"disponible":true,"clientId":"…apps.googleusercontent.com"}`. Avec `disponible:false`, le bouton reste masqué et l’interface explique que Google n’est pas configuré.
+5. Lance Angular avec `npm start`. Clique sur Google : la réponse Google est envoyée à `POST /api/v1/auth/google/connexion`. Les comptes professionnels déjà créés doivent d’abord associer Google depuis « Sécurité du compte »; Google ne fusionne pas deux comptes par simple correspondance d’adresse e-mail.
+
+Si le front Angular et l’API sont servis sur des origines différentes en production, configure aussi l’origine du site dans `ANKA_CORS_ORIGINS` côté backend. En développement, `src/proxy.conf.json` relaie `/api` vers le serveur Spring Boot.
+
+## Organisation du code
+
+```text
+src/
+├── proxy.conf.json                         Relais API pour ng serve
+├── material-theme.scss                     Thème Angular Material
+├── styles.css                              Couleurs et police
+└── app/
+    ├── app.config.ts                       HttpClient, intercepteur et routes
+    ├── app.routes.ts                       Connexion et espaces protégés
+    ├── core/
+    │   ├── auth/                            Session JWT et modèles
+    │   ├── config/api.config.ts             Préfixe /api/v1
+    │   ├── guards/actor-workspace.guard.ts  Accès selon rôle et vérification
+    │   └── interceptors/auth.interceptor.ts En-tête Bearer et renouvellement
+    ├── features/
+    │   ├── auth/                            Connexion, gestion du compte, sécurité et Google
+    │   ├── admin/                           Tableau de bord et accès API admin
+    │   ├── dieteticien/                     Tableau de bord, suivi et adaptations
+    │   ├── nutritionniste/                  Tableau de bord et accès API nutritionniste
+    │   └── professionnel/                   Patients et disponibilités partagés
+    └── shared/
+        ├── data-access/                     Listes utilisées par plusieurs rôles
+        ├── forms/                            Formulaire réutilisé entre fonctionnalités
+        └── components/                       Navigation et cadre commun des espaces
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Les services propres aux tableaux de bord sont rangés dans `features/<role>/data-access/`. `WorkspaceListService` et le formulaire générique restent dans `shared/` parce qu’ils desservent plusieurs rôles. La structure détaillée et les responsabilités sont décrites dans [STRUCTURE.md](src/app/STRUCTURE.md). Les dossiers de fonctionnalités sans code n’ont pas de placeholders : ils seront créés avec leurs premiers vrais écrans.
 
-## Code scaffolding
+## Design system
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Le thème et les variables CSS reprennent le design system du projet Figma : vert `#2E7D5B`, jaune `#F4B942`, orange `#E8894A`, rouge `#D9534F`, texte `#26332D` et fond clair `#FFF9F0`. La police Poppins est chargée localement depuis `public/fonts/`. Les espaces gardent la mise en page prévue pour **1440 × 1024 px**, avec une barre latérale de 280 px sur grand écran.
 
-```bash
-ng generate component component-name
-```
+Les transitions d’écran utilisent les API Angular natives `animate.enter` et `animate.leave`, avec des keyframes CSS définis dans `src/styles.css`. L’admin a une apparition verticale, le diététicien un léger déplacement horizontal et le nutritionniste un fondu avec agrandissement discret. Les panneaux et messages de confirmation ont aussi une entrée et une sortie animées. `prefers-reduced-motion` réduit ces animations au minimum. Aucune dépendance d’animation externe n’est ajoutée : Angular 22 fournit ces API, et le paquet historique `@angular/animations` est déprécié.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Compilation et limites
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
+La compilation Angular de production réussit. Elle vérifie la cohérence du code front, mais ne prouve pas que le backend, MariaDB et les comptes sont disponibles à l’exécution.
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Cette liaison couvre les parcours web décrits ci-dessus pour les trois rôles. La compilation ne remplace pas une vérification de bout en bout avec Spring Boot, MariaDB et des comptes réels. Le projet Flutter n’est pas modifié par cette intégration.

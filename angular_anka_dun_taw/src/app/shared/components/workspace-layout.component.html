@@ -1,0 +1,46 @@
+<div class="app-frame" [class.admin]="actor().id === 'admin'" [class.dieteticien]="actor().id === 'dieteticien'" [class.nutritionniste]="actor().id === 'nutritionniste'" [class.menu-open]="menuOpen()">
+  @if (menuOpen()) {
+    <button class="scrim" aria-label="Fermer le menu" (click)="menuOpen.set(false)"></button>
+  }
+  <aside class="sidebar">
+    <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, choisir un espace"
+      ><span class="brand-emblem"><app-icon name="leaf" /></span><strong>Anka Dùn Taw</strong
+      ><small>Bien manger, mieux vivre</small></a
+    >
+    <nav [attr.aria-label]="actor().shortTitle">
+      @for (item of actor().navigation; track item.path) {
+        <a
+          [routerLink]="['/espaces', actor().id, item.path]"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="menuOpen.set(false)"
+          ><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a
+        >
+      }
+    </nav>
+    <div class="sidebar-bottom">
+      <a class="change-space" routerLink="/espaces"><app-icon name="grid" />Mon espace</a>
+      <button mat-button class="change-space" type="button" (click)="logout()">
+        <app-icon name="logout" />Se déconnecter
+      </button>
+      @if (logoutError()) {
+        <small class="logout-error" role="alert">{{ logoutError() }}</small>
+      }
+      <div class="profile">
+        <span class="avatar">{{ profileInitials() }}</span>
+        <div>
+          <strong>{{ profileName() }}</strong
+          ><small>{{ actor().shortTitle }}</small>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <main>
+    <div class="mobile-top">
+      <button mat-icon-button (click)="menuOpen.set(true)" aria-label="Ouvrir le menu">☰</button
+      ><span>{{ actor().title }}</span>
+    </div>
+    <section class="page-area"><router-outlet /></section>
+    <footer>Anka Dùn Taw · Votre espace de travail</footer>
+  </main>
+</div>
