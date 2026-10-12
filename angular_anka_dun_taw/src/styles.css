@@ -28,6 +28,8 @@
 }
 :root {
   color-scheme: light;
+  --brand-navy: #0b3063;
+  --brand-blue: #006aa4;
   --green: #2e7d5b;
   --green-dark: #205d43;
   --soft-green: #f0f7f2;

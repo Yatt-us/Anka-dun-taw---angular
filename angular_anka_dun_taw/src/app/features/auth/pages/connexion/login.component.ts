@@ -5,12 +5,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UserRole } from '../../../../core/auth/auth.models';
 import { actorForRole } from '../../../../core/guards/actor-workspace.guard';
-import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { GoogleButtonComponent } from '../../components/google-button.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, UiIconComponent, RouterLink, GoogleButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, GoogleButtonComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })

@@ -1,46 +1,147 @@
-<header class="heading"><h1>{{ actor() === 'dieteticien' ? 'Mes bénéficiaires' : 'Patients en contact' }}</h1>
-      <p>Consultez les patients liés à vos rendez-vous acceptés ou terminés.</p></header>
-    <div class="panel lookup"><label>Numéro du patient
-      <input type="number" min="1" [(ngModel)]="searchedId" placeholder="Ex. 12" />
-    </label><button type="button" [disabled]="!searchedId || searchedId < 1" (click)="selectById()">Ouvrir son dossier</button></div>
-    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    <section class="panel"><h2>Patients récemment liés à votre activité</h2>
-      @if (loading()) { <p>Chargement…</p> }
-      @else if (!patients().length) { <p>Aucun patient lié par un rendez-vous accepté ou terminé.</p> }
-      @else { <div class="patient-grid">@for (patient of patients(); track patient.id) {
-        <button type="button" class="patient" (click)="select(patient)"><strong>{{ patient.name }}</strong><small>Compte n° {{ patient.id }} →</small></button>
-      }</div>
-        <div class="pager"><button type="button" [disabled]="patientPage() === 0 || loading()" (click)="changePatientPage(-1)">Précédent</button>
-          <span>Page {{ patientPage() + 1 }} · {{ patientTotal() }} patient(s)</span>
-          <button type="button" [disabled]="(patientPage() + 1) * patientPageSize >= patientTotal() || loading()" (click)="changePatientPage(1)">Suivant</button></div>
+<header class="patients-header">
+  <div>
+    <h1>{{ actor() === 'dieteticien' ? 'Mes Patients Diététiques' : 'Patients en contact' }}</h1>
+    <p>{{ actor() === 'dieteticien'
+      ? 'Gérez et optimisez les profils nutritionnels, budgets et contraintes des patients d’Anka Dùn Taw.'
+      : 'Consultez les patients liés à vos rendez-vous acceptés ou terminés.' }}</p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
+</header>
+
+<section class="search-card" aria-label="Recherche de patients">
+  <label class="search-field">
+    <app-icon name="search" />
+    <span class="visually-hidden">Rechercher un patient par nom ou numéro</span>
+    <input type="search" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)"
+      placeholder="Rechercher un patient (ex. : Diarra, numéro de compte)…" />
+  </label>
+  <button type="button" class="filter-button" [attr.aria-expanded]="showFilters()"
+    aria-controls="patient-filters" (click)="showFilters.set(!showFilters())">
+    <app-icon name="settings" /> Filtres avancés
+  </button>
+  <button type="button" class="new-button" (click)="showNewPatientHelp.set(true)">
+    <app-icon name="plus" /> Nouveau patient
+  </button>
+</section>
+
+@if (showFilters()) {
+  <section id="patient-filters" class="filters-panel" aria-label="Filtres des patients">
+    <label>Trier les patients
+      <select [ngModel]="sortOrder()" (ngModelChange)="onSort($event)">
+        <option value="name">Nom : A à Z</option>
+        <option value="name-desc">Nom : Z à A</option>
+        <option value="id-desc">Compte le plus récent</option>
+      </select>
+    </label>
+    <p>La recherche porte sur les patients liés à votre activité.</p>
+  </section>
+}
+
+@if (error()) { <p class="error-banner" role="alert">{{ error() }} <button type="button" (click)="load()">Réessayer</button></p> }
+
+<section class="table-card" aria-label="Liste des patients">
+  @if (loading()) { <p class="table-state" role="status">Chargement des patients…</p> }
+  @else if (!filteredPatients().length) {
+    <p class="table-state">{{ patients().length ? 'Aucun patient ne correspond à cette recherche.' : 'Aucun patient lié à votre activité pour le moment.' }}</p>
+  } @else {
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th scope="col">Patient</th>
+          <th scope="col">Profil nutritionnel</th>
+          <th scope="col">Objectif</th>
+          <th scope="col">Budget</th>
+          <th scope="col">Contraintes &amp; aliments</th>
+          <th scope="col">Actions</th>
+        </tr></thead>
+        <tbody>
+          @for (patient of visiblePatients(); track patient.id) {
+            <tr>
+              <td data-label="Patient">
+                <div class="patient-identity">
+                  <span class="patient-avatar">
+                    {{ initials(patient.name) }}
+                    @if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }
+                  </span>
+                  <span><strong>{{ patient.name }}</strong><small>ID : #{{ patient.id }}</small></span>
+                </div>
+              </td>
+              @if (summaries()[patient.id]; as details) {
+                <td data-label="Profil nutritionnel">{{ profileLabel(details) }}</td>
+                <td data-label="Objectif"><span class="goal-text">{{ mainGoal(details) }}</span></td>
+                <td data-label="Budget"><strong class="budget-text">{{ activeBudget(details) ? money(activeBudget(details)!.montant, activeBudget(details)!.devise) : '—' }}</strong></td>
+                <td data-label="Contraintes & aliments">
+                  <div class="chips">
+                    @for (chip of constraints(details); track chip.kind + chip.text) {
+                      <span class="chip" [class.negative]="chip.kind === 'negative'">{{ chip.text }}</span>
+                    } @empty { <span class="no-constraints">{{ details.profile ? 'Aucune contrainte renseignée' : 'Données indisponibles' }}</span> }
+                  </div>
+                </td>
+              } @else {
+                <td data-label="Profil nutritionnel" class="loading-cell">Chargement…</td>
+                <td data-label="Objectif" class="loading-cell">—</td>
+                <td data-label="Budget" class="loading-cell">—</td>
+                <td data-label="Contraintes & aliments" class="loading-cell">—</td>
+              }
+              <td data-label="Actions"><button type="button" class="manage-button" (click)="select(patient)" [attr.aria-label]="'Gérer le dossier de ' + patient.name">Gérer</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (filteredPatients().length > patientPageSize) {
+      <div class="pager">
+        <span>{{ patientPage() * patientPageSize + 1 }}–{{ lastVisibleIndex() }} sur {{ filteredPatients().length }}</span>
+        <button type="button" [disabled]="patientPage() === 0" (click)="changePatientPage(-1)">Précédent</button>
+        <button type="button" [disabled]="(patientPage() + 1) * patientPageSize >= filteredPatients().length" (click)="changePatientPage(1)">Suivant</button>
+      </div>
+    }
+  }
+</section>
+
+@if (selected(); as patient) {
+  <div class="modal-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()">
+    <section class="detail" role="dialog" aria-modal="true" aria-labelledby="patient-detail-title"
+      cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()" animate.enter="adt-panel-enter" animate.leave="adt-panel-leave">
+      <div class="modal-heading"><div><small>DOSSIER PATIENT · N° {{ patient.id }}</small><h2 id="patient-detail-title">{{ patient.name }}</h2></div>
+        <button type="button" class="close-button" (click)="closeDetail()" aria-label="Fermer le dossier">✕</button></div>
+      @if (detailLoading()) { <p>Chargement du dossier…</p> }
+      @else {
+        @if (detailError()) { <p class="detail-error" role="alert">{{ detailError() }}</p> }
+        @if (profile(); as data) {
+          <h3>Profil nutritionnel</h3>
+          <div class="stats">
+            <span>Zone <strong>{{ data.zone || '—' }}</strong></span>
+            <span>Poids <strong>{{ data.poidsKg ?? '—' }} kg</strong></span>
+            <span>IMC <strong>{{ data.imc ?? '—' }}</strong></span>
+            <span>Activité <strong>{{ data.niveauActivite || '—' }}</strong></span>
+            <span>Mode budget <strong>{{ data.modeBudget || '—' }}</strong></span>
+          </div>
+          <p>Allergies : {{ data.allergies?.join(', ') || 'aucune déclarée' }}</p>
+          @if (data.commentaireSante) { <p>{{ data.commentaireSante }}</p> }
+        }
+        <h3>Objectifs</h3>
+        @for (goal of goals(); track goal.id) { <p class="detail-item">{{ goal.description || goal.type }} · {{ goal.statut }} · {{ goal.progressionPourcentage ?? 0 }} %</p> }
+        @if (!goals().length) { <p>Aucun objectif enregistré.</p> }
+        <h3>Budgets</h3>
+        @for (budget of budgets(); track budget.id) { <p class="detail-item">{{ money(budget.montant, budget.devise) }} / {{ budget.periode }} {{ budget.actif ? '· actif' : '' }}</p> }
+        @if (!budgets().length) { <p>Aucun budget enregistré.</p> }
+        <div class="day"><label>Budget petit montant du jour <input type="date" [(ngModel)]="selectedDate" /></label>
+          <button type="button" (click)="loadDay(patient.id)">Consulter</button></div>
+        @if (dailyBudget(); as budget) { <p class="detail-item">{{ budget.date }} : {{ money(budget.montantDisponible, budget.devise) }} disponibles sur {{ money(budget.plafond, budget.devise) }}.</p> }
       }
     </section>
-    @if (selected(); as patient) {
-      <div class="modal-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()">
-      <section class="panel detail" role="dialog" aria-modal="true" aria-labelledby="patient-detail-title"
-        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()" animate.enter="adt-panel-enter" animate.leave="adt-panel-leave">
-        <div class="modal-heading"><div><small>DOSSIER PATIENT · N° {{ patient.id }}</small><h2 id="patient-detail-title">{{ patient.name }}</h2></div>
-          <button type="button" class="close" (click)="closeDetail()" aria-label="Fermer le dossier">✕</button></div>
-        @if (detailLoading()) { <p>Chargement du dossier…</p> }
-          @else {
-            @if (detailError()) { <p class="error" role="alert">{{ detailError() }}</p> }
-            @if (profile(); as data) {
-              <h3>Profil nutritionnel</h3>
-              <div class="stats"><span>Zone <strong>{{ data.zone || '—' }}</strong></span><span>Poids <strong>{{ data.poidsKg ?? '—' }} kg</strong></span>
-                <span>IMC <strong>{{ data.imc ?? '—' }}</strong></span><span>Activité <strong>{{ data.niveauActivite || '—' }}</strong></span>
-                <span>Mode budget <strong>{{ data.modeBudget || '—' }}</strong></span></div>
-              <p>Allergies : {{ data.allergies?.join(', ') || 'aucune déclarée' }}</p>
-              @if (data.commentaireSante) { <p>{{ data.commentaireSante }}</p> }
-            }
-            <h3>Objectifs</h3>
-            @for (goal of goals(); track goal.id) { <p class="item">{{ goal.description || goal.type }} · {{ goal.statut }} · {{ goal.progressionPourcentage ?? 0 }} %</p> }
-            @if (!goals().length) { <p>Aucun objectif enregistré.</p> }
-            <h3>Budgets</h3>
-            @for (budget of budgets(); track budget.id) { <p class="item">{{ budget.montant }} {{ budget.devise || 'XOF' }} / {{ budget.periode }} {{ budget.actif ? '· actif' : '' }}</p> }
-            @if (!budgets().length) { <p>Aucun budget enregistré.</p> }
-            <div class="day"><label>Budget petit montant du jour <input type="date" [(ngModel)]="selectedDate" /></label>
-              <button type="button" (click)="loadDay(patient.id)">Consulter</button></div>
-            @if (dailyBudget(); as budget) { <p class="item">{{ budget.date }} : {{ budget.montantDisponible }} {{ budget.devise || 'XOF' }} disponibles sur {{ budget.plafond }}.</p> }
-          }
-      </section></div>
-    }
+  </div>
+}
+
+@if (showNewPatientHelp()) {
+  <div class="modal-backdrop" role="presentation" (click)="showNewPatientHelp.set(false)" (keydown.escape)="showNewPatientHelp.set(false)">
+    <section class="new-patient-dialog" role="dialog" aria-modal="true" aria-labelledby="new-patient-title"
+      cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <div class="modal-heading"><h2 id="new-patient-title">Ajouter un patient à votre suivi</h2>
+        <button type="button" class="close-button" (click)="showNewPatientHelp.set(false)" aria-label="Fermer">✕</button></div>
+      <p>Les patients apparaissent ici après un rendez-vous accepté ou terminé avec votre compte professionnel.</p>
+      <a class="dialog-link" [routerLink]="actor() === 'dieteticien' ? '/espaces/dieteticien/rendez-vous' : '/espaces/nutritionniste/rendez-vous'">Voir les rendez-vous</a>
+    </section>
+  </div>
+}

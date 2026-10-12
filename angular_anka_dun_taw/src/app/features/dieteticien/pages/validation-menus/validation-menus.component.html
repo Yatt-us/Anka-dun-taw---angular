@@ -1,0 +1,54 @@
+<section class="validation-page">
+  <header class="page-header"><div><h1>Validation des Menus</h1><p>Contrôlez les repas et les coûts estimés avant de publier un menu.</p></div>
+    <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span></header>
+  @if (success()) { <p class="feedback success" role="status">{{ success() }}</p> }
+  @if (error()) { <p class="feedback error" role="alert">{{ error() }} <button type="button" (click)="load()">Actualiser</button></p> }
+
+  @if (loading()) { <div class="state" aria-live="polite">Chargement des menus à contrôler…</div> }
+  @else if (!queue().length) { <div class="state"><strong>Aucun menu en attente de validation</strong><p>Les nouveaux brouillons et menus validés apparaîtront ici.</p><a routerLink="../menus/creer">Créer un menu</a></div> }
+  @else {
+    <div class="content-grid">
+      <section class="queue-panel"><h2>File des menus à contrôler</h2><p class="panel-intro">{{ queue().length }} menu(s) à vérifier avant publication</p>
+        <div class="queue-list">@for (menu of queue(); track menu.id) { <button type="button" class="queue-item" [class.selected]="selectedMenuId() === menu.id" [attr.aria-pressed]="selectedMenuId() === menu.id" (click)="selectMenu(menu.id)">
+          <span class="queue-status">{{ menu.statut === 'VALIDE' ? 'PRÊT À PUBLIER' : menu.statut === 'EN_VALIDATION' ? 'EN VALIDATION' : 'BROUILLON' }}</span>
+          <strong>{{ menu.titre }}</strong><small>Patient : {{ patientName(menu.beneficiaireIds) }}</small>
+          @if (costFor(menu.id); as estimate) { <span class="queue-cost">{{ money(estimate.coutTotalEstime, estimate.devise) }}</span> }
+        </button> }</div>
+      </section>
+      <section class="detail-panel">
+        @if (detailLoading()) { <div class="state">Chargement du menu…</div> }
+        @else if (detail(); as menu) {
+          <header class="detail-header"><div><small>MENU À CONTRÔLER</small><h2>{{ menu.titre }}</h2><p>{{ patientName(menu.beneficiaireIds) }} · {{ menu.zone || 'Zone non renseignée' }}</p></div>
+            <span class="status-pill" [class.unknown]="budgetCheck() === 'unknown'" [class.over]="budgetCheck() === 'exceeded'">
+              {{ budgetCheck() === 'respected' ? 'Budget respecté' : budgetCheck() === 'exceeded' ? 'Budget dépassé' : 'Budget à vérifier' }}
+            </span></header>
+          @if (budget(); as patientBudget) { <p class="budget-line">Budget patient : {{ money(patientBudget.montant, patientBudget.devise) }} / {{ label(patientBudget.periode) }}
+            @if (budgetCheck() === 'unknown') { <span>· période ou prix non comparables</span> }</p> }
+          <div class="meals-list">@for (meal of mealViews(); track meal.key) { <article class="meal-row"><div><strong>{{ meal.title }}</strong><p>{{ meal.detail }}</p></div><span>{{ money(meal.cost, cost()?.devise || 'XOF') }}</span></article> }</div>
+          @if (!mealViews().length) { <p class="missing">Ce menu ne contient aucun repas exploitable.</p> }
+          <div class="summary"><span>Coût total estimé du menu</span><strong>{{ money(cost()?.coutTotalEstime, cost()?.devise || 'XOF') }}</strong></div>
+          <div class="checklist"><h3>Points de contrôle</h3><div class="check-items"><span [class.ok]="!!menu.repas?.length">{{ menu.repas?.length ? '✓' : '!' }} Repas renseignés</span>
+            <span [class.ok]="!!cost()?.prixDisponibles">{{ cost()?.prixDisponibles ? '✓' : '!' }} Prix locaux disponibles</span>
+            <span [class.ok]="budgetCheck() === 'respected'" [class.alert]="budgetCheck() === 'exceeded'">{{ budgetCheck() === 'respected' ? '✓' : '!' }} Budget {{ budgetCheck() === 'unknown' ? 'non vérifiable' : budgetCheck() === 'exceeded' ? 'dépassé' : 'respecté' }}</span>
+            <span>○ Allergènes et adéquation nutritionnelle : contrôle professionnel requis</span></div></div>
+          <div class="detail-actions">@if (canCorrect()) { <button type="button" class="correction-button" (click)="openCorrection()">Corriger le menu</button> }
+            <button type="button" class="publish-button" [disabled]="!canPublish() || busy()" (click)="openConfirm()">{{ menu.statut === 'VALIDE' ? 'Publier le menu' : 'Ouvrir les options de validation' }}</button></div>
+          @if (costsError()) { <p class="field-note">Les estimations de coût n’ont pas pu être chargées. Actualisez pour vérifier ce menu.</p> }
+          @else if (!canPublish()) { <p class="field-note">La publication nécessite des repas, des prix disponibles et aucun dépassement de budget connu.</p> }
+        }
+      </section>
+    </div>
+  }
+
+  @if (confirmOpen() && selectedMenu(); as menu) {
+    <div class="modal-backdrop" role="presentation" (click)="closeConfirm()" (keydown.escape)="closeConfirm()"><section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <h2 id="confirm-title">{{ menu.statut === 'VALIDE' ? 'Publier le menu' : 'Valider et publier le menu' }}</h2>
+      <p>Le menu « {{ menu.titre }} » sera publié pour {{ patientName(menu.beneficiaireIds) }}. Il deviendra accessible dans son espace après confirmation.</p>
+      <div class="modal-fact">Coût total estimé <strong>{{ money(cost()?.coutTotalEstime, cost()?.devise || 'XOF') }}</strong></div>
+      @if (budget(); as patientBudget) { <div class="modal-fact">Budget du patient <strong>{{ money(patientBudget.montant, patientBudget.devise) }} / {{ label(patientBudget.periode) }}</strong></div> }
+      <p class="modal-note">La diffusion d’une notification dépend de la configuration du serveur. Vérifiez manuellement les allergènes et la qualité nutritionnelle avant de poursuivre.</p>
+      <div class="modal-actions"><button type="button" class="cancel-button" [disabled]="busy()" (click)="closeConfirm()">Annuler</button>@if (canCorrect()) { <button type="button" class="correction-button" [disabled]="busy()" (click)="openCorrection()">Corriger</button> }<button type="button" class="publish-button" [disabled]="busy()" (click)="publish()">{{ busy() ? 'Publication…' : menu.statut === 'VALIDE' ? 'Publier' : 'Valider & publier' }}</button></div>
+    </section></div>
+  }
+  @if (editorOpen() && selectedMenuId(); as id) { <div class="modal-backdrop editor-backdrop" role="presentation" (click)="closeCorrection()" (keydown.escape)="closeCorrection()"><section class="editor-modal" role="dialog" aria-modal="true" aria-label="Corriger le menu" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()"><app-workspace-editor kind="menu" [entityId]="id" (saved)="correctionSaved()" (cancelled)="closeCorrection()" /></section></div> }
+</section>

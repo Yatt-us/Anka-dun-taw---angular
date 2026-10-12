@@ -18,6 +18,9 @@ import { WorkspaceEditorComponent } from '../forms/workspace-editor.component';
 import { EditorKind, WorkspaceEditorService } from '../forms/workspace-editor.service';
 import { SecurityComponent } from '../../features/auth/pages/securite/security.component';
 import { WorkspaceAction } from '../models/workspace-list.models';
+import { DieteticienRecipesComponent } from '../../features/dieteticien/pages/recettes/dieteticien-recipes.component';
+import { DieteticienRecommendationsComponent } from '../../features/dieteticien/pages/recommandations/dieteticien-recommendations.component';
+import { DieteticienPublishedMenusComponent } from '../../features/dieteticien/pages/menus-publies/dieteticien-published-menus.component';
 
 
 const SECTION_TITLES: Record<string, string> = {
@@ -60,6 +63,9 @@ type LoadState = 'loading' | 'ready' | 'error' | 'unavailable';
     A11yModule,
     WorkspaceEditorComponent,
     SecurityComponent,
+    DieteticienRecipesComponent,
+    DieteticienRecommendationsComponent,
+    DieteticienPublishedMenusComponent,
   ],
   templateUrl: './workspace-page.component.html',
   styleUrl: './workspace-page.component.css',
@@ -129,6 +135,9 @@ export class WorkspacePageComponent {
   readonly statusFilterOptions = computed(() => this.lists.statusFilterOptions(this.section()));
   readonly recordLabel = computed(() => this.lists.recordLabel(this.actor().id));
   readonly canEditProfile = computed(() => this.createKinds().includes('profile'));
+  readonly isDieteticienRecipes = computed(() => this.actor().id === 'dieteticien' && this.section() === 'recettes');
+  readonly isDieteticienRecommendations = computed(() => this.actor().id === 'dieteticien' && this.section() === 'recommandations');
+  readonly isDieteticienMenus = computed(() => this.actor().id === 'dieteticien' && this.section() === 'menus');
 
   readonly filteredRows = computed(() => {
     const query = this.searchQuery().trim().toLocaleLowerCase('fr');
@@ -158,6 +167,10 @@ export class WorkspacePageComponent {
       const size = this.pageSize();
       const statut = this.adminStatus();
       this.reloadCounter();
+      if (actor === 'dieteticien' && (section === 'recettes' || section === 'recommandations' || section === 'menus')) {
+        this.loadState.set('unavailable');
+        return;
+      }
       const request = this.lists.load(actor, section, page, size, statut);
       this.result.set(EMPTY_RESULT);
       this.selectedRow.set(null);

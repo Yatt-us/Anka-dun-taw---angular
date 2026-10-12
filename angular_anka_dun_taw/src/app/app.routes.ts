@@ -74,6 +74,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dieteticien/pages/portions-couts/portions-couts.component').then((m) => m.PortionsCoutsComponent),
       },
       {
+        path: 'validation-menus',
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/dieteticien/pages/validation-menus/validation-menus.component').then((m) => m.ValidationMenusComponent),
+      },
+      {
+        path: 'menus/creer',
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/dieteticien/pages/creer-menu/dieteticien-create-menu.component').then((m) => m.DieteticienCreateMenuComponent),
+      },
+      {
         path: 'patients',
         canActivate: [workspaceSectionGuard],
         loadComponent: () => import('./features/professionnel/patients/professional-patients-route.component').then((m) => m.ProfessionalPatientsRouteComponent),
@@ -87,6 +97,11 @@ export const routes: Routes = [
         path: 'disponibilites',
         canActivate: [workspaceSectionGuard],
         loadComponent: () => import('./features/professionnel/disponibilites/disponibilites.component').then((m) => m.DisponibilitesComponent),
+      },
+      {
+        path: 'profil',
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/professionnel/pages/profil/professional-profile.component').then((m) => m.ProfessionalProfileComponent),
       },
       {
         path: ':section',

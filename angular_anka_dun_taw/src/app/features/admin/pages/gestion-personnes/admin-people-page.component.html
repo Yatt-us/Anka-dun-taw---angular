@@ -1,73 +1,216 @@
-<header class="page-heading" animate.enter="adt-page-enter">
-  <div>
-    <span class="eyebrow">ADMINISTRATION</span>
-    <h1>{{ title }}</h1>
-    <p>{{ description }}</p>
-  </div>
-  <span class="total">{{ result().totalElements }} compte(s)</span>
-</header>
+@if (kind === 'utilisateurs') {
+  <section class="accounts-page">
+    <header class="accounts-heading" animate.enter="adt-page-enter">
+      <div class="accounts-heading-copy">
+        <h1>Gestion des Utilisateurs</h1>
+        <p>Consultez et gérez les comptes des parents et des professionnels.</p>
+      </div>
+      <div class="global-search">
+        <app-icon name="search" />
+        <input type="search" aria-label="Recherche globale" placeholder="Recherche globale..."
+          [value]="globalSearch()" (input)="setGlobalSearch($event)" maxlength="80" />
+        @if (globalSearch().trim().length > 1) {
+          <div class="global-results">
+            @if (globalSearchError()) {
+              <p role="alert">Recherche indisponible.</p>
+            } @else if (globalLoading()) {
+              <p role="status">Recherche en cours…</p>
+            } @else {
+              @for (item of globalResults(); track item.type + '-' + item.id) {
+                <button type="button" (click)="openGlobalResult(item)">
+                  <strong>{{ item.titre }}</strong><small>{{ item.type }}</small>
+                </button>
+              } @empty { <p>Aucun résultat pour le moment.</p> }
+            }
+          </div>
+        }
+      </div>
+    </header>
 
-@if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+    @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+    @if (actionError() && !selected()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
 
-<section class="panel">
-  <div class="panel-heading">
-    <div><h2>{{ kind === 'professionnels' ? 'Dossiers professionnels' : 'Comptes inscrits' }}</h2>
-      <p>{{ kind === 'professionnels' ? 'Ouvrez un dossier pour consulter les justificatifs et statuer sur la validation.' : 'Recherchez un compte et consultez ses informations.' }}</p></div>
-    <button type="button" class="action-button secondary" [attr.aria-expanded]="listVisible()" (click)="toggleList()">
-      {{ listVisible() ? 'Masquer la liste' : 'Afficher la liste' }}
-    </button>
-  </div>
+    <div class="accounts-toolbar" aria-label="Filtres des comptes">
+      <label class="accounts-search">
+        <app-icon name="search" />
+        <input type="search" placeholder="Rechercher un utilisateur..." aria-label="Rechercher un utilisateur"
+          [value]="search()" (input)="setSearch($event)" maxlength="80" />
+      </label>
+      <label class="select-control select-role">
+        <span class="sr-only">Filtrer par rôle</span>
+        <select [value]="roleFilter()" (change)="setRoleFilter($event)">
+          <option value="">Rôle: Tous</option>
+          <option value="UTILISATEUR">Utilisateur</option>
+          <option value="DIETETICIEN">Diététicien</option>
+          <option value="NUTRITIONNISTE">Nutritionniste</option>
+          <option value="ADMIN">Administrateur</option>
+        </select>
+      </label>
+      <label class="select-control select-status">
+        <span class="sr-only">Filtrer par statut</span>
+        <select [value]="statusFilter()" (change)="setStatusFilter($event)">
+          <option value="">Statut: Tous</option>
+          <option value="ACTIF">Actif</option>
+          <option value="SUSPENDU">Suspendu</option>
+          <option value="DESACTIVE">Désactivé</option>
+        </select>
+      </label>
+      <button class="export-button" type="button" (click)="exportCsv()" [disabled]="exporting()">
+        <app-icon name="download" />{{ exporting() ? 'Export en cours…' : 'Exporter CSV' }}
+      </button>
+    </div>
 
-  @if (state() === 'loading') {
-    <p class="state" aria-live="polite">Chargement des comptes…</p>
-  } @else if (state() === 'error') {
-    <div class="state error" role="alert"><p>{{ error() }}</p><button type="button" class="action-button" (click)="retry()">Réessayer</button></div>
-  } @else {
-    <div class="list-area" [class.blurred]="!listVisible()" [attr.aria-hidden]="!listVisible()">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
-        <mat-label>Rechercher un compte</mat-label>
-        <input matInput type="search" [value]="search()" (input)="setSearch($event)" />
-      </mat-form-field>
-      <div class="table-wrap">
-        <table mat-table [dataSource]="filteredPeople()">
-          <ng-container matColumnDef="person">
-            <th mat-header-cell *matHeaderCellDef>Compte</th>
-            <td mat-cell *matCellDef="let person"><span class="person"><span class="avatar">{{ initials(person) }}
-              @if (person.photoProfilUrl) { <img [src]="person.photoProfilUrl" [alt]="'Photo de ' + fullName(person)" loading="lazy" (error)="hideBrokenImage($event)" /> }
-            </span>
-              <span><strong>{{ fullName(person) }}</strong><small>N° {{ person.id }}</small></span></span></td>
-          </ng-container>
-          <ng-container matColumnDef="contact">
-            <th mat-header-cell *matHeaderCellDef>Contact / spécialité</th>
-            <td mat-cell *matCellDef="let person"><span>{{ person.email || 'E-mail non renseigné' }}</span>
-              <small>{{ kind === 'professionnels' ? (person.specialite || 'Spécialité non renseignée') : (person.telephone || 'Téléphone non renseigné') }}</small></td>
-          </ng-container>
-          <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef>Rôle</th>
-            <td mat-cell *matCellDef="let person">{{ roleLabel(person.role) }}</td>
-          </ng-container>
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Statut</th>
-            <td mat-cell *matCellDef="let person"><span class="badge" [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span></td>
-          </ng-container>
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef><span class="sr-only">Actions</span></th>
-            <td mat-cell *matCellDef="let person"><button mat-button type="button" (click)="open(person)">Consulter →</button></td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
-          <tr *matNoDataRow><td colspan="5" class="empty">Aucun compte ne correspond à la recherche.</td></tr>
+    @if (state() === 'loading') {
+      <div class="accounts-table-card state" role="status">Chargement des comptes…</div>
+    } @else if (state() === 'error') {
+      <div class="accounts-table-card state error" role="alert">
+        <p>{{ error() }}</p><button type="button" class="action-button" (click)="retry()">Réessayer</button>
+      </div>
+    } @else {
+      <div class="accounts-table-card">
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th scope="col">Nom &amp; prénom</th>
+              <th scope="col">Email</th>
+              <th scope="col">Rôle</th>
+              <th scope="col">Date d'inscription</th>
+              <th scope="col">Statut</th>
+              <th scope="col" class="actions-heading">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (person of filteredPeople(); track person.id) {
+              <tr>
+                <td data-label="Nom & prénom">
+                  <span class="account-person">
+                    <span class="account-avatar" aria-hidden="true">
+                      @if (person.photoProfilUrl) {
+                        <img [src]="person.photoProfilUrl" alt="" loading="lazy" (error)="hideBrokenImage($event)" />
+                      }
+                    </span>
+                    <strong>{{ fullName(person) }}</strong>
+                  </span>
+                </td>
+                <td data-label="Email">{{ person.email || '—' }}</td>
+                <td data-label="Rôle">{{ roleLabel(person.role) }}</td>
+                <td data-label="Inscription" class="date-cell">{{ formatShortDate(person.dateInscription) }}</td>
+                <td data-label="Statut"><span class="badge" [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span></td>
+                <td data-label="Actions" class="actions-cell">
+                  <button class="row-action" type="button" (click)="open(person)"
+                    [attr.aria-label]="'Gérer le compte de ' + fullName(person)"
+                    [title]="'Gérer le compte de ' + fullName(person)">
+                    <app-icon name="trash" />
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="no-accounts">Aucun compte ne correspond aux filtres.</td></tr>
+            }
+          </tbody>
         </table>
       </div>
-      <mat-paginator [length]="result().totalElements" [pageSize]="pageSize()" [pageIndex]="pageIndex()"
-        [pageSizeOptions]="[10, 20, 50]" (page)="changePage($event)" showFirstLastButtons
-        aria-label="Pagination des comptes" />
-    </div>
-    @if (!listVisible()) {
-      <div class="list-overlay"><button type="button" class="action-button" (click)="toggleList()">Afficher la liste · {{ result().totalElements }} compte(s)</button></div>
+      <div class="accounts-pagination">
+        <span>Affichage de {{ firstVisible() }} à {{ lastVisible() }} sur {{ result().totalElements }} comptes</span>
+        <nav aria-label="Pages des comptes">
+          <button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0">Précédent</button>
+          @for (number of pageNumbers(); track number) {
+            <button type="button" [class.current]="number === pageIndex()"
+              [attr.aria-current]="number === pageIndex() ? 'page' : null"
+              (click)="goToPage(number)">{{ number + 1 }}</button>
+          }
+          <button type="button" (click)="goToPage(pageIndex() + 1)"
+            [disabled]="pageIndex() + 1 >= pageCount()">Suivant</button>
+        </nav>
+      </div>
     }
-  }
-</section>
+  </section>
+} @else {
+  <section class="professionals-page">
+    <header class="accounts-heading" animate.enter="adt-page-enter">
+      <div class="accounts-heading-copy">
+        <h1>Vérification des Professionnels</h1>
+        <p>Contrôlez les diplômes et compétences des praticiens de santé.</p>
+      </div>
+      <div class="global-search">
+        <app-icon name="search" />
+        <input type="search" aria-label="Recherche globale" placeholder="Recherche globale..."
+          [value]="globalSearch()" (input)="setGlobalSearch($event)" (keydown.escape)="globalSearch.set('')" maxlength="80" />
+        @if (globalSearch().trim().length > 1) {
+          <div class="global-results">
+            @if (globalSearchError()) { <p role="alert">Recherche indisponible.</p> }
+            @else if (globalLoading()) { <p role="status">Recherche en cours…</p> }
+            @else {
+              @for (item of globalResults(); track item.type + '-' + item.id) {
+                <button type="button" (click)="openGlobalResult(item)"><strong>{{ item.titre }}</strong><small>{{ item.type }}</small></button>
+              } @empty { <p>Aucun résultat.</p> }
+            }
+          </div>
+        }
+      </div>
+    </header>
+
+    <nav class="verification-tabs" aria-label="Statut de vérification">
+      @for (tab of verificationTabs; track tab.status) {
+        <button type="button" [class.active]="verificationStatus() === tab.status"
+          [attr.aria-pressed]="verificationStatus() === tab.status" (click)="selectVerificationStatus(tab.status)">
+          {{ tab.label }}<span class="tab-count">{{ verificationCounts()[tab.status] ?? '—' }}</span>
+        </button>
+      }
+    </nav>
+
+    <p class="verification-notice"><app-icon name="warning" />
+      <span>Chaque professionnel doit faire l’objet d’une vérification rigoureuse avant de pouvoir publier des recettes ou conseiller les parents.</span>
+    </p>
+    @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+    @if (actionError() && !selected()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+
+    @if (state() === 'loading') {
+      <p class="professional-state" role="status">Chargement des dossiers…</p>
+    } @else if (state() === 'error') {
+      <div class="professional-state error" role="alert"><p>{{ error() }}</p>
+        <button type="button" class="professional-button primary" (click)="retry()">Réessayer</button>
+      </div>
+    } @else {
+      <div class="professionals-grid">
+        @for (person of filteredPeople(); track person.id) {
+          <article class="professional-card">
+            <button class="professional-identity" type="button" (click)="open(person)" [attr.aria-label]="'Consulter le dossier de ' + fullName(person)">
+              <span class="professional-avatar">{{ initials(person) }}
+                @if (person.photoProfilUrl) { <img [src]="person.photoProfilUrl" alt="" loading="lazy" (error)="hideBrokenImage($event)" /> }
+              </span>
+              <span class="professional-copy">
+                <span class="professional-name"><strong>{{ fullName(person) }}</strong><span [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span></span>
+                <span class="professional-specialty">{{ person.specialite || roleLabel(person.role) }}</span>
+                <span class="professional-location"><app-icon name="map-pin" />Localisation non renseignée</span>
+              </span>
+            </button>
+            <div class="professional-actions">
+              @if (person.statutVerification === 'EN_ATTENTE') {
+                <button class="professional-button primary" type="button" (click)="openReview(person, 'verify')"><app-icon name="check" />Valider le profil</button>
+                <button class="professional-button refuse" type="button" (click)="openReview(person, 'refuse')"><app-icon name="close" />Refuser</button>
+              } @else {
+                <button class="professional-button outline" type="button" (click)="open(person)">Consulter le dossier<app-icon name="arrow" /></button>
+              }
+            </div>
+          </article>
+        } @empty { <p class="professional-state empty-dossiers">Aucun dossier dans cette catégorie.</p> }
+      </div>
+      @if (pageCount() > 1) {
+        <div class="accounts-pagination">
+          <span>{{ firstVisible() }}–{{ lastVisible() }} sur {{ result().totalElements }} professionnels</span>
+          <nav aria-label="Pages des professionnels">
+            <button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0">Précédent</button>
+            @for (number of pageNumbers(); track number) {
+              <button type="button" [class.current]="number === pageIndex()" [attr.aria-current]="number === pageIndex() ? 'page' : null" (click)="goToPage(number)">{{ number + 1 }}</button>
+            }
+            <button type="button" (click)="goToPage(pageIndex() + 1)" [disabled]="pageIndex() + 1 >= pageCount()">Suivant</button>
+          </nav>
+        </div>
+      }
+    }
+  </section>
+}
 
 @if (selected(); as person) {
   <div class="backdrop" role="presentation" (click)="close()" (keydown.escape)="close()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
@@ -76,7 +219,7 @@
         <h2 id="person-title">{{ fullName(person) }}</h2><p>Compte n° {{ person.id }}</p>
         @if (person.photoProfilUrl) { <img class="profile-photo" [src]="person.photoProfilUrl" [alt]="'Photo de ' + fullName(person)" loading="lazy" (error)="hideBrokenImage($event)" /> }
       </div>
-        <button mat-icon-button type="button" (click)="close()" aria-label="Fermer">✕</button></header>
+        <button mat-icon-button type="button" (click)="close()" [disabled]="busy()" aria-label="Fermer">✕</button></header>
 
       <section class="detail-section"><h3>Identité et coordonnées</h3><dl class="detail-grid">
         <div><dt>Nom</dt><dd>{{ person.nom || 'Non renseigné' }}</dd></div><div><dt>Prénom</dt><dd>{{ person.prenom || 'Non renseigné' }}</dd></div>
@@ -97,30 +240,39 @@
         </dl><h4>Biographie et présentation</h4><p class="biography">{{ person.biographie || 'Aucune biographie fournie.' }}</p></section>
       }
 
-      @if (kind === 'utilisateurs') {
+      @if (kind === 'utilisateurs' && person.role !== 'DIETETICIEN' && person.role !== 'NUTRITIONNISTE') {
         <section class="detail-section"><h3>Gestion du compte</h3><label class="filter">Rôle
           <select [value]="selectedRole()" (change)="setRole($event)">
-            <option value="UTILISATEUR">Utilisateur</option><option value="DIETETICIEN">Diététicien</option>
-            <option value="NUTRITIONNISTE">Nutritionniste</option><option value="ADMIN">Administrateur</option>
+            <option value="UTILISATEUR">Utilisateur</option><option value="ADMIN">Administrateur</option>
           </select></label></section>
       }
 
+      @if (kind === 'professionnels' && person.statutVerification === 'EN_ATTENTE' && reviewIntent() === 'refuse') {
+        <label class="refusal">Motif du refus
+          <textarea rows="3" maxlength="500" [disabled]="busy()" [value]="refusalComment()" (input)="setRefusalComment($event)" placeholder="Précisez les éléments manquants ou non conformes" required></textarea>
+          <small>{{ refusalComment().length }}/500 caractères · enregistré dans l’historique administratif</small>
+        </label>
+      }
       @if (actionError()) { <p class="error" role="alert">{{ actionError() }}</p> }
       <footer class="detail-actions">
         @if (kind === 'professionnels' && person.statutVerification === 'EN_ATTENTE') {
-          <button class="action-button secondary" type="button" [disabled]="busy()" (click)="refuse()">Refuser le dossier</button>
-          <button class="action-button" type="button" [disabled]="busy()" (click)="verify()">{{ busy() ? 'Traitement…' : 'Valider le professionnel' }}</button>
+          @if (reviewIntent() === 'refuse') {
+            <button class="action-button secondary" type="button" [disabled]="busy()" (click)="close()">Annuler</button>
+            <button class="action-button danger" type="button" [disabled]="busy() || !refusalComment().trim()" (click)="refuse()">{{ busy() ? 'Traitement…' : 'Confirmer le refus' }}</button>
+          } @else {
+            <button class="action-button secondary" type="button" [disabled]="busy()" (click)="reviewIntent.set('refuse')">Refuser le dossier</button>
+            <button class="action-button" type="button" [disabled]="busy()" (click)="verify()">{{ busy() ? 'Traitement…' : 'Valider le professionnel' }}</button>
+          }
         }
         @if (kind === 'utilisateurs') {
-          <button class="action-button secondary" type="button" [disabled]="busy()" (click)="saveRole()">Enregistrer le rôle</button>
-          @if ((person.statutCompte || person.statut) === 'ACTIF') { <button class="action-button danger" type="button" [disabled]="busy()" (click)="deactivate()">Désactiver le compte</button> }
+          @if (person.role !== 'DIETETICIEN' && person.role !== 'NUTRITIONNISTE' && selectedRole() !== person.role) {
+            <button class="action-button secondary" type="button" [disabled]="busy()" (click)="saveRole()">Enregistrer le rôle</button>
+          }
+          @if ((person.statutCompte || person.statut) === 'ACTIF') {
+            <button class="action-button danger" type="button" [disabled]="busy()" (click)="deactivate()">Désactiver le compte</button>
+          }
         }
       </footer>
-      @if (kind === 'professionnels' && person.statutVerification === 'EN_ATTENTE') {
-        <label class="refusal">Motif de refus (à renseigner si vous refusez)
-          <textarea rows="2" [value]="refusalComment()" (input)="setRefusalComment($event)" placeholder="Précisez les éléments manquants ou non conformes"></textarea>
-        </label>
-      }
     </section>
   </div>
 }

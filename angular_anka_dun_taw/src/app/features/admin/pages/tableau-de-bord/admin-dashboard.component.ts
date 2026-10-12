@@ -3,11 +3,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
+import { ACTORS } from '../../../../shared/components/workspace-config';
+import { formatStatusLabel } from '../../../../shared/utils/workspace-formatters';
+import { catchError, of, Subject, switchMap, timer } from 'rxjs';
 import {
   ActivityReport,
   AdminDashboardApi,
+  AdminSearchResult,
   AdminStatistics,
   JournalActivity,
 } from '../../data-access/admin-dashboard.data-access';
@@ -27,8 +31,10 @@ interface MonthBar {
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly api = inject(AdminDashboardApi);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly numberFormat = new Intl.NumberFormat('fr-FR');
+  private readonly searchInput = new Subject<string>();
 
   readonly statistics = signal<AdminStatistics | null>(null);
   readonly statisticsError = signal(false);
@@ -36,15 +42,27 @@ export class AdminDashboardComponent implements OnInit {
   readonly activitiesError = signal(false);
   readonly months = signal<MonthBar[] | null>(null);
   readonly activities = signal<JournalActivity[] | null>(null);
-  readonly showActivityList = signal(false);
+  readonly createdMenus = signal<number | null>(null);
+  readonly educationalContent = signal<number | null>(null);
+  readonly searchQuery = signal('');
+  readonly searchResults = signal<AdminSearchResult[]>([]);
+  readonly searchLoading = signal(false);
+  readonly searchError = signal(false);
+  readonly sectionResults = computed(() => {
+    const query = this.searchQuery().trim().toLocaleLowerCase('fr');
+    if (!query) return [];
+    return ACTORS.admin.navigation.filter((item) =>
+      item.label.toLocaleLowerCase('fr').includes(query),
+    ).slice(0, 6);
+  });
   readonly hasRegistrations = computed(
     () => this.months()?.some((month) => month.value > 0) ?? false,
   );
 
   readonly metrics = computed(() => {
     const statistics = this.statistics();
-    const value = (count: number | undefined) =>
-      count === undefined ? (this.statisticsError() ? '—' : '…') : this.numberFormat.format(count);
+    const value = (count: number | null | undefined, failed = this.statisticsError()) =>
+      count == null ? (failed ? '—' : '…') : this.numberFormat.format(count);
     const detail = this.statisticsError() ? 'Données indisponibles' : '';
     return [
       {
@@ -61,14 +79,14 @@ export class AdminDashboardComponent implements OnInit {
         ),
         detail: statistics ? 'Diététiciens et nutritionnistes actifs' : detail,
         icon: 'pro',
-        tone: '',
+        tone: 'orange',
       },
       {
         label: 'Aliments locaux disponibles',
         value: value(statistics?.alimentsLocauxDisponibles),
-        detail,
+        detail: statistics ? 'Disponibles dans le catalogue local' : detail,
         icon: 'leaf',
-        tone: '',
+        tone: 'green',
       },
       {
         label: 'Recettes publiées',
@@ -78,21 +96,23 @@ export class AdminDashboardComponent implements OnInit {
         tone: 'orange',
       },
       {
-        label: 'Menus publiés',
-        value: value(statistics?.menusPublies),
-        detail,
-        icon: 'calendar',
-        tone: '',
+        label: 'Menus créés',
+        value: value(this.createdMenus(), this.createdMenusError()),
+        detail: this.createdMenusError() ? 'Données indisponibles' : '',
+        icon: 'grid',
+        tone: 'blue',
       },
       {
-        label: 'Rendez-vous demandés',
-        value: value(statistics?.rendezVousDemandes),
-        detail,
-        icon: 'calendar',
+        label: 'Contenus éducatifs',
+        value: value(this.educationalContent(), this.educationalContentError()),
+        detail: this.educationalContentError() ? 'Données indisponibles' : '',
+        icon: 'book',
         tone: 'yellow',
       },
     ];
   });
+  readonly createdMenusError = signal(false);
+  readonly educationalContentError = signal(false);
 
   readonly distribution = computed(() => {
     const statistics = this.statistics();
@@ -106,12 +126,97 @@ export class AdminDashboardComponent implements OnInit {
       total: this.numberFormat.format(total),
       rawTotal: total,
       professionalPercentage: total ? (professionals / total) * 100 : 0,
+      professionalPercentRounded: total ? Math.round((professionals / total) * 100) : 0,
+      userPercentRounded: total ? 100 - Math.round((professionals / total) * 100) : 0,
     };
   });
 
-  toggleActivityList(): void { this.showActivityList.update((visible) => !visible); }
+  updateSearch(event: Event): void {
+    const query = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(query);
+    this.searchInput.next(query.trim());
+  }
+
+  openFirstSearchResult(): void {
+    const result = this.searchResults()[0];
+    if (result) {
+      this.openSearchResult(result);
+      return;
+    }
+    const section = this.sectionResults()[0];
+    if (section) {
+      void this.router.navigate(['/espaces/admin', section.path]);
+      this.clearSearch();
+    }
+  }
+
+  openSearchResult(result: AdminSearchResult): void {
+    void this.router.navigate(['/espaces/admin', result.type]);
+    this.clearSearch();
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.searchInput.next('');
+  }
+
+  searchTypeLabel(type: AdminSearchResult['type']): string {
+    return ({ utilisateurs: 'Utilisateur', professionnels: 'Professionnel', aliments: 'Aliment',
+      recettes: 'Recette', menus: 'Menu', contenus: 'Contenu' })[type];
+  }
+
+  activityName(item: JournalActivity): string {
+    return [item.acteurPrenom, item.acteurNom].filter(Boolean).join(' ')
+      || (item.acteurId === null ? 'Compte inconnu' : `Compte #${item.acteurId}`);
+  }
+
+  activityInitials(item: JournalActivity): string {
+    return [item.acteurPrenom?.[0], item.acteurNom?.[0]].filter(Boolean).join('').toLocaleUpperCase('fr') || '?';
+  }
+
+  activityRole(item: JournalActivity): string {
+    return ({ UTILISATEUR: 'Utilisateur', DIETETICIEN: 'Pro', NUTRITIONNISTE: 'Pro',
+      ADMIN: 'Admin' } as Record<string, string>)[item.acteurRole ?? ''] ?? 'Compte';
+  }
+
+  activityLabel(value: string | null): string {
+    return value ? formatStatusLabel(value) : 'Plateforme';
+  }
+
+  relativeTime(value: string): string {
+    const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60_000);
+    if (!Number.isFinite(minutes) || minutes < 0) return 'À l’instant';
+    if (minutes < 60) return `Il y a ${Math.max(minutes, 1)} min`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `Il y a ${hours} h`;
+    const days = Math.round(hours / 24);
+    return `Il y a ${days} j`;
+  }
 
   ngOnInit(): void {
+    this.searchInput.pipe(
+      switchMap((term) => {
+        this.searchError.set(false);
+        if (term.length < 2) {
+          this.searchLoading.set(false);
+          return of([] as AdminSearchResult[]);
+        }
+        this.searchLoading.set(true);
+        return timer(250).pipe(
+          switchMap(() => this.api.search(term)),
+          catchError(() => {
+            this.searchError.set(true);
+            return of([] as AdminSearchResult[]);
+          }),
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((results) => {
+      this.searchResults.set(results);
+      this.searchLoading.set(false);
+    });
+
     const today = new Date();
     const firstMonth = new Date(today.getFullYear(), today.getMonth() - 5, 1);
 
@@ -138,6 +243,15 @@ export class AdminDashboardComponent implements OnInit {
         next: (page) => this.activities.set(page.content),
         error: () => this.activitiesError.set(true),
       });
+
+    this.api.createdMenusCount().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (count) => this.createdMenus.set(count),
+      error: () => this.createdMenusError.set(true),
+    });
+    this.api.educationalContentCount().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (count) => this.educationalContent.set(count),
+      error: () => this.educationalContentError.set(true),
+    });
   }
 
   private dateParameter(date: Date): string {

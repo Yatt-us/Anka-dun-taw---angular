@@ -1,0 +1,71 @@
+<header class="profile-header">
+  <div><h1>Mon Profil Professionnel</h1>
+    <p>Gérez vos informations publiques et vos disponibilités sur l’application.</p></div>
+  <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
+</header>
+
+@if (loading()) {
+  <p class="state" role="status">Chargement de votre profil…</p>
+} @else if (!profile()) {
+  <div class="state error" role="alert"><p>{{ error() || 'Profil indisponible.' }}</p>
+    <button type="button" (click)="load()">Réessayer</button></div>
+} @else {
+  @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+  @if (success()) { <p class="notice success" role="status">{{ success() }}</p> }
+  <div class="profile-grid">
+    <section class="identity-card" aria-label="Aperçu du profil professionnel">
+      <div class="portrait">{{ initials() }}
+        @if (form.photoProfilUrl; as photo) { <img [src]="photo" alt="Portrait du professionnel" (error)="hideBrokenImage($event)" /> }
+      </div>
+      <button class="photo-button" type="button" [disabled]="saving()" (click)="photoEditorOpen.set(!photoEditorOpen())">
+        {{ photoEditorOpen() ? 'Masquer le champ photo' : 'Modifier la photo' }}
+      </button>
+      @if (photoEditorOpen()) {
+        <label class="photo-field">Adresse de la photo
+          <input type="url" name="photoProfilUrlPreview" [(ngModel)]="form.photoProfilUrl" [disabled]="saving()" maxlength="500" placeholder="https://…" />
+        </label>
+      }
+      <h2>{{ fullName() }}</h2>
+      <p class="role">{{ roleLabel(profile()!.role) }}</p>
+      <span class="verification" [class.pending]="profile()!.statutVerification !== 'VERIFIE'">{{ verificationLabel(profile()!.statutVerification) }}</span>
+      <div class="identity-section"><h3>SPÉCIALITÉS</h3>
+        <div class="chips">
+          @for (speciality of specialities(); track speciality) { <span>{{ speciality }}</span> }
+          @if (!specialities().length) { <em>À renseigner</em> }
+        </div>
+      </div>
+      <div class="identity-section"><h3>QUALIFICATION</h3><p>{{ form.qualification || 'À renseigner' }}</p></div>
+      @if (form.anneesExperience !== null) { <div class="identity-section"><h3>EXPÉRIENCE</h3><p>{{ form.anneesExperience }} an(s)</p></div> }
+      @if (form.numeroOrdre) { <div class="identity-section"><h3>NUMÉRO PROFESSIONNEL</h3><p>{{ form.numeroOrdre }}</p></div> }
+    </section>
+
+    <form class="details-card" #profileForm="ngForm" (ngSubmit)="save(profileForm)">
+      <h2>Informations Personnelles &amp; Professionnelles</h2>
+      <fieldset class="form-grid" [disabled]="saving()">
+        <label>Prénom *<input name="prenom" [(ngModel)]="form.prenom" required maxlength="80" autocomplete="given-name" /></label>
+        <label>Nom *<input name="nom" [(ngModel)]="form.nom" required maxlength="80" autocomplete="family-name" /></label>
+        <label>Adresse e-mail <input [value]="profile()!.email || 'Non renseignée'" readonly aria-describedby="email-help" />
+          <small id="email-help">L’adresse e-mail ne peut pas être modifiée ici.</small></label>
+        <label>Téléphone <input name="telephone" [(ngModel)]="form.telephone" type="tel" maxlength="30" autocomplete="tel" placeholder="+223 …" /></label>
+        <label class="span-two">Spécialités *<input name="specialite" [(ngModel)]="form.specialite" required maxlength="160" placeholder="Ex. Nutrition infantile, diabète" />
+          <small>Séparez plusieurs spécialités par une virgule.</small></label>
+        <label>Qualification *<input name="qualification" [(ngModel)]="form.qualification" required maxlength="160" placeholder="Ex. Diplôme en diététique" /></label>
+        <label>Années d’expérience <input name="anneesExperience" [(ngModel)]="form.anneesExperience" type="number" min="0" max="80" step="1" /></label>
+        <label>Numéro professionnel <input name="numeroOrdre" [(ngModel)]="form.numeroOrdre" maxlength="80" [readonly]="profile()!.statutVerification === 'VERIFIE'" />
+          @if (profile()!.statutVerification === 'VERIFIE') { <small>Une modification demande une nouvelle vérification.</small> }</label>
+        <label class="span-two">Biographie professionnelle
+          <textarea name="biographie" [(ngModel)]="form.biographie" maxlength="3000" rows="4" placeholder="Présentez votre expérience et votre approche…"></textarea></label>
+      </fieldset>
+      <div class="settings-block"><div><h3>Disponibilités</h3>
+          <p>Ajoutez ou retirez vos créneaux de rendez-vous depuis la page dédiée.</p></div>
+        <a routerLink="../disponibilites">Gérer mes disponibilités →</a></div>
+      <div class="settings-block"><div><h3>Notifications</h3>
+          <p>Consultez les alertes et messages reçus dans votre espace.</p></div>
+        <a routerLink="../notifications">Voir mes notifications →</a></div>
+      <div class="form-actions">
+        <button type="button" class="secondary-button" [disabled]="saving() || !dirty()" (click)="reset()">Annuler les modifications</button>
+        <button type="submit" class="primary-button" [disabled]="saving() || !dirty()">{{ saving() ? 'Enregistrement…' : 'Enregistrer les modifications' }}</button>
+      </div>
+    </form>
+  </div>
+}
