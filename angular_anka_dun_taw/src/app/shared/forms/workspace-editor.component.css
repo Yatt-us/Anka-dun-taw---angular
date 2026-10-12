@@ -33,3 +33,17 @@ footer { margin-top: 26px; justify-content: flex-end; }
 @media (max-width: 600px) { .field-grid, .repeat-row, .meal-row { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .proposition-row { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .submit { transition: none; } .submit:hover:not(:disabled) { transform: none; } }
+
+/* Taille de lecture de l'éditeur dans l'espace administrateur. */
+:host-context(.admin) { font-size: 18px; }
+:host-context(.admin) h2 { font-size: 24px; }
+:host-context(.admin) h3 { font-size: 20px; }
+:host-context(.admin) .editor-description { font-size: 17px; }
+:host-context(.admin) .eyebrow { font-size: 15px; }
+:host-context(.admin) label { font-size: 18px; }
+:host-context(.admin) input,
+:host-context(.admin) select,
+:host-context(.admin) textarea { font-size: 18px; }
+:host-context(.admin) .form-error { font-size: 16px; }
+:host-context(.admin) .submit,
+:host-context(.admin) .close-form { min-height: 46px; font-size: 16px; }

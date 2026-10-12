@@ -1,5 +1,5 @@
 :host { display: block; min-width: 0; width: 100%; color: #23332f; }
-:host-context(.dieteticien) { width: calc(100% + 95px); margin-left: -62px; }
+:host-context(.dieteticien) { width: 100%; }
 .patients-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 45px; }
 .patients-header h1 { margin: 0 0 5px; color: var(--brand-navy); font-size: clamp(22px, 1.9vw, 28px); line-height: 1.25; }
 .patients-header p { margin: 0; color: #38443f; font-size: 12px; line-height: 1.5; }

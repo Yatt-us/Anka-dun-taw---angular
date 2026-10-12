@@ -95,3 +95,42 @@ button[mat-button] { min-height: 40px; }
   .professional-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .create-button { transition: none; } .create-button:hover:not(:disabled) { transform: none; } }
+
+/* Les rubriques génériques sont aussi utilisées hors de l'administration. */
+:host-context(.admin) { font-size: 18px; }
+:host-context(.admin) h1 { font-size: 34px; }
+:host-context(.admin) h2,
+:host-context(.admin) .list-heading h2 { font-size: 22px; }
+:host-context(.admin) .page-heading p,
+:host-context(.admin) .list-heading p,
+:host-context(.admin) .state-panel p,
+:host-context(.admin) .detail p { font-size: 18px; }
+:host-context(.admin) .section-toolbar { font-size: 18px; }
+:host-context(.admin) .section-toolbar mat-form-field { font-size: 18px; }
+:host-context(.admin) .source-label,
+:host-context(.admin) .list-count,
+:host-context(.admin) .success-banner,
+:host-context(.admin) .draft-banner,
+:host-context(.admin) .comment-label,
+:host-context(.admin) .message strong,
+:host-context(.admin) .message small,
+:host-context(.admin) .message-pager,
+:host-context(.admin) .section-hint { font-size: 16px; }
+:host-context(.admin) .create-button,
+:host-context(.admin) button { min-height: 44px; font-size: 16px; }
+:host-context(.admin) table { min-width: 950px; }
+:host-context(.admin) th { font-size: 16px; }
+:host-context(.admin) td { font-size: 18px; }
+:host-context(.admin) .person-cell small,
+:host-context(.admin) .status { font-size: 15px; }
+:host-context(.admin) .detail { width: min(820px, calc(100vw - 56px)); }
+:host-context(.admin) .detail-kicker,
+:host-context(.admin) .professional-grid dt,
+:host-context(.admin) .professional-biography h4 { font-size: 15px; }
+:host-context(.admin) .professional-profile-copy h3,
+:host-context(.admin) .professional-section h3 { font-size: 20px; }
+:host-context(.admin) .professional-grid dd { font-size: 18px; }
+@media (max-width: 760px) {
+  :host-context(.admin) h1 { font-size: 28px; }
+  :host-context(.admin) .detail { width: 100%; }
+}

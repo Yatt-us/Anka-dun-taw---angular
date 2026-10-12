@@ -12,10 +12,15 @@ import { ActorId } from '../../../shared/components/workspace-config';
 interface ApiPage<T> { content: T[]; number: number; totalPages: number; totalElements: number }
 interface PatientSummary { id: number; nom: string; prenom: string; photoProfilUrl?: string | null }
 interface Patient { id: number; name: string; lastName: string; photoProfilUrl?: string | null }
+interface FoodPreference {
+  type: 'AIME' | 'EVITE' | 'ALLERGIE' | 'RESTRICTION' | 'REGIME_ALIMENTAIRE';
+  valeur: string;
+}
 interface NutritionProfile {
+  id: number; nom?: string; statut?: string; objectifId?: number | null; budgetActifId?: number | null;
   zone?: string; poidsKg?: number; tailleCm?: number; imc?: number;
   niveauActivite?: string; modeBudget?: string; allergies?: string[];
-  alimentsPreferes?: string[]; alimentsAEviter?: string[]; commentaireSante?: string;
+  preferences?: FoodPreference[]; commentaireSante?: string;
 }
 interface Goal { id: number; description?: string; type?: string; statut?: string; progressionPourcentage?: number }
 interface Budget { id: number; montant: number; devise?: string; periode?: string; actif?: boolean }
@@ -70,7 +75,7 @@ export class PatientsComponent {
   readonly dateLabel = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
-  selectedDate = new Date().toISOString().slice(0, 10);
+  selectedDate = this.localDate(new Date());
 
   constructor() {
     effect(() => { this.actor(); this.load(); });
@@ -188,23 +193,32 @@ export class PatientsComponent {
     this.budgets.set(details.budgets);
   }
   activeBudget(details: PatientDetails | undefined): Budget | null {
-    return details?.budgets.find((budget) => budget.actif) ?? details?.budgets[0] ?? null;
+    if (!details) return null;
+    const budgetId = details.profile?.budgetActifId;
+    return details.budgets.find((budget) => budget.id === budgetId)
+      ?? details.budgets.find((budget) => budget.actif)
+      ?? null;
   }
   mainGoal(details: PatientDetails | undefined): string {
-    const goal = details?.goals.find((item) => item.statut === 'EN_COURS') ?? details?.goals[0];
+    const goal = details?.goals.find((item) => item.id === details.profile?.objectifId)
+      ?? details?.goals.find((item) => item.statut === 'EN_COURS')
+      ?? details?.goals[0];
     return goal?.description || goal?.type || 'Aucun objectif disponible';
   }
   profileLabel(details: PatientDetails | undefined): string {
     const profile = details?.profile;
-    return profile?.modeBudget || profile?.niveauActivite || (profile ? 'Profil nutritionnel renseigné' : 'Profil indisponible');
+    return profile?.nom?.trim() || (profile ? 'Profil nutritionnel actif' : 'Profil indisponible');
   }
   constraints(details: PatientDetails | undefined): { text: string; kind: 'positive' | 'negative' }[] {
     const profile = details?.profile;
-    return [
-      ...(profile?.alimentsPreferes ?? []).map((text) => ({ text, kind: 'positive' as const })),
-      ...(profile?.allergies ?? []).map((text) => ({ text, kind: 'negative' as const })),
-      ...(profile?.alimentsAEviter ?? []).map((text) => ({ text, kind: 'negative' as const })),
-    ].slice(0, 3);
+    const preferences = (profile?.preferences ?? [])
+      .filter((item) => item.valeur?.trim() && item.type !== 'REGIME_ALIMENTAIRE')
+      .map((item) => ({ text: item.valeur.trim(), kind: item.type === 'AIME' ? 'positive' as const : 'negative' as const }));
+    const allergies = (profile?.allergies ?? []).map((text) => ({ text, kind: 'negative' as const }));
+    return [...preferences, ...allergies]
+      .filter((item, index, items) => items.findIndex((other) =>
+        other.text.toLocaleLowerCase('fr') === item.text.toLocaleLowerCase('fr')) === index)
+      .slice(0, 3);
   }
   money(amount: number, devise?: string): string {
     const number = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount);
@@ -221,4 +235,11 @@ export class PatientsComponent {
       });
   }
   closeDetail(): void { this.selected.set(null); }
+
+  private localDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 }

@@ -1,55 +1,92 @@
 /* Espace administrateur : rail bleu et cartes sur fond crème de la maquette. */
-.app-frame.admin { grid-template-columns: 196px minmax(0, 1fr); background: #fff9f0; }
+.app-frame.admin { grid-template-columns: 248px minmax(0, 1fr); background: #fff9f0; }
 .admin .sidebar {
   position: sticky;
   top: 0;
+  align-self: start;
   height: 100dvh;
-  padding: 0 15px 17px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  min-height: 0;
+  padding: 0 0 17px 12px;
+  overflow: hidden;
   border: 0;
-  border-right: 8px solid #9fc8db;
-  border-top-right-radius: 46px;
-  background: var(--brand-navy);
+  background:
+    linear-gradient(to bottom, #fff9f0 0 112px, #9fc8db 112px 118px, transparent 118px),
+    linear-gradient(to right, #9fc8db 0 7px, var(--brand-navy) 7px calc(100% - 58px), #fff calc(100% - 58px) calc(100% - 8px), #9fc8db calc(100% - 8px));
   color: white;
 }
 .admin .sidebar::before {
   content: '';
   position: absolute;
-  top: 58px;
-  right: -1px;
-  width: 56px;
-  height: 76px;
-  border-top-left-radius: 70px;
-  background: #fff9f0;
+  top: 118px;
+  right: 8px;
+  width: 50px;
+  height: 39px;
+  border-top-right-radius: 47px;
+  background: var(--brand-navy);
   pointer-events: none;
 }
-.admin .brand { display: none; }
-.admin nav { position: relative; z-index: 1; gap: 16px; margin-top: 118px; }
+.admin .sidebar::after {
+  content: '';
+  position: absolute;
+  top: 156px;
+  right: 8px;
+  width: 50px;
+  height: 67px;
+  border-top-left-radius: 60px;
+  background: #fff;
+  pointer-events: none;
+}
+.admin .brand {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 auto;
+  width: 144px;
+  height: 98px;
+  margin: 11px auto 0;
+  border-radius: 0;
+  background: transparent;
+}
+.admin nav {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 16px;
+  min-height: 0;
+  margin-top: 65px;
+  padding-bottom: 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #7fa0c2 transparent;
+}
 .admin nav a {
-  width: 100%;
-  min-height: 43px;
-  padding: 9px 13px;
+  width: 174px;
+  min-height: 44px;
+  padding: 8px 12px;
+  gap: 14px;
   border-radius: 999px;
   background: #5678a3;
   color: white;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.3;
+  letter-spacing: .1px;
 }
 .admin nav a:hover { transform: none; background: #6d8cb2; color: white; }
-.admin nav a.active, .admin nav a.active:hover { background: white; color: var(--brand-navy); }
-.admin nav app-icon { flex: 0 0 17px; width: 17px; height: 17px; }
-.admin .admin-more { display: flex; align-items: center; gap: 12px; min-height: 38px; margin-top: 2px; padding: 8px 13px; border: 1px solid #7897b5; border-radius: 999px; background: transparent; color: #dce8f3; font: inherit; font-size: 10px; font-weight: 600; text-align: left; cursor: pointer; }
+.admin nav a.active, .admin nav a.active:hover { width: min(218px, 100%); background: white; color: var(--brand-navy); }
+.admin nav app-icon { flex: 0 0 18px; width: 18px; height: 18px; }
+.admin .admin-more { display: flex; align-items: center; gap: 14px; width: 174px; min-height: 44px; margin-top: 2px; padding: 8px 13px; border: 1px solid #7897b5; border-radius: 999px; background: transparent; color: #dce8f3; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; cursor: pointer; }
 .admin .admin-more:hover { background: #315c8a; }
 .admin .admin-more app-icon { width: 17px; height: 17px; }
 .admin .admin-more-list { display: grid; gap: 6px; padding-left: 6px; }
-.admin .admin-more-list a { min-height: 35px; font-size: 10px; }
-.admin .sidebar-bottom { position: relative; padding-top: 20px; }
+.admin .admin-more-list a { min-height: 42px; font-size: 15px; }
+.admin .sidebar-bottom { position: relative; flex: 0 0 auto; width: calc(100% - 58px); margin-top: 0; padding-top: 20px; }
 .admin .sidebar-bottom .change-space:first-child { display: none; }
 .admin .sidebar-bottom button.change-space {
   position: absolute;
-  right: 0;
+  right: -18px;
   bottom: 5px;
   z-index: 1;
   justify-content: center;
@@ -64,20 +101,24 @@
 }
 .admin .sidebar-bottom button.change-space:hover { background: #335d91; }
 .admin .sidebar-bottom button.change-space app-icon { flex: 0 0 18px; width: 18px; height: 18px; margin: 0; }
-.admin .profile { min-height: 58px; margin-top: 0; padding: 12px 35px 0 2px; border-top: 1px solid #d9e5ee; background: transparent; }
+.admin .profile { min-height: 58px; margin-top: 0; padding: 12px 0 0 2px; border-top: 1px solid #d9e5ee; background: transparent; }
+.admin .profile > div { min-width: 0; flex: 1; }
 .admin .profile .avatar { flex: 0 0 36px; background: #e2f0fa; color: var(--brand-blue); }
-.admin .profile strong { overflow: hidden; color: white; text-overflow: ellipsis; white-space: nowrap; }
-.admin .profile small { color: #8fbce1; }
-.admin .page-area { max-width: 1740px; padding: 37px 36px 45px; }
+.admin .profile strong { color: white; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.admin .profile small { color: #8fbce1; font-size: 13px; }
+.admin .page-area { max-width: 1900px; padding: 37px 28px 45px; font-size: 18px; line-height: 1.5; }
 .admin footer { display: none; }
 @media (max-width: 1100px) and (min-width: 761px) {
-  .app-frame.admin { grid-template-columns: 180px minmax(0, 1fr); }
-  .admin .sidebar { padding-inline: 11px; }
-  .admin nav a { padding-inline: 10px; }
-  .admin .page-area { padding: 28px 24px 38px; }
+  .app-frame.admin { grid-template-columns: 214px minmax(0, 1fr); }
+  .admin .sidebar { padding-left: 12px; }
+  .admin .brand { width: 132px; height: 91px; }
+  .admin nav a { width: 140px; padding-inline: 10px; font-size: 14px; }
+  .admin nav a.active, .admin nav a.active:hover { width: min(184px, 100%); }
+  .admin .admin-more { width: 140px; font-size: 13px; }
+  .admin .page-area { padding: 28px 20px 38px; }
 }
 @media (min-width: 950px) and (max-width: 1100px) {
-  .app-frame.admin { grid-template-columns: 196px minmax(0, 1fr); }
+  .app-frame.admin { grid-template-columns: 214px minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
   .app-frame.admin { display: block; }
@@ -86,15 +127,28 @@
     top: 0;
     width: min(280px, 85vw);
     height: 100dvh;
+    min-height: 0;
     padding: 15px 14px;
     border: 0;
     border-radius: 0 24px 24px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--brand-navy);
     transform: translateX(-100%);
   }
   .admin.menu-open .sidebar { transform: translateX(0); }
-  .admin .sidebar::before { display: none; }
-  .admin .brand { display: flex; width: 120px; height: 120px; margin: 0 auto 16px; }
-  .admin nav { margin-top: 0; gap: 6px; }
-  .admin nav a { min-height: 40px; }
+  .admin .sidebar::before, .admin .sidebar::after { display: none; }
+  .admin .brand {
+    width: 120px;
+    height: 94px;
+    margin: 0 auto 16px;
+    padding: 5px;
+    border-radius: 12px;
+    background: #fff9f0;
+  }
+  .admin nav { flex: 0 0 auto; width: 100%; min-height: auto; margin-top: 0; padding-bottom: 0; gap: 9px; overflow: visible; }
+  .admin nav a, .admin nav a.active, .admin .admin-more { width: 100%; min-height: 44px; font-size: 16px; }
+  .admin .sidebar-bottom { width: 100%; margin-top: auto; }
+  .admin .sidebar-bottom button.change-space { right: 0; }
   .admin .page-area { padding: 22px 16px 36px; }
 }

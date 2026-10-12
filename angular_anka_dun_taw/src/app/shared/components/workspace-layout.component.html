@@ -4,14 +4,9 @@
   }
   <aside class="sidebar">
     <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, choisir un espace">
-      @if (actor().id === 'dieteticien') {
-        <svg class="brand-logo" viewBox="206 64 263 198" aria-hidden="true" focusable="false">
-          <image href="/images/logo-anka-dun-taw.png" width="677" height="369" />
-        </svg>
-      } @else {
-        <span class="brand-emblem"><app-icon name="leaf" /></span><strong>Anka Dùn Taw</strong>
-        <small>Bien manger, mieux vivre</small>
-      }
+      <svg class="brand-logo" viewBox="206 64 263 198" aria-hidden="true" focusable="false">
+        <image href="/images/logo-anka-dun-taw.png" width="677" height="369" />
+      </svg>
     </a>
     <nav [attr.aria-label]="actor().shortTitle">
       @for (item of primaryNavigation(); track item.path) {
