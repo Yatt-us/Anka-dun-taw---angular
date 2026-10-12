@@ -21,6 +21,11 @@ const PATHS: Record<string, string> = {
   arrow: 'm9 5 7 7-7 7',
   logout: 'M9 3H3v18h6m5-14 5 5-5 5m-7-5h13',
   search: 'M21 21l-6-6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0',
+  download: 'M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4',
+  trash: 'M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6',
+  close: 'm6 6 12 12M18 6 6 18',
+  warning: 'M12 3 2 21h20L12 3Zm0 6v5m0 3v1',
+  'map-pin': 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Zm-5 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
   pie: 'M12 3v9h9M9 3.5A9 9 0 1 0 20.5 15M15 3.5V9h5.5',
 };
 @Component({

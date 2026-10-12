@@ -1,3 +1,10 @@
+@if (isDieteticienRecipes()) {
+  <app-dieteticien-recipes />
+} @else if (isDieteticienRecommendations()) {
+  <app-dieteticien-recommendations />
+} @else if (isDieteticienMenus()) {
+  <app-dieteticien-published-menus />
+} @else {
 <header class="page-heading" animate.enter="adt-page-enter">
     <div>
       <h1>{{ sectionTitle() }}</h1>
@@ -211,3 +218,4 @@
     <p class="section-hint">{{ result().hint || 'La recherche porte sur la page actuellement affichée.' }}</p>
   }
   @if (canEditProfile()) { <app-security /> }
+}

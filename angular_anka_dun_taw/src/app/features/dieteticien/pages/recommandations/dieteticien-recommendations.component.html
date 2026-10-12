@@ -1,0 +1,46 @@
+<section class="recommendations-page">
+  <header class="page-header"><div><h1>Recommandations Nutritionnelles</h1><p>Rédigez des conseils pratiques liés aux menus locaux de vos patients.</p></div>
+    <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span></header>
+
+  @if (loading()) { <div class="state" aria-live="polite">Chargement des patients et des menus…</div> }
+  @else if (error() && !patients().length) { <div class="state" role="alert">{{ error() }} <button type="button" (click)="load()">Réessayer</button></div> }
+  @else if (!patients().length) { <div class="state">Aucun patient n’est lié à votre compte pour le moment.</div> }
+  @else {
+    <div class="main-grid"><div class="left-column">
+      <section class="suggestions card"><h2>Suggestions de rédaction</h2><p class="card-intro">Modèles généraux à adapter au profil et au menu du patient.</p>
+        <div class="theme-tabs" role="group" aria-label="Thème de recommandation">
+          @for (theme of templates; track theme.id) { <button type="button" [class.active]="selectedThemeId() === theme.id" [attr.aria-pressed]="selectedThemeId() === theme.id" (click)="selectTheme(theme.id)">{{ theme.label }}</button> }
+        </div>
+        <div class="suggestion-box"><strong>{{ selectedTheme().title }}</strong><p>{{ selectedTheme().text }}</p><button type="button" (click)="insertSuggestion()">+ Insérer dans l’éditeur</button></div>
+      </section>
+
+      <section class="editor card"><h2>Éditeur de conseil personnalisé</h2>
+        <label for="recommendation-title">Titre de la recommandation</label><input id="recommendation-title" type="text" maxlength="160" placeholder="Ex. : Varier les produits locaux de saison" [(ngModel)]="title" (ngModelChange)="draftSaved.set(false)" />
+        <label for="recommendation-content">Contenu des conseils pratiques</label><textarea id="recommendation-content" rows="7" maxlength="4000" placeholder="Rédigez votre recommandation pour ce patient…" [(ngModel)]="content" (ngModelChange)="draftSaved.set(false)"></textarea>
+        <label for="target-menu">Menu du patient</label><select id="target-menu" [value]="selectedMenuId() ?? ''" (change)="onMenuChange($event)" [disabled]="!editableMenus().length">
+          @if (!editableMenus().length) { <option value="">Aucun menu modifiable</option> }
+          @for (menu of editableMenus(); track menu.id) { <option [value]="menu.id">{{ menu.titre }} · {{ menu.statut === 'BROUILLON' ? 'Brouillon' : 'En validation' }}</option> }
+        </select>
+        @if (!editableMenus().length) { <p class="field-hint">Créez un brouillon de menu pour lui attribuer cette recommandation.</p> }
+        @if (error()) { <p class="feedback error" role="alert">{{ error() }}</p> }
+        @if (success()) { <p class="feedback success" role="status">{{ success() }}</p> }
+        <div class="editor-actions"><button type="button" class="draft-button" (click)="saveDraft()">{{ draftSaved() ? 'Brouillon enregistré dans cet onglet' : 'Enregistrer le brouillon' }}</button>
+          <button type="button" class="assign-button" [disabled]="saving() || !editableMenus().length || !title.trim() || !content.trim()" (click)="assign()">{{ saving() ? 'Enregistrement…' : 'Attribuer au menu' }}</button></div>
+      </section>
+    </div><aside class="right-column">
+      <section class="patient-preview card"><h2>Aperçu du patient ciblé</h2><label class="patient-picker" for="patient-select">Patient
+        <select id="patient-select" [value]="selectedPatientId() ?? ''" (change)="onPatientChange($event)">@for (patient of patients(); track patient.id) { <option [value]="patient.id">{{ patientName(patient) }}</option> }</select>
+      </label>
+        @if (selectedPatient(); as patient) { <div class="patient-identity"><span class="avatar">{{ patient.prenom?.charAt(0) || 'P' }}@if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }</span><div><strong>{{ patientName(patient) }}</strong><small>ID : #{{ patient.id }}</small></div></div> }
+        <div class="patient-facts"><p><span>Objectif</span><strong>{{ goals()[0]?.description || goals()[0]?.type || 'Non renseigné' }}</strong></p>
+          <p><span>Région</span><strong>{{ profile()?.zone || 'Non renseignée' }}</strong></p>
+          <p><span>Budget actif</span><strong class="budget">{{ budget() ? money(budget()!.montant, budget()!.devise) + ' / ' + budget()!.periode.toLowerCase() : 'Non renseigné' }}</strong></p>
+        </div>@if (detailsLoading()) { <p class="loading-detail">Chargement du profil…</p> }
+      </section>
+      <section class="history card"><h2>Recommandations des menus</h2>
+        @if (!history().length) { <p class="empty-history">Aucune recommandation enregistrée dans les menus récents de ce patient.</p> }
+        @for (menu of history(); track menu.id) { <button type="button" class="history-item" (click)="editHistory(menu)"><span>{{ menu.statut === 'PUBLIE' ? 'MENU PUBLIÉ' : 'MENU ' + menu.statut.replaceAll('_', ' ') }}</span><strong>{{ menu.titre }}</strong><small>{{ menu.recommandations }}</small></button> }
+      </section>
+    </aside></div>
+  }
+</section>

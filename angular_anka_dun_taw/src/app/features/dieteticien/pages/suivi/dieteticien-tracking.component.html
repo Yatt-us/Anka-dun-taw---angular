@@ -1,12 +1,86 @@
-<header class="dashboard-header">
+<header class="tracking-header">
   <div>
-    <h1>Suivi des patients</h1>
-    <p>Retrouvez ici les indicateurs d’évolution nutritionnelle et le respect des menus.</p>
+    <h1>Suivi des Habitudes &amp; Évolution Nutritionnelle</h1>
+    <p>Suivez les objectifs nutritionnels et les budgets déclarés par les patients que vous accompagnez.</p>
   </div>
+  <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
 </header>
 
-<mat-card appearance="outlined" class="tracking-state">
-  <span class="tracking-state-icon"><app-icon name="chart" /></span>
-  <h2>Les indicateurs de suivi ne sont pas encore disponibles</h2>
-  <p>Les dossiers des patients restent consultables dans « Mes patients ».</p>
-</mat-card>
+@if (error()) {
+  <div class="error-state" role="alert"><p>{{ error() }}</p><button type="button" (click)="load()">Réessayer</button></div>
+} @else if (loading()) {
+  <p class="state" role="status">Chargement des patients…</p>
+} @else {
+  <section class="metrics" aria-label="Indicateurs de suivi">
+    <article class="metric"><span class="metric-icon blue"><app-icon name="users" /></span>
+      <div><span>Patients accompagnés</span><strong>{{ patients().length }}</strong><small>Patients liés à votre espace</small></div>
+    </article>
+    <article class="metric"><span class="metric-icon gold"><app-icon name="pie" /></span>
+      <div><span>Objectifs en cours</span><strong>{{ detailsLoading() ? '…' : activeGoals().length }}</strong><small>{{ goalsUnavailable() ? 'Données partielles sur cette page' : 'Sur cette page de patients' }}</small></div>
+    </article>
+    <article class="metric"><span class="metric-icon coral"><app-icon name="chart" /></span>
+      <div><span>Progression moyenne</span><strong>{{ detailsLoading() ? '…' : averageProgress() === null ? '—' : averageProgress() + '%' }}</strong><small>{{ goalsUnavailable() ? 'Données partielles' : 'Objectifs suivis sur cette page' }}</small></div>
+    </article>
+    <article class="metric"><span class="metric-icon green"><app-icon name="book" /></span>
+      <div><span>Budgets actifs</span><strong>{{ detailsLoading() ? '…' : budgetCount() + ' / ' + readableBudgets() }}</strong><small>{{ budgetsUnavailable() ? 'Données partielles sur cette page' : 'Sur cette page de patients' }}</small></div>
+    </article>
+  </section>
+
+  <section class="chart-card" aria-labelledby="progress-chart-title">
+    <div class="section-title"><h2 id="progress-chart-title">Progression moyenne par type d’objectif</h2><span>Patients affichés</span></div>
+    @if (detailsLoading()) {
+      <p class="chart-empty" role="status">Chargement des objectifs…</p>
+    } @else {
+      @for (bar of progressBars(); track bar.label) {
+        <div class="bar-row"><span class="bar-label">{{ bar.label }} <small>({{ bar.count }})</small></span>
+          <div class="bar-track" role="img" [attr.aria-label]="bar.label + ' : ' + bar.value + ' pour cent de progression moyenne'"><span [style.width.%]="bar.value" [style.background]="bar.color"></span></div>
+          <strong>{{ bar.value }}%</strong></div>
+      } @empty {
+        <p class="chart-empty">Aucune progression d’objectif renseignée pour ces patients.</p>
+      }
+    }
+    <p class="chart-note">Les repas réellement consommés ne sont pas encore partagés dans cet espace.</p>
+  </section>
+
+  <section class="table-card" aria-labelledby="patient-follow-up-title">
+    <div class="section-title"><h2 id="patient-follow-up-title">Fiches de Suivi &amp; Objectifs par Patient</h2>
+      <span>{{ patients().length }} patient(s)</span></div>
+    @if (!patients().length) {
+      <div class="state"><p>Aucun patient lié à votre espace pour le moment.</p><a routerLink="../patients">Voir mes patients</a></div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Patient</th><th scope="col">Objectif principal</th><th scope="col">Progression</th><th scope="col">Budget déclaré</th><th scope="col">État du suivi</th></tr></thead>
+          <tbody>
+            @for (patient of visiblePatients(); track patient.id) {
+              @let detail = details()[patient.id];
+              @let goal = mainGoal(detail);
+              @let progressValue = progress(goal);
+              @let budget = activeBudget(detail);
+              <tr>
+                <td data-label="Patient"><span class="person"><span class="avatar">{{ initials(patient) }}
+                  @if (patient.photoProfilUrl; as photo) { <img [src]="photo" alt="" (error)="hideBrokenImage($event)" /> }
+                </span><strong>{{ name(patient) }}</strong></span></td>
+                <td data-label="Objectif principal">{{ detail ? detail.goals === null ? 'Indisponible' : goalLabel(goal) : 'Chargement…' }}</td>
+                <td data-label="Progression">
+                  @if (progressValue !== null) {
+                    <span class="progress-value"><span class="progress-track"><span [style.width.%]="progressValue" [class.good]="progressValue >= 80" [class.mid]="progressValue >= 50 && progressValue < 80"></span></span><strong>{{ progressValue }}%</strong></span>
+                  } @else { <span class="muted">{{ detail ? detail.goals === null ? 'Indisponible' : 'Non renseignée' : 'Chargement…' }}</span> }
+                </td>
+                <td data-label="Budget déclaré">{{ budget ? money(budget) : detail ? detail.budgets === null ? 'Indisponible' : 'Non déclaré' : 'Chargement…' }}</td>
+                <td data-label="État du suivi">{{ followUpLabel(detail) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (pageCount() > 1) {
+        <nav class="pager" aria-label="Pagination des patients">
+          <span>{{ page() * 8 + 1 }}–{{ pageEnd() }} sur {{ patients().length }}</span>
+          <button type="button" [disabled]="page() === 0" (click)="changePage(-1)">Précédent</button>
+          <button type="button" [disabled]="page() + 1 >= pageCount()" (click)="changePage(1)">Suivant</button>
+        </nav>
+      }
+    }
+  </section>
+}

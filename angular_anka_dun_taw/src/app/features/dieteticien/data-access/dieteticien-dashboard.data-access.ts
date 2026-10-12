@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { EMPTY, expand, from, mergeMap, Observable, reduce } from 'rxjs';
+import { EMPTY, expand, from, map, mergeMap, Observable, reduce } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 
 export interface DietitianMenu {
@@ -26,15 +26,30 @@ export interface ProfessionalAppointment {
   statut: 'DEMANDE' | 'ACCEPTE' | 'REFUSE' | 'ANNULE' | 'TERMINE';
 }
 
+export interface DietitianBeneficiary {
+  id: number;
+  prenom: string;
+  nom: string;
+  photoProfilUrl?: string | null;
+}
+
 interface Page<T> {
   content: T[];
   number: number;
   totalPages: number;
+  totalElements: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class DietitianDashboardApi {
   private readonly http = inject(HttpClient);
+
+  beneficiaries(): Observable<DietitianBeneficiary[]> {
+    return this.allPages<DietitianBeneficiary>(
+      `${API_BASE_URL}/professionnel/beneficiaires`,
+      new HttpParams().set('size', '100').set('sort', 'nom,asc'),
+    );
+  }
 
   menus(): Observable<DietitianMenu[]> {
     return this.allPages<DietitianMenu>(
@@ -50,7 +65,7 @@ export class DietitianDashboardApi {
           this.allPages<AdaptationRequest>(
             `${API_BASE_URL}/professionnel/menus/${menu.id}/demandes-adaptation`,
             new HttpParams().set('size', '100').set('sort', 'createdAt,desc'),
-          ),
+          ).pipe(map((requests) => requests.map((request) => ({ ...request, menuId: menu.id })))),
         4,
       ),
       reduce((all, requests) => all.concat(requests), [] as AdaptationRequest[]),

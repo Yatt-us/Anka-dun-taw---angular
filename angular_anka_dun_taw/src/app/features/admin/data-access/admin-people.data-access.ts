@@ -29,17 +29,36 @@ export interface AdminPeoplePage {
   totalElements: number;
 }
 
+export interface AdminPeopleFilters {
+  recherche?: string;
+  role?: string;
+  statut?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminPeopleDataAccess {
   private readonly http = inject(HttpClient);
 
-  users(page: number, size: number): Observable<AdminPeoplePage> {
-    return this.page('/admin/utilisateurs', page, size);
+  accounts(page: number, size: number, filters: AdminPeopleFilters): Observable<AdminPeoplePage> {
+    return this.http.get<AdminPeoplePage>(`${API_BASE_URL}/admin/comptes`, {
+      params: this.params(page, size, filters),
+    });
   }
 
-  professionals(page: number, size: number): Observable<AdminPeoplePage> {
-    const params = this.params(page, size);
+  exportAccounts(filters: AdminPeopleFilters): Observable<Blob> {
+    return this.http.get(`${API_BASE_URL}/admin/comptes/export`, {
+      params: this.params(0, 5, filters).delete('page').delete('size'),
+      responseType: 'blob',
+    });
+  }
+
+  professionals(page: number, size: number, statut?: string): Observable<AdminPeoplePage> {
+    const params = this.params(page, size, { statut });
     return this.http.get<AdminPeoplePage>(`${API_BASE_URL}/admin/professionnels`, { params });
+  }
+
+  professional(id: number): Observable<AdminPerson> {
+    return this.http.get<AdminPerson>(`${API_BASE_URL}/admin/professionnels/${id}`);
   }
 
   verify(id: number): Observable<unknown> {
@@ -58,15 +77,11 @@ export class AdminPeopleDataAccess {
     return this.http.post(`${API_BASE_URL}/admin/utilisateurs/${id}/desactiver`, {});
   }
 
-  private page(path: string, page: number, size: number): Observable<AdminPeoplePage> {
-    return this.http.get<AdminPeoplePage>(`${API_BASE_URL}${path}`, {
-      params: this.params(page, size),
-    });
-  }
-
-  private params(page: number, size: number, filters: Record<string, string> = {}): HttpParams {
+  private params(page: number, size: number, filters: AdminPeopleFilters = {}): HttpParams {
     let params = new HttpParams().set('page', page).set('size', size);
-    for (const [key, value] of Object.entries(filters)) params = params.set(key, value);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) params = params.set(key, value);
+    }
     return params;
   }
 }

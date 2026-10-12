@@ -4,8 +4,10 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
+import { AuthService } from '../../../../core/auth/auth.service';
 import {
   AdaptationRequest,
+  DietitianBeneficiary,
   DietitianDashboardApi,
   DietitianMenu,
   ProfessionalAppointment,
@@ -15,10 +17,11 @@ import {
   selector: 'app-dieteticien-dashboard',
   imports: [MatCardModule, MatButtonModule, RouterLink, UiIconComponent],
   templateUrl: './dieteticien-dashboard.component.html',
-  styleUrl: '../../../../shared/components/dashboard.css',
+  styleUrls: ['../../../../shared/components/dashboard.css', './dieteticien-dashboard.component.css'],
 })
 export class DieteticienDashboardComponent implements OnInit {
   private readonly api = inject(DietitianDashboardApi);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly numberFormat = new Intl.NumberFormat('fr-FR');
   private readonly today = new Date();
@@ -36,13 +39,18 @@ export class DieteticienDashboardComponent implements OnInit {
   }).format(this.today);
 
   readonly menus = signal<DietitianMenu[] | null>(null);
+  readonly beneficiaries = signal<DietitianBeneficiary[]>([]);
+  readonly beneficiariesCount = signal<number | null>(null);
+  readonly beneficiariesError = signal(false);
   readonly adaptations = signal<AdaptationRequest[] | null>(null);
   readonly appointments = signal<ProfessionalAppointment[] | null>(null);
   readonly menusError = signal(false);
   readonly adaptationsError = signal(false);
   readonly appointmentsError = signal(false);
-  readonly showAdaptationsList = signal(false);
-  readonly showAppointmentsList = signal(false);
+  readonly displayName = computed(() => {
+    const user = this.auth.currentUser();
+    return user ? [user.prenom, user.nom].filter(Boolean).join(' ') : 'cher professionnel';
+  });
 
   readonly pendingAdaptations = computed(
     () => this.adaptations()?.filter((request) => request.statut === 'EN_ATTENTE') ?? null,
@@ -63,24 +71,22 @@ export class DieteticienDashboardComponent implements OnInit {
   readonly metrics = computed(() => {
     const menus = this.menus();
     const requests = this.pendingAdaptations();
-    const beneficiaries = menus
-      ? new Set(menus.flatMap((menu) => menu.beneficiaireIds ?? [])).size
-      : undefined;
+    const beneficiaries = this.beneficiariesCount();
     return [
       {
-        label: 'Bénéficiaires de mes menus',
-        value: this.value(beneficiaries, this.menusError()),
-        detail: this.menusError() ? 'Données indisponibles' : 'Personnes associées à mes menus',
+        label: 'Mes patients actifs',
+        value: this.value(beneficiaries ?? undefined, this.beneficiariesError()),
+        detail: this.beneficiariesError() ? 'Données indisponibles' : 'Patients liés à votre espace',
         icon: 'users',
         tone: '',
       },
       {
-        label: 'Menus en validation',
+        label: 'Menus à créer ou valider',
         value: this.value(
-          menus?.filter((menu) => menu.statut === 'EN_VALIDATION').length,
+          menus?.filter((menu) => menu.statut === 'BROUILLON' || menu.statut === 'EN_VALIDATION').length,
           this.menusError(),
         ),
-        detail: this.menusError() ? 'Données indisponibles' : 'Statut en validation',
+        detail: this.menusError() ? 'Données indisponibles' : 'Brouillons et validations',
         icon: 'book',
         tone: 'orange',
       },
@@ -92,19 +98,20 @@ export class DieteticienDashboardComponent implements OnInit {
         tone: 'yellow',
       },
       {
-        label: 'Taux de réussite',
-        value: '—',
-        detail: 'Indicateur indisponible',
+        label: 'Menus publiés',
+        value: this.value(menus?.filter((menu) => menu.statut === 'PUBLIE').length, this.menusError()),
+        detail: this.menusError() ? 'Données indisponibles' : 'Disponibles pour les patients',
         icon: 'chart',
         tone: '',
       },
     ];
   });
 
-  toggleAdaptationsList(): void { this.showAdaptationsList.update((visible) => !visible); }
-  toggleAppointmentsList(): void { this.showAppointmentsList.update((visible) => !visible); }
-
   ngOnInit(): void {
+    this.api.beneficiaries().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (patients) => { this.beneficiaries.set(patients); this.beneficiariesCount.set(patients.length); },
+      error: () => this.beneficiariesError.set(true),
+    });
     this.api
       .menus()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -136,6 +143,19 @@ export class DieteticienDashboardComponent implements OnInit {
 
   menuTitle(menuId: number): string {
     return this.menus()?.find((menu) => menu.id === menuId)?.titre || `Menu #${menuId}`;
+  }
+
+  patientName(id: number): string {
+    const patient = this.beneficiaries().find((item) => item.id === id);
+    return patient ? [patient.prenom, patient.nom].filter(Boolean).join(' ') || `Patient n° ${id}` : `Patient n° ${id}`;
+  }
+
+  patientPhoto(id: number): string | null {
+    return this.beneficiaries().find((item) => item.id === id)?.photoProfilUrl || null;
+  }
+
+  hideBrokenImage(event: Event): void {
+    (event.target as HTMLImageElement).remove();
   }
 
   appointmentTime(dateTime: string): string {

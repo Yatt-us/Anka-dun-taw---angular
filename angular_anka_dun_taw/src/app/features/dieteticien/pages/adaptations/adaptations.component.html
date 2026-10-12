@@ -1,58 +1,148 @@
-<header class="heading"><h1>Demandes d’adaptation</h1><p>Choisissez un menu pour voir les demandes de ses bénéficiaires.</p></header>
-    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    @if (success()) { <p class="success" role="status">{{ success() }}</p> }
-    <section class="panel"><h2>Mes menus</h2>
-      @if (loadingMenus()) { <p>Chargement…</p> }
-      @else if (!menus().length) { <p>Aucun menu disponible.</p> }
-      @else { <div class="menu-grid">@for (menu of menus(); track menu.id) {
-        <button type="button" class="menu-choice" [class.chosen]="selectedMenu()?.id === menu.id" (click)="selectMenu(menu)">{{ menu.titre }} <small>n° {{ menu.id }}</small></button>
-      }</div> }
-      <div class="pager"><button type="button" [disabled]="menuPage() === 0" (click)="changeMenuPage(-1)">Précédent</button>
-        <span>Page {{ menuPage() + 1 }}</span><button type="button" [disabled]="(menuPage() + 1) * 20 >= menuTotal()" (click)="changeMenuPage(1)">Suivant</button></div>
+<header class="adapt-header">
+  <div>
+    <h1>Demandes d’Adaptation des Menus</h1>
+    <p>Consultez et ajustez les repas de vos patients selon les réalités du marché malien.</p>
+  </div>
+  <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
+</header>
+
+@if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+@if (success()) { <p class="notice success" role="status">{{ success() }} <a routerLink="../menus">Voir mes menus</a></p> }
+
+<section class="filter-bar" aria-label="Rechercher et filtrer les demandes">
+  <label class="search-field">
+    <app-icon name="search" />
+    <input type="search" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
+      placeholder="Rechercher par patient, ingrédient (mil, fonio) ou menu…" aria-label="Rechercher une demande" />
+  </label>
+  <label class="filter-select" [class.unavailable]="!priorities().length">
+    <span>Priorité</span>
+    <select [ngModel]="priorityFilter()" (ngModelChange)="priorityFilter.set($event)" [disabled]="!priorities().length" aria-label="Filtrer par priorité">
+      <option value="TOUTES">Toutes</option>
+      @for (priority of priorities(); track priority) { <option [value]="priority">{{ priority }}</option> }
+    </select>
+  </label>
+  <label class="filter-select">
+    <span>Statut</span>
+    <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" aria-label="Filtrer par statut">
+      <option value="EN_ATTENTE">En attente</option>
+      <option value="TRAITEE">Traitée</option>
+      <option value="REFUSEE">Refusée</option>
+      <option value="TOUS">Tous</option>
+    </select>
+  </label>
+</section>
+
+@if (loading()) {
+  <p class="empty-state" role="status">Chargement des demandes…</p>
+} @else if (!menus().length) {
+  <p class="empty-state">Aucun menu disponible. <a routerLink="../menus/creer">Créer un menu</a> pour recevoir des demandes d’adaptation.</p>
+} @else {
+  <div class="adapt-grid">
+    <section class="request-list" aria-label="Demandes d’adaptation">
+      @for (request of filteredRequests(); track request.id) {
+        <button type="button" class="request-card" [class.selected]="focusedRequest()?.id === request.id" (click)="focus(request)"
+          [attr.aria-current]="focusedRequest()?.id === request.id ? 'true' : null">
+          <span class="request-top">
+            <span class="patient-avatar"><app-icon name="user" />
+              @if (patientPhoto(request.demandeurId); as photo) { <img [src]="photo" alt="" (error)="hideBrokenImage($event)" /> }
+            </span>
+            <span class="request-identity"><strong>{{ patientName(request.demandeurId) }}</strong><small>{{ requestDate(request) }}</small></span>
+            <span class="status-pill" [class.processed]="request.statut !== 'EN_ATTENTE' && request.statut !== 'EN_COURS'">{{ statusLabel(request.statut) }}</span>
+          </span>
+          <strong class="request-subject">{{ requestSubject(request) }}</strong>
+          @if (requestDescription(request); as description) { <span class="request-excerpt">{{ description }}</span> }
+          <span class="request-bottom"><span>Menu concerné : <strong>{{ menuTitle(request.menuId) }}</strong></span><span class="request-action">{{ request.statut === 'EN_ATTENTE' || request.statut === 'EN_COURS' ? 'Traiter la demande' : 'Voir la demande' }} →</span></span>
+        </button>
+      } @empty {
+        <div class="empty-state">
+          @if (requests().length) { Aucune demande ne correspond à ces filtres. }
+          @else { Aucune demande d’adaptation pour le moment. }
+        </div>
+      }
     </section>
-    @if (selectedMenu(); as menu) {
-      <section class="panel"><h2>Demandes pour « {{ menu.titre }} »</h2>
-        @if (loadingRequests()) { <p>Chargement…</p> }
-        @else if (!requests().length) { <p>Aucune demande pour ce menu.</p> }
-        @else { @for (request of requests(); track request.id) {
-          <article class="request"><div><strong>Patient n° {{ request.demandeurId }}</strong><small>{{ request.statut }}</small><p>{{ request.motif }}</p>
-            @if (request.reponse) { <p>Réponse : {{ request.reponse }}</p> }</div>
-            @if (request.statut === 'EN_ATTENTE' || request.statut === 'EN_COURS') {
-              <div class="actions"><button type="button" (click)="choose(request, 'accept')">Adapter le menu</button>
-                <button type="button" class="secondary" (click)="choose(request, 'refuse')">Refuser</button></div>
-            }
-          </article>
-        } }
-        <div class="pager"><button type="button" [disabled]="requestPage() === 0" (click)="changeRequestPage(-1)">Précédent</button>
-          <span>Page {{ requestPage() + 1 }}</span><button type="button" [disabled]="(requestPage() + 1) * 20 >= requestTotal()" (click)="changeRequestPage(1)">Suivant</button></div>
-      </section>
-    }
-    @if (selectedRequest(); as request) {
-      <div class="modal-backdrop" role="presentation" (click)="closeDecision()" (keydown.escape)="closeDecision()">
-      <section class="panel decision" role="dialog" aria-modal="true" aria-labelledby="decision-title"
-        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()" animate.enter="adt-panel-enter" animate.leave="adt-panel-leave">
-        <header class="modal-heading"><div><small>DEMANDE N° {{ request.id }}</small><h2 id="decision-title">{{ decision() === 'accept' ? 'Préparer le menu révisé' : 'Répondre à la demande' }}</h2></div>
-          <button type="button" class="close" (click)="closeDecision()" aria-label="Fermer la fenêtre">✕</button></header>
-        <p>Demande n° {{ request.id }} · {{ request.motif }}</p>
-        <label>Réponse au patient *<textarea rows="3" [(ngModel)]="response" placeholder="Expliquez votre décision"></textarea></label>
-        @if (decision() === 'accept') {
-          <div class="fields"><label>Titre du nouveau menu *<input [(ngModel)]="revisionTitle" /></label>
-            <label>Début *<input type="date" [(ngModel)]="revisionStart" /></label>
-            <label>Fin<input type="date" [(ngModel)]="revisionEnd" /></label></div>
-          <label>Recommandations<textarea rows="3" [(ngModel)]="revisionNotes"></textarea></label>
-          <h3>Repas à adapter</h3>
-          @for (meal of revisionMeals; track $index; let i = $index) {
-            <div class="meal"><label>Recette<select [(ngModel)]="meal.recetteId"><option [ngValue]="0">Choisir…</option>
+
+    <aside class="treatment-card" aria-label="Traitement de la demande sélectionnée">
+      @if (focusedRequest(); as request) {
+        <h2>Traitement de la Demande</h2>
+        <div class="patient-banner">
+          <span class="patient-avatar large"><app-icon name="user" />
+            @if (patientPhoto(request.demandeurId); as photo) { <img [src]="photo" alt="" (error)="hideBrokenImage($event)" /> }
+          </span>
+          <div><strong>{{ patientName(request.demandeurId) }}</strong>
+            <small>Patient n° {{ request.demandeurId }}
+              @if (patientBudget(); as budget) { · Budget : {{ money(budget.montant, budget.devise) }} / {{ budget.periode || 'période' }} }
+            </small></div>
+        </div>
+        @if (detailLoading()) {
+          <p class="detail-loading" role="status">Chargement du menu et du budget…</p>
+        } @else {
+          <div class="detail-section"><h3>MENU ACTUEL</h3>
+            <p class="menu-name">{{ selectedMenu() ? menuMealTitle(selectedMenu()!) : menuTitle(request.menuId) }}</p>
+          </div>
+          <div class="detail-section"><h3>PROBLÈME SIGNALÉ</h3><p>{{ request.motif || 'Le patient souhaite adapter ce menu.' }}</p></div>
+          <div class="detail-section"><h3>SOLUTION ALTERNATIVE</h3>
+            <div class="solution-box">
+              @if (hasDraftChanges()) {
+                <strong>Projet d’adaptation préparé</strong>
+                <span>{{ revisionMeals.length }} repas · {{ revisionNotes || 'Repas ou dates modifiés dans le projet.' }}</span>
+              } @else {
+                <strong>À préparer avec le patient</strong>
+                <span>Modifiez les repas, les portions ou les recommandations avant d’accepter la demande. Le coût sera vérifié avant publication.</span>
+              }
+            </div>
+          </div>
+          @if (request.statut === 'EN_ATTENTE' || request.statut === 'EN_COURS') {
+            <label class="response-field">Consignes ou message pour {{ patientName(request.demandeurId) }}
+              <textarea rows="4" [(ngModel)]="response" placeholder="Expliquez l’adaptation proposée ou la raison du refus…"></textarea>
+            </label>
+            <div class="treatment-actions">
+              <button type="button" class="primary-button" [disabled]="!selectedMenu()" (click)="choose(request, 'accept')"><app-icon name="check" /> Adapter le menu</button>
+              @if (hasDraftChanges()) { <button type="button" class="secondary-button" (click)="resetDraft()"><app-icon name="refresh" /> Réinitialiser le projet</button> }
+              <button type="button" class="reject-button" [disabled]="!selectedMenu()" (click)="choose(request, 'refuse')">Refuser et répondre</button>
+            </div>
+          } @else {
+            <p class="processed-note">Cette demande est {{ statusLabel(request.statut).toLocaleLowerCase('fr') }}.</p>
+            @if (request.reponse) { <div class="previous-response"><strong>Réponse envoyée</strong><p>{{ request.reponse }}</p></div> }
+          }
+        }
+      } @else {
+        <h2>Traitement de la Demande</h2>
+        <p class="empty-detail">Sélectionnez une demande dans la liste pour consulter son menu et répondre au patient.</p>
+      }
+    </aside>
+  </div>
+}
+
+@if (selectedRequest(); as request) {
+  <div class="modal-backdrop" role="presentation" (click)="closeDecision()" (keydown.escape)="closeDecision()">
+    <section class="decision" role="dialog" aria-modal="true" aria-labelledby="decision-title"
+      cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()" animate.enter="adt-panel-enter" animate.leave="adt-panel-leave">
+      <header class="modal-heading"><div><small>DEMANDE N° {{ request.id }}</small><h2 id="decision-title">{{ decision() === 'accept' ? 'Préparer le menu révisé' : 'Répondre à la demande' }}</h2></div>
+        <button type="button" class="close" (click)="closeDecision()" aria-label="Fermer la fenêtre">✕</button></header>
+      <p>{{ request.motif }}</p>
+      @if (error()) { <p class="modal-error" role="alert">{{ error() }}</p> }
+      <label>Réponse au patient *<textarea rows="3" [(ngModel)]="response" placeholder="Expliquez votre décision"></textarea></label>
+      @if (decision() === 'accept') {
+        <div class="fields"><label>Titre du nouveau menu *<input [(ngModel)]="revisionTitle" /></label>
+          <label>Début *<input type="date" [(ngModel)]="revisionStart" /></label>
+          <label>Fin<input type="date" [(ngModel)]="revisionEnd" /></label></div>
+        <label>Recommandations<textarea rows="3" [(ngModel)]="revisionNotes"></textarea></label>
+        <h3>Repas à adapter</h3>
+        @for (meal of revisionMeals; track $index; let i = $index) {
+          <div class="meal"><label>Recette<select [(ngModel)]="meal.recetteId"><option [ngValue]="0">Choisir…</option>
               @for (recipe of recipes(); track recipe.id) { <option [ngValue]="recipe.id">{{ recipe.nom }}</option> }
               @if (meal.recetteId && !recipeListed(meal.recetteId)) { <option [ngValue]="meal.recetteId">Recette n° {{ meal.recetteId }}</option> }
             </select></label><label>Jour<input type="number" min="1" [(ngModel)]="meal.jour" /></label>
-              <label>Moment<select [(ngModel)]="meal.typeRepas"><option value="PETIT_DEJEUNER">Petit déjeuner</option><option value="DEJEUNER">Déjeuner</option><option value="DINER">Dîner</option><option value="COLLATION">Collation</option></select></label>
-              <label>Portions<input type="number" min="0.01" step="0.01" [(ngModel)]="meal.nombrePortions" /></label>
-              <button type="button" class="secondary" [disabled]="revisionMeals.length === 1" (click)="revisionMeals.splice(i, 1)">Retirer</button></div>
-          }
-          <button type="button" class="secondary" (click)="revisionMeals.push({recetteId: 0, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1})">+ Ajouter un repas</button>
+            <label>Moment<select [(ngModel)]="meal.typeRepas"><option value="PETIT_DEJEUNER">Petit déjeuner</option><option value="DEJEUNER">Déjeuner</option><option value="DINER">Dîner</option><option value="COLLATION">Collation</option></select></label>
+            <label>Portions<input type="number" min="0.01" step="0.01" [(ngModel)]="meal.nombrePortions" /></label>
+            <button type="button" class="secondary-button" [disabled]="revisionMeals.length === 1" (click)="revisionMeals.splice(i, 1)">Retirer</button></div>
         }
-        <div class="actions"><button type="button" [disabled]="saving()" (click)="submit()">{{ saving() ? 'Enregistrement…' : 'Envoyer la réponse' }}</button>
-          <button type="button" class="secondary" (click)="closeDecision()">Annuler</button></div>
-      </section></div>
-    }
+        <button type="button" class="secondary-button" (click)="revisionMeals.push({recetteId: 0, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1})">+ Ajouter un repas</button>
+        <p class="revision-note">Le coût et les apports du menu révisé seront à vérifier avant publication.</p>
+      }
+      <div class="modal-actions"><button type="button" class="primary-button" [disabled]="saving()" (click)="submit()">{{ saving() ? 'Enregistrement…' : decision() === 'accept' ? 'Créer le menu révisé et répondre' : 'Envoyer la réponse' }}</button>
+        <button type="button" class="secondary-button" (click)="closeDecision()">Annuler</button></div>
+    </section>
+  </div>
+}

@@ -21,23 +21,44 @@ export class AccountActionsComponent {
   private readonly auth = inject(AuthService);
   readonly mode = signal<Mode>(this.route.snapshot.queryParamMap.get('action') === 'oubli' ? 'oubli' : 'inscription');
   readonly signupMethod = signal<'password' | 'google'>('password');
+  readonly signupStep = signal<1 | 2>(1);
   readonly busy = signal(false);
   readonly error = signal('');
   readonly success = signal('');
   readonly title = computed(() => ({ inscription: 'Créer un compte professionnel', oubli: 'Mot de passe oublié', reinitialisation: 'Définir un nouveau mot de passe' })[this.mode()]);
   readonly description = computed(() => ({ inscription: 'Diététicien ou nutritionniste : renseignez vos informations professionnelles.', oubli: 'Recevez un code pour retrouver l’accès à votre compte.', reinitialisation: 'Utilisez le code reçu pour choisir un nouveau mot de passe.' })[this.mode()]);
-  nom = ''; prenom = ''; email = ''; telephone = ''; motDePasse = ''; role = 'DIETETICIEN'; specialite = ''; numeroOrdre = ''; qualification = ''; anneesExperience: number | null = null; biographie = '';
+  nom = ''; prenom = ''; email = ''; telephone = ''; motDePasse = ''; confirmationMotDePasse = ''; role = 'DIETETICIEN'; specialite = ''; numeroOrdre = ''; qualification = ''; anneesExperience: number | null = null; biographie = '';
   recoveryEmail = ''; resetToken = ''; newPassword = '';
 
   setMode(mode: Mode): void { this.mode.set(mode); this.error.set(''); this.success.set(''); }
   setSignupMethod(method: 'password' | 'google'): void {
     this.signupMethod.set(method);
+    this.signupStep.set(method === 'google' ? 2 : 1);
     this.error.set('');
     this.success.set('');
   }
+  continueSignup(valid: boolean): void {
+    const error = this.personalDetailsError(valid);
+    if (error) { this.error.set(error); return; }
+    this.error.set('');
+    this.signupStep.set(2);
+  }
+
+  private personalDetailsError(valid = true): string | null {
+    if (!valid || !this.prenom.trim() || !this.nom.trim() || this.motDePasse.length < 8) {
+      return 'Complétez les champs obligatoires. Le mot de passe doit contenir au moins huit caractères.';
+    }
+    if (this.motDePasse !== this.confirmationMotDePasse) {
+      return 'Les deux mots de passe ne correspondent pas.';
+    }
+    return null;
+  }
   signup(valid: boolean): void {
     if (this.signupMethod() !== 'password') return;
-    if (!valid || (!this.email.trim() && !this.telephone.trim())) { this.error.set('Renseignez au moins une adresse e-mail ou un téléphone et les champs obligatoires.'); return; }
+    const personalError = this.personalDetailsError();
+    if (personalError) { this.error.set(personalError); this.signupStep.set(1); return; }
+    if (!this.email.trim() && !this.telephone.trim()) { this.error.set('Renseignez une adresse e-mail ou un numéro de téléphone.'); return; }
+    if (!valid) { this.error.set('Complétez les informations professionnelles obligatoires.'); return; }
     this.send('/auth/inscription-professionnel', { nom: this.nom.trim(), prenom: this.prenom.trim(), email: this.email.trim() || null,
       telephone: this.telephone.trim() || null, motDePasse: this.motDePasse, role: this.role, specialite: this.specialite.trim(),
       numeroOrdre: this.numeroOrdre.trim() || null, qualification: this.qualification.trim(), anneesExperience: this.anneesExperience,

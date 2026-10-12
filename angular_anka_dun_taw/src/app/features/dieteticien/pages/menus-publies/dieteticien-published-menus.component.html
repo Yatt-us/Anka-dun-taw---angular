@@ -1,0 +1,49 @@
+<section class="published-page">
+  <header class="page-header"><div><h1>Menus Publiés</h1><p>Consultez les menus actifs et archivés, ou préparez une nouvelle version en brouillon.</p></div>
+    <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span></header>
+  @if (success()) { <p class="feedback success" role="status">{{ success() }} <a routerLink="../validation-menus">Ouvrir la validation</a></p> }
+  @if (error()) { <p class="feedback error" role="alert">{{ error() }} <button type="button" (click)="load()">Réessayer</button></p> }
+
+  <div class="stats"><article class="stat"><span class="stat-icon"><app-icon name="check" /></span><div><small>MENUS ACTIFS</small><strong>{{ loading() ? '…' : activeCount() + ' menus' }}</strong></div></article>
+    <article class="stat"><span class="stat-icon"><app-icon name="clock" /></span><div><small>COÛT MOYEN HEBDO</small><strong>{{ loading() ? '…' : money(averageWeeklyCost()) }}</strong></div></article>
+    <article class="stat"><span class="stat-icon"><app-icon name="book" /></span><div><small>MENUS ARCHIVÉS</small><strong>{{ loading() ? '…' : archivedCount() + ' menus' }}</strong></div></article></div>
+
+  <section class="list-card"><div class="toolbar"><label class="search-field"><app-icon name="search" /><span class="sr-only">Rechercher un menu ou un patient</span>
+        <input type="search" placeholder="Rechercher un menu ou un patient…" [value]="searchQuery()" (input)="updateSearch($event)" /></label>
+      <label class="status-field"><span class="sr-only">Filtrer par statut</span><select [value]="statusFilter()" (change)="updateStatus($event)">
+        <option value="PUBLICS">Publiés et archivés</option><option value="PUBLIE">Publiés</option><option value="ARCHIVE">Archivés</option><option value="TOUS">Tous les statuts</option><option value="BROUILLON">Brouillons</option><option value="EN_VALIDATION">En validation</option><option value="VALIDE">Validés</option>
+      </select></label></div>
+    @if (loading()) { <p class="state" aria-live="polite">Chargement des menus…</p> }
+    @else if (!filtered().length) { <div class="state"><strong>Aucun menu correspondant</strong><p>Essayez un autre filtre ou créez votre premier menu.</p><a routerLink="../menus/creer">Créer un menu</a></div> }
+    @else { <div class="table-scroll"><table><thead><tr><th>MENU / PATIENT</th><th>DURÉE</th><th>COÛT ESTIMÉ</th><th>PUBLICATION</th><th>STATUT</th><th>ACTIONS</th></tr></thead><tbody>
+      @for (menu of visible(); track menu.id) { <tr><td data-label="Menu / patient"><div class="person-cell"><span class="avatar">{{ patientName(menu.beneficiaireIds).charAt(0) }}@if (patientPhoto(menu.beneficiaireIds); as photo) { <img [src]="photo" alt="" (error)="hideBrokenImage($event)" /> }</span>
+          <div><strong>{{ menu.titre }}</strong><small>{{ patientName(menu.beneficiaireIds) }}</small></div></div></td>
+        <td data-label="Durée">{{ durationLabel(menu) }}</td><td data-label="Coût estimé" class="cost-cell">{{ money(costFor(menu.id)?.coutTotalEstime, costFor(menu.id)?.devise || 'XOF') }}</td>
+        <td data-label="Publication">{{ menu.statut === 'PUBLIE' || menu.statut === 'ARCHIVE' ? publishedDate(menu) : '—' }}</td>
+        <td data-label="Statut"><span class="status" [class.archived]="menu.statut === 'ARCHIVE'" [class.pending]="menu.statut !== 'PUBLIE' && menu.statut !== 'ARCHIVE'">{{ menu.statut === 'PUBLIE' ? 'Actif' : label(menu.statut) }}</span></td>
+        <td data-label="Actions"><div class="row-actions"><button type="button" (click)="openDetail(menu)">Consulter</button>@if (canEdit(menu)) { <button type="button" (click)="editMenu(menu)">Modifier</button> }</div></td></tr> }
+    </tbody></table></div>
+      <nav class="pager" aria-label="Pagination des menus"><span>{{ filtered().length }} menu(s) · page {{ page() + 1 }} sur {{ totalPages() }}</span><button type="button" [disabled]="page() === 0" (click)="changePage(-1)">←</button><button type="button" [disabled]="page() + 1 >= totalPages()" (click)="changePage(1)">→</button></nav>
+    }
+    @if (costsError()) { <p class="cost-note">Les coûts estimés ne sont pas disponibles pour le moment.</p> }
+  </section>
+
+  @if (selected(); as menu) { <div class="modal-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()"><section class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="menu-detail-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+    <header><div><small>DÉTAIL DU MENU</small><h2 id="menu-detail-title">{{ menu.titre }}</h2><p>{{ patientName(menu.beneficiaireIds) }} · {{ label(menu.statut) }}</p></div><button type="button" class="close-button" aria-label="Fermer" (click)="closeDetail()">✕</button></header>
+    @if (detailLoading()) { <p class="detail-state">Chargement du détail…</p> }
+    @else if (detailError() && !menu.repas?.length) { <p class="feedback error" role="alert">{{ detailError() }}</p> }
+    @else {
+      <div class="detail-facts"><span>Période <strong>{{ menu.dateDebut || '—' }} → {{ menu.dateFin || '—' }}</strong></span><span>Zone <strong>{{ menu.zone || '—' }}</strong></span><span>Coût estimé <strong>{{ money(costFor(menu.id)?.coutTotalEstime, costFor(menu.id)?.devise || 'XOF') }}</strong></span></div>
+      <h3>Repas du menu</h3>@if (!menu.repas?.length) { <p class="detail-state">Aucun repas renseigné.</p> }
+      @for (meal of menu.repas ?? []; track $index) { <p class="meal-detail">Jour {{ meal.jour }} · {{ label(meal.typeRepas) }} · Recette n° {{ meal.recetteId }} · {{ meal.nombrePortions }} portion(s)</p> }
+      @if (menu.recommandations) { <h3>Recommandations</h3><p class="recommendations">{{ menu.recommandations }}</p> }
+      @if (detailError()) { <p class="feedback error" role="alert">{{ detailError() }}</p> }
+      @if (cloneOpen()) { <div class="clone-panel"><h3>Nouvelle copie en brouillon</h3><p>La copie conserve les repas et bénéficiaires. Choisissez sa nouvelle période avant de l’enregistrer.</p>
+          <label>Titre <input type="text" maxlength="160" [(ngModel)]="cloneTitle" /></label><div class="clone-dates"><label>Début <input type="date" [(ngModel)]="cloneStart" /></label><label>Fin <input type="date" [(ngModel)]="cloneEnd" /></label></div>
+          <div class="modal-actions"><button type="button" class="secondary" [disabled]="saving()" (click)="cloneOpen.set(false)">Annuler</button><button type="button" class="primary" [disabled]="saving()" (click)="clone()">{{ saving() ? 'Création…' : 'Créer le brouillon' }}</button></div></div> }
+      @else { <div class="modal-actions">@if (canEdit(menu)) { <button type="button" class="primary" (click)="openEditor()">Modifier le brouillon</button> }
+          @else if (menu.statut === 'PUBLIE' || menu.statut === 'ARCHIVE') { <button type="button" class="primary" (click)="prepareClone()">Dupliquer en brouillon</button> }</div> }
+    }
+  </section></div> }
+  @if (editorOpen() && selected(); as menu) { <div class="modal-backdrop editor-backdrop" role="presentation" (click)="closeEditor()" (keydown.escape)="closeEditor()"><section class="editor-modal" role="dialog" aria-modal="true" aria-label="Modifier le menu" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()"><app-workspace-editor kind="menu" [entityId]="menu.id" (saved)="editorSaved()" (cancelled)="closeEditor()" /></section></div> }
+</section>

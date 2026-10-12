@@ -1,0 +1,35 @@
+:host { display:block; width:calc(100% + 95px); margin-left:-62px; min-width:0; color:#1e2c24; }
+.page-header { display:flex; justify-content:space-between; align-items:center; gap:22px; margin-bottom:35px; }
+.page-header h1 { margin:0 0 5px; color:var(--brand-navy,#0b3063); font-size:clamp(21px,1.85vw,27px); line-height:1.25; }
+.page-header p { margin:0; color:#37463e; font-size:12px; line-height:1.5; }
+.date-chip { display:inline-flex; align-items:center; gap:8px; flex:none; padding:8px 11px; border:1px solid #e6dfd5; border-radius:8px; background:#fff; font-size:11px; font-weight:650; white-space:nowrap; }
+.date-chip app-icon { width:15px; height:15px; color:var(--brand-blue,#006aa4); }
+.main-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(270px,1fr); gap:18px; align-items:start; }
+.left-column,.right-column { display:grid; min-width:0; gap:18px; }
+.card { min-width:0; padding:20px; border:1px solid #f0ebe2; border-radius:14px; background:#fff; }
+.card h2 { margin:0 0 16px; color:#171e19; font-size:15px; line-height:1.3; }
+.card-intro { margin:-9px 0 16px; color:#64736a; font-size:10px; }
+.theme-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:13px; }
+.theme-tabs button { min-height:28px; padding:5px 10px; border:1px solid #e8e0d7; border-radius:999px; background:#fff; color:#27352d; font:inherit; font-size:10px; font-weight:650; cursor:pointer; }
+.theme-tabs button.active { border-color:#006aa4; background:#eff9ff; color:#006aa4; }
+.suggestion-box { padding:15px; border:1px solid #ebe1d2; border-radius:9px; background:#fffaf1; }
+.suggestion-box strong { color:var(--brand-blue,#006aa4); font-size:11px; text-transform:uppercase; }
+.suggestion-box p { margin:9px 0 11px; color:#28332b; font-size:11px; line-height:1.65; }
+.suggestion-box button { border:0; padding:0; background:transparent; color:var(--brand-blue,#006aa4); font:inherit; font-size:10px; font-weight:700; text-decoration:underline; cursor:pointer; }
+.editor { box-shadow:0 4px 13px #2a322117; }.editor h2 { margin-bottom:19px; }
+.editor label { display:block; margin:12px 0 6px; color:#222a23; font-size:10px; font-weight:800; text-transform:uppercase; }
+.editor input,.editor textarea,.editor select,.patient-picker select { display:block; width:100%; min-width:0; padding:10px 11px; border:1px solid #e7dfd3; border-radius:7px; outline:0; background:#fffaf1; color:#1e2c24; font:inherit; font-size:11px; line-height:1.5; }
+.editor input,.editor select { min-height:40px; }.editor textarea { resize:vertical; min-height:145px; }.editor input:focus,.editor textarea:focus,.editor select:focus,.patient-picker select:focus { border-color:#006aa4; box-shadow:0 0 0 3px #006aa420; }
+.editor input::placeholder,.editor textarea::placeholder { color:#67716a; opacity:1; }.editor select:disabled { opacity:.65; }
+.field-hint { margin:5px 0 0; color:#778378; font-size:10px; }.editor-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:9px; margin-top:13px; }
+.editor-actions button { min-height:38px; padding:8px 12px; border:1px solid #e6ddd1; border-radius:7px; background:#fff; color:#1d2b23; font:inherit; font-size:10px; font-weight:700; cursor:pointer; }
+.editor-actions .assign-button { border-color:#006aa4; background:#006aa4; color:#fff; }.editor-actions button:disabled { opacity:.5; cursor:default; }
+.feedback { margin:12px 0 0; padding:9px 11px; border-radius:7px; font-size:11px; line-height:1.45; }.feedback.error { background:#fff0ed; color:#aa403a; }.feedback.success { background:#e8f3ed; color:#2b7355; }
+.patient-preview h2 { text-transform:uppercase; font-size:12px; letter-spacing:.015em; }.patient-picker { display:block; margin-bottom:15px; color:#68766a; font-size:10px; }.patient-picker select { margin-top:5px; background:#fff; }
+.patient-identity { display:flex; align-items:center; gap:10px; padding-bottom:15px; border-bottom:1px solid #ece6df; }.avatar { position:relative; display:grid; place-items:center; flex:none; width:40px; height:40px; overflow:hidden; border-radius:50%; background:#e5d3bc; color:#705332; font-size:13px; font-weight:700; }.avatar img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.patient-identity strong,.patient-identity small { display:block; }.patient-identity strong { color:#172019; font-size:13px; }.patient-identity small { margin-top:2px; color:#647168; font-size:10px; }.patient-facts { margin-top:7px; }.patient-facts p { display:flex; justify-content:space-between; gap:12px; margin:0; padding:6px 0; font-size:10px; }.patient-facts p span { color:#637168; }.patient-facts p strong { max-width:62%; color:#263129; font-weight:700; text-align:right; overflow-wrap:anywhere; }.patient-facts .budget { color:#006aa4; }.loading-detail { color:#617268; font-size:10px; }
+.history h2 { margin-bottom:13px; }.history-item { display:grid; width:100%; gap:5px; margin-top:9px; padding:11px; border:0; border-radius:9px; background:#fffaf1; color:#202d23; font:inherit; text-align:left; cursor:pointer; }.history-item:hover { background:#f7f1e5; }.history-item span { color:#006aa4; font-size:9px; font-weight:800; }.history-item strong { font-size:11px; }.history-item small { display:-webkit-box; overflow:hidden; color:#546257; font-size:10px; line-height:1.45; -webkit-line-clamp:2; -webkit-box-orient:vertical; }.empty-history { color:#647168; font-size:11px; line-height:1.5; }.state { padding:35px; border-radius:12px; background:#fff; color:#5d6c61; text-align:center; font-size:12px; }
+.state button { margin-left:10px; padding:7px 12px; border:1px solid #006aa4; border-radius:7px; background:#006aa4; color:#fff; font:inherit; font-size:11px; cursor:pointer; }
+@media(max-width:1280px) { :host { width:100%; margin-left:0; } }
+@media(max-width:850px) { .main-grid { grid-template-columns:1fr; }.right-column { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:650px) { .page-header { align-items:flex-start; flex-direction:column; gap:12px; margin-bottom:21px; }.right-column { grid-template-columns:1fr; }.card { padding:15px; }.editor-actions button { flex:1; }.theme-tabs button { flex:1 1 auto; } }
