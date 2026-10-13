@@ -4,7 +4,7 @@ Ce projet Angular contient les espaces **administrateur**, **diététicien** et 
 
 ## Démarrer les deux applications
 
-Prévoir Node.js 24, npm 11 et le JDK utilisé par le backend. La base MariaDB, le secret JWT et le compte administrateur se configurent **dans le backend**, jamais dans ce projet Angular.
+Prévoir Node.js 24, npm 11 et le JDK utilisé par le backend. La base de données, le secret JWT et le compte administrateur se configurent **dans le backend**, jamais dans ce projet Angular.
 
 1. Dans un premier terminal, à la racine du backend :
 
@@ -27,7 +27,11 @@ Le fichier `src/proxy.conf.json` relaie les requêtes `/api/**` vers `http://loc
 
 ### En production
 
-Les appels Angular utilisent le chemin relatif `/api/v1`. Le serveur qui publie le site doit donc faire suivre `/api/**` vers Spring Boot sous la **même origine** que le site. Le proxy Angular ne s’applique qu’au serveur de développement. Le backend doit être lancé avec son profil `prod` et ses variables d’environnement ; voir son README pour ces réglages.
+Les appels Angular utilisent le chemin relatif `/api/v1`. Sur Vercel, le fichier [`vercel.json`](vercel.json) relaie `/api/**` vers le backend Render et conserve la navigation Angular sur `index.html`. Configurer la racine du projet Vercel sur `angular_anka_dun_taw`, là où se trouvent `package.json` et `vercel.json`. Le proxy Angular `src/proxy.conf.json` ne s’applique qu’au serveur de développement. Le backend doit être lancé avec son profil `prod` et ses variables d’environnement ; voir son README pour ces réglages.
+
+Après le déploiement, ouvrir `https://<site-vercel>/api/v1/auth/google/configuration` : la réponse doit être du JSON. Si elle contient `<!doctype html>`, la règle de relais Vercel n’est pas active et l’application sert sa page d’accueil à la place de l’API. La session doit ensuite pouvoir être restaurée après un rechargement de la page grâce au cookie de renouvellement émis sur la même origine.
+
+Au-delà de 8 secondes d'attente sur la connexion, l'écran explique que le serveur peut être en cours de démarrage. Cela n'interrompt pas la requête ; sur l'instance Render gratuite, un réveil observé le 13 octobre 2026 a duré 225 secondes. Ce message ne réduit pas le temps de démarrage du service.
 
 ## Connexion et droits
 
@@ -48,9 +52,9 @@ Si un professionnel est encore en attente, refusé ou suspendu, l’écran d’e
 | Espace | Écran | Sources principales |
 | --- | --- | --- |
 | Administrateur | Tableau de bord | `/admin/statistiques`, `/admin/rapports/activite`, `/admin/journal-activite` |
-| Administrateur | Utilisateurs, professionnels | `/admin/utilisateurs`, `/admin/professionnels` |
+| Administrateur | Utilisateurs, professionnels | `/admin/comptes`, `/admin/professionnels` |
 | Administrateur | Aliments, catégories, recettes | `/aliments`, `/categories-aliments`, `/admin/recettes` |
-| Administrateur | Contenus publiés, historique | `/conseils`, `/articles`, `/quiz`, `/admin/journal-activite` |
+| Administrateur | Contenus publiés, historique | `/conseils` en lecture seule, `/articles`, `/quiz`, `/admin/journal-activite` |
 | Administrateur | Quiz, défis, badges | `/admin/quiz`, `/admin/defis`, `/badges` et routes d’écriture `/admin/quiz`, `/admin/defis`, `/admin/badges` |
 | Administrateur | Liste et archivage des menus | `/admin/menus`, `/admin/menus/{id}/archiver` |
 | Diététicien | Tableau de bord | `/professionnel/menus`, demandes d’adaptation de chaque menu, `/professionnel/rendez-vous` |
@@ -61,7 +65,7 @@ Si un professionnel est encore en attente, refusé ou suspendu, l’écran d’e
 
 Toutes ces routes sont préfixées par `/api/v1`. La recherche filtre uniquement la page affichée ; la pagination lit les pages du serveur. Un chargement, une erreur, une liste vide et une rubrique indisponible sont présentés séparément. Aucune valeur fictive n’est utilisée pour les tableaux de bord en service.
 
-Les patients du diététicien sont retrouvés depuis ses menus et ses rendez-vous récents ; ceux du nutritionniste depuis ses conversations et rendez-vous. Le diététicien peut consulter le profil nutritionnel, les objectifs et les budgets d’un bénéficiaire autorisé. Le backend ne fournit pas encore de liste globale paginée de patients professionnels ni de lecture du profil nutritionnel pour le nutritionniste. Les consultations du nutritionniste affichent les rendez-vous demandés et ses questions affichent les conversations. La rubrique « Portions & coûts » n’a pas encore de liste API dédiée.
+Les professionnels disposent de `GET /professionnel/beneficiaires`, une liste paginée des utilisateurs actifs liés par un rendez-vous accepté ou terminé. Le diététicien peut consulter le profil nutritionnel, les objectifs et les budgets d’un bénéficiaire autorisé. Les consultations du nutritionniste affichent les rendez-vous demandés et ses questions affichent les conversations. La rubrique « Portions & coûts » compose les données des menus et budgets existants.
 
 ## Formulaires et actions disponibles
 
@@ -76,6 +80,8 @@ Les formulaires transmettent les champs attendus par les DTO Spring Boot. Les li
 Le formulaire de menu exige au moins un bénéficiaire et un repas. Une recette exige au moins un ingrédient. Une adaptation acceptée soumet un **menu révisé complet** avec le demandeur comme bénéficiaire ; une demande refusée reçoit une réponse. Le conseil reste au statut `BROUILLON` après sa validation dans le backend ; la liste l’affiche « Validé » grâce à `validateurId`, afin de rendre ensuite l’action « Publier » disponible.
 
 Les listes administratives de quiz, défis et menus affichent aussi les brouillons et proposent un filtre de statut. Un brouillon de quiz ou de défi peut être rouvert et modifié. Les réponses correctes d’un quiz ne sont renvoyées que par l’API administrative protégée. Un menu publié peut être archivé depuis sa liste. Les routes `/me/**` réservées à `UTILISATEUR` appartiennent à Flutter, sauf les notifications autorisées à tout compte connecté.
+
+L'onglet administrateur « Conseils pratiques » présente seulement les conseils publiés. Leur création, modification et archivage sont réservés par le backend au nutritionniste auteur ; l'administration n'affiche donc aucune commande d'écriture pour ces contenus.
 
 ### Activer « Continuer avec Google »
 
@@ -130,12 +136,14 @@ Les transitions d’écran utilisent les API Angular natives `animate.enter` et 
 npm run build
 ```
 
-La compilation Angular de production réussit. Elle vérifie la cohérence du code front, mais ne prouve pas que le backend, MariaDB et les comptes sont disponibles à l’exécution.
+Une compilation Angular de production vérifie la cohérence du code front, mais ne prouve pas que le backend, PostgreSQL et les comptes sont disponibles à l’exécution.
 
-Cette liaison couvre les parcours web décrits ci-dessus pour les trois rôles. La compilation ne remplace pas une vérification de bout en bout avec Spring Boot, MariaDB et des comptes réels. Le projet Flutter n’est pas modifié par cette intégration.
+Cette liaison couvre les parcours web décrits ci-dessus pour les trois rôles. La compilation ne remplace pas une vérification de bout en bout avec Spring Boot, PostgreSQL et des comptes réels.
 
 ## Prix régionaux dans l'administration
 
 Dans **Aliments locaux → Prix et saisonnalité**, le sélecteur de région détermine le prix présenté et exporté pour chaque aliment. La table charge les relevés de la page en un appel à `GET /api/v1/aliments/prix-actuels?zone=…&ids=…` et n'affiche que le plus récent dont la période inclut aujourd'hui dans cette région ; `—` signifie qu'aucun prix actuel n'y est disponible. Une erreur de chargement est affichée séparément et désactive l'export des prix. Le formulaire d'ajout de prix envoie toujours la région choisie pour le relevé. Le backend refuse les périodes qui se chevauchent pour un même aliment, une même région et une même unité (HTTP 409). Le détail de l'aliment conserve la liste de tous ses relevés.
 
 Les vues professionnelles qui ouvrent un menu par son identifiant nécessitent `GET /api/v1/professionnel/menus/{id}` sur le backend correspondant.
+
+Dans **Menus publiés**, le détail d'un menu affiche aussi ses versions conservées par `GET /api/v1/professionnel/menus/{id}/versions`. Ouvrir une version montre le titre, le statut, les bénéficiaires et les repas enregistrés à cette date, y compris les portions et coûts. Le chargement et les erreurs de cet historique sont indépendants du détail courant. Cette vue nécessite le backend et la migration `028_versions_menus` correspondants ; les versions plus anciennes que la migration ne peuvent pas être reconstituées.

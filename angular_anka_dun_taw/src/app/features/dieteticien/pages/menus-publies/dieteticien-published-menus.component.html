@@ -37,6 +37,34 @@
       <h3>Repas du menu</h3>@if (!menu.repas?.length) { <p class="detail-state">Aucun repas renseigné.</p> }
       @for (meal of menu.repas ?? []; track $index) { <p class="meal-detail">Jour {{ meal.jour }} · {{ label(meal.typeRepas) }} · Recette n° {{ meal.recetteId }} · {{ meal.nombrePortions }} portion(s)</p> }
       @if (menu.recommandations) { <h3>Recommandations</h3><p class="recommendations">{{ menu.recommandations }}</p> }
+      <section class="version-history" aria-label="Historique des versions du menu">
+        <h3>Historique des versions</h3>
+        @if (versionLoading()) { <p class="detail-state" role="status">Chargement des versions…</p> }
+        @else if (versionError()) { <p class="feedback error" role="alert">{{ versionError() }} <button type="button" (click)="retryVersions()">Réessayer</button></p> }
+        @else if (!versions().length) { <p class="detail-state">Aucune version enregistrée pour ce menu.</p> }
+        @else {
+          <div class="version-list">
+            @for (version of versions(); track version.id) {
+              <button type="button" class="version-entry" [class.active]="selectedVersion()?.id === version.id"
+                [attr.aria-expanded]="selectedVersion()?.id === version.id" (click)="toggleVersion(version)">
+                <strong>Version {{ version.numeroVersion }} · {{ label(version.instantane.statut) }}</strong>
+                <span>{{ versionDate(version.dateVersion) }} · {{ label(version.motifModification) }}</span>
+              </button>
+            }
+          </div>
+          @if (selectedVersion(); as version) {
+            <div class="version-snapshot">
+              <strong>{{ version.instantane.titre }}</strong>
+              <p>{{ version.instantane.dateDebut || '—' }} → {{ version.instantane.dateFin || '—' }} · {{ money(version.instantane.coutTotalEstime) }}</p>
+              <p>Bénéficiaires : {{ version.instantane.beneficiaireIds?.length || 0 }} · Identifiants {{ version.instantane.beneficiaireIds?.join(', ') || '—' }}</p>
+              @for (meal of version.instantane.repas ?? []; track $index) {
+                <p>Jour {{ meal.jour }} · {{ label(meal.typeRepas) }} · {{ meal.recetteNom || ('Recette n° ' + meal.recetteId) }} · {{ meal.nombrePortions }} portion(s) · {{ money(meal.coutEstime) }}</p>
+              }
+              @if (version.instantane.recommandations) { <p class="recommendations">{{ version.instantane.recommandations }}</p> }
+            </div>
+          }
+        }
+      </section>
       @if (detailError()) { <p class="feedback error" role="alert">{{ detailError() }}</p> }
       @if (cloneOpen()) { <div class="clone-panel"><h3>Nouvelle copie en brouillon</h3><p>La copie conserve les repas et bénéficiaires. Choisissez sa nouvelle période avant de l’enregistrer.</p>
           <label>Titre <input type="text" maxlength="160" [(ngModel)]="cloneTitle" /></label><div class="clone-dates"><label>Début <input type="date" [(ngModel)]="cloneStart" /></label><label>Fin <input type="date" [(ngModel)]="cloneEnd" /></label></div>

@@ -1,11 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UserRole } from '../../../../core/auth/auth.models';
 import { actorForRole } from '../../../../core/guards/actor-workspace.guard';
 import { GoogleButtonComponent } from '../../components/google-button.component';
+import { timer } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -18,11 +20,14 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private loginAttempt = 0;
   readonly form = this.fb.nonNullable.group({
     identifiant: ['', Validators.required],
     motDePasse: ['', Validators.required],
   });
   readonly submitting = signal(false);
+  readonly slowConnection = signal(false);
   readonly error = signal<string | null>(
     this.route.snapshot.queryParamMap.get('deconnexion') === 'echec'
       ? 'Votre compte ne dispose pas d’un espace professionnel et la déconnexion a échoué. Réessayez.'
@@ -34,12 +39,13 @@ export class LoginComponent {
     ? 'Mot de passe modifié. Connectez-vous avec votre nouveau mot de passe.' : '';
 
   submit(): void {
+    if (this.submitting()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     this.error.set(null);
-    this.submitting.set(true);
+    this.beginSubmission();
     const { identifiant, motDePasse } = this.form.getRawValue();
     this.auth.login(identifiant, motDePasse).subscribe({
       next: (user) => this.finishLogin(user.role),
@@ -53,13 +59,24 @@ export class LoginComponent {
   loginWithGoogle(jetonId: string): void {
     if (this.submitting()) return;
     this.error.set(null);
-    this.submitting.set(true);
+    this.beginSubmission();
     this.auth.loginWithGoogle(jetonId).subscribe({
       next: (user) => this.finishLogin(user.role),
       error: (error: unknown) => {
         this.error.set(this.googleErrorMessage(error));
         this.submitting.set(false);
       },
+    });
+  }
+
+  private beginSubmission(): void {
+    const attempt = ++this.loginAttempt;
+    this.slowConnection.set(false);
+    this.submitting.set(true);
+    timer(8000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (attempt === this.loginAttempt && this.submitting()) {
+        this.slowConnection.set(true);
+      }
     });
   }
 
@@ -126,11 +143,18 @@ export class LoginComponent {
     if (error.status === 0) {
       return 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.';
     }
+    if (error.status === 200 && typeof error.error?.text === 'string'
+      && error.error.text.toLowerCase().includes('<!doctype html')) {
+      return 'Le service de connexion est mal configuré. Contactez l’administrateur du site.';
+    }
     if (error.status === 429) {
       return 'Trop de tentatives de connexion. Réessayez plus tard.';
     }
     if (error.status === 401) {
       return 'E-mail, téléphone ou mot de passe incorrect.';
+    }
+    if (error.status >= 500) {
+      return 'Le serveur a rencontré une erreur. Réessayez dans quelques instants.';
     }
     const apiMessage = typeof error.error?.message === 'string' ? error.error.message : null;
     return apiMessage ?? 'La connexion a échoué. Réessayez.';
