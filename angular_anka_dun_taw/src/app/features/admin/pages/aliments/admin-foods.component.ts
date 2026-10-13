@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { A11yModule } from '@angular/cdk/a11y';
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, firstValueFrom, from, map, mergeMap, of, Subscription } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminDashboardApi, AdminSearchResult } from '../../data-access/admin-dashboard.data-access';
 import { AdminFood, AdminFoodCategory, AdminFoodPage, AdminFoodsDataAccess } from '../../data-access/admin-foods.data-access';
@@ -45,7 +45,16 @@ export class AdminFoodsComponent {
   readonly selectedFood = signal<AdminFood | null>(null);
   readonly foodPrices = signal<FoodPrice[]>([]);
   readonly viewMode = signal<'nutrition' | 'prices'>('nutrition');
+  readonly priceZone = signal('BAMAKO');
+  readonly priceZones = [
+    { value: 'BAMAKO', label: 'Bamako' }, { value: 'KAYES', label: 'Kayes' },
+    { value: 'KOULIKORO', label: 'Koulikoro' }, { value: 'SIKASSO', label: 'Sikasso' },
+    { value: 'SEGOU', label: 'Ségou' }, { value: 'MOPTI', label: 'Mopti' },
+    { value: 'TOMBOUCTOU', label: 'Tombouctou' }, { value: 'GAO', label: 'Gao' },
+    { value: 'KIDAL', label: 'Kidal' },
+  ];
   readonly pagePrices = signal<Record<number, FoodPrice | null>>({});
+  readonly pagePricesError = signal(false);
   readonly priceEditorFood = signal<AdminFood | null>(null);
   readonly pricesLoading = signal(false);
   readonly pricesError = signal(false);
@@ -63,7 +72,7 @@ export class AdminFoodsComponent {
   });
   readonly firstVisible = computed(() => this.result().totalElements ? this.pageIndex() * this.pageSize + 1 : 0);
   readonly lastVisible = computed(() => Math.min((this.pageIndex() + 1) * this.pageSize, this.result().totalElements));
-  readonly pricesReady = computed(() => this.viewMode() !== 'prices' || this.result().content.every((food) => Object.hasOwn(this.pagePrices(), food.id)));
+  readonly pricesReady = computed(() => this.viewMode() !== 'prices' || (!this.pagePricesError() && this.result().content.every((food) => Object.hasOwn(this.pagePrices(), food.id))));
 
   constructor() {
     const initialCategory = Number(this.route.snapshot.queryParamMap.get('categorieId'));
@@ -128,13 +137,20 @@ export class AdminFoodsComponent {
     effect((onCleanup) => {
       const foods = this.result().content;
       if (this.viewMode() !== 'prices' || this.state() !== 'ready') return;
+      const zone = this.priceZone();
       this.pagePrices.set({});
-      const subscription = from(foods).pipe(
-        mergeMap((food) => this.api.prices(food.id).pipe(
-          map((prices) => ({ id: food.id, price: this.currentPrice(prices) })),
-          catchError(() => of({ id: food.id, price: null })),
-        ), 3),
-      ).subscribe(({ id, price }) => this.pagePrices.update((current) => ({ ...current, [id]: price })));
+      this.pagePricesError.set(false);
+      if (!foods.length) return;
+      const subscription = this.api.currentPrices(zone, foods.map((food) => food.id)).subscribe({
+        next: (prices) => {
+          const byId: Record<number, FoodPrice | null> = Object.fromEntries(foods.map((food) => [food.id, null]));
+          for (const price of prices) {
+            if (price.alimentId != null && Object.hasOwn(byId, price.alimentId)) byId[price.alimentId] = price;
+          }
+          this.pagePrices.set(byId);
+        },
+        error: () => this.pagePricesError.set(true),
+      });
       onCleanup(() => subscription.unsubscribe());
     });
   }
@@ -161,17 +177,15 @@ export class AdminFoodsComponent {
   }
 
   formatPrice(price: FoodPrice | null | undefined): string {
-    if (price === undefined) return 'Chargement…';
+    if (price === undefined) return this.pagePricesError() ? 'Indisponible' : 'Chargement…';
     if (!price) return '—';
     const amount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(price.prix);
     const unit = price.quantiteReference && price.unite ? ` / ${price.quantiteReference} ${price.unite}` : '';
     return `${amount} ${price.devise || 'FCFA'}${unit}`;
   }
 
-  private currentPrice(prices: FoodPrice[]): FoodPrice | null {
-    const today = new Date().toISOString().slice(0, 10);
-    const sorted = [...prices].sort((a, b) => (b.dateDebut || '').localeCompare(a.dateDebut || ''));
-    return sorted.find((price) => (!price.dateDebut || price.dateDebut <= today) && (!price.dateFin || price.dateFin >= today)) ?? sorted[0] ?? null;
+  setPriceZone(event: Event): void {
+    this.priceZone.set((event.target as HTMLSelectElement).value);
   }
 
   setSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
