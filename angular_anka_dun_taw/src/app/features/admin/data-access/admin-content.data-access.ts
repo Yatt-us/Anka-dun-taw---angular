@@ -40,5 +40,4 @@ export class AdminContentDataAccess {
   archiveQuiz(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/quiz/${id}/archiver`, {}); }
   publishChallenge(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/defis/${id}/publier`, {}); }
   archiveChallenge(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/defis/${id}/archiver`, {}); }
-  archiveAdvice(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/conseils/${id}/archiver`, {}); }
 }

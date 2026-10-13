@@ -126,11 +126,18 @@ export class LoginComponent {
     if (error.status === 0) {
       return 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.';
     }
+    if (error.status === 200 && typeof error.error?.text === 'string'
+      && error.error.text.toLowerCase().includes('<!doctype html')) {
+      return 'Le site renvoie sa page d’accueil à la place de l’API. Vérifiez la configuration du relais /api sur Vercel.';
+    }
     if (error.status === 429) {
       return 'Trop de tentatives de connexion. Réessayez plus tard.';
     }
     if (error.status === 401) {
       return 'E-mail, téléphone ou mot de passe incorrect.';
+    }
+    if (error.status >= 500) {
+      return 'Le serveur a rencontré une erreur. Réessayez dans quelques instants.';
     }
     const apiMessage = typeof error.error?.message === 'string' ? error.error.message : null;
     return apiMessage ?? 'La connexion a échoué. Réessayez.';

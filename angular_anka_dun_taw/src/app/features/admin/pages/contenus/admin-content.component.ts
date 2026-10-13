@@ -118,11 +118,13 @@ export class AdminContentComponent {
     return 'En cours';
   }
   newContent(): void {
+    if (this.tab() === 'conseils') return;
     this.editId.set(undefined);
-    this.editorKind.set(this.tab() === 'defis' ? 'challenge' : this.tab() === 'conseils' ? 'advice' : 'quiz');
+    this.editorKind.set(this.tab() === 'defis' ? 'challenge' : 'quiz');
     this.actionError.set('');
   }
   edit(selection: Selection): void {
+    if (selection.kind === 'advice') return;
     this.selected.set(null);
     if (selection.status !== 'BROUILLON') { this.selected.set(selection); return; }
     this.editId.set(selection.id);
@@ -135,12 +137,10 @@ export class AdminContentComponent {
   openAdvice(item: AdminAdvice): void { this.selected.set({ kind: 'advice', id: item.id, title: item.titre, status: item.statut }); this.actionError.set(''); }
   closeSelection(): void { this.selected.set(null); }
   perform(action: 'publish' | 'archive', item: Selection): void {
-    if (this.busy()) return;
+    if (this.busy() || item.kind === 'advice') return;
     this.busy.set(true);
     const request = item.kind === 'quiz' ? action === 'publish' ? this.api.publishQuiz(item.id) : this.api.archiveQuiz(item.id)
-      : item.kind === 'challenge' ? action === 'publish' ? this.api.publishChallenge(item.id) : this.api.archiveChallenge(item.id)
-      : action === 'archive' ? this.api.archiveAdvice(item.id) : null;
-    if (!request) { this.busy.set(false); return; }
+      : action === 'publish' ? this.api.publishChallenge(item.id) : this.api.archiveChallenge(item.id);
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => { this.busy.set(false); this.selected.set(null); this.message.set(action === 'publish' ? 'Contenu publié.' : 'Contenu archivé.'); this.reload(); },
       error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
