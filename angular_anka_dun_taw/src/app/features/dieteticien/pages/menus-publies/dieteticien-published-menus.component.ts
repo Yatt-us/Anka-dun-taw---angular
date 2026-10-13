@@ -11,15 +11,20 @@ import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-edi
 import { DietitianBeneficiary, DietitianDashboardApi, DietitianMenu } from '../../data-access/dieteticien-dashboard.data-access';
 
 interface ApiPage<T> { content: T[]; number: number; totalPages: number }
-interface Meal { recetteId: number; jour: number; typeRepas: string; nombrePortions: number; commentaire?: string | null }
+interface Meal { recetteId: number; recetteNom?: string | null; jour: number; typeRepas: string; nombrePortions: number; coutEstime?: number | null; commentaire?: string | null }
 interface Menu extends DietitianMenu {
   description?: string | null; type?: string; dateDebut?: string; dateFin?: string | null;
   datePublication?: string | null; publieLe?: string | null; zone?: string | null;
   objectifId?: number | null; budgetId?: number | null; recommandations?: string | null;
+  coutTotalEstime?: number | null;
   repas?: Meal[] | null;
 }
 interface MenuCost { menuId: number; coutTotalEstime: number | null; devise: string; prixDisponibles: boolean }
 interface CreatedMenu { id: number }
+interface MenuVersion {
+  id: number; menuId: number; numeroVersion: number; dateVersion: string;
+  motifModification: string; instantane: Menu;
+}
 
 @Component({
   selector: 'app-dieteticien-published-menus',
@@ -38,6 +43,10 @@ export class DieteticienPublishedMenusComponent {
   readonly loading = signal(true);
   readonly costsError = signal(false);
   readonly detailLoading = signal(false);
+  readonly versionLoading = signal(false);
+  readonly versionError = signal('');
+  readonly versions = signal<MenuVersion[]>([]);
+  readonly selectedVersion = signal<MenuVersion | null>(null);
   readonly saving = signal(false);
   readonly error = signal('');
   readonly detailError = signal('');
@@ -137,13 +146,59 @@ export class DieteticienPublishedMenusComponent {
     this.cloneOpen.set(false);
     this.detailLoading.set(true);
     this.detailError.set('');
+    this.versions.set([]);
+    this.selectedVersion.set(null);
+    this.loadVersions(menu.id, generation);
     this.http.get<Menu>(`${API_BASE_URL}/professionnel/menus/${menu.id}`)
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (detail) => { if (generation !== this.detailGeneration) return; this.selected.set(detail); this.detailLoading.set(false); },
         error: (cause: unknown) => { if (generation !== this.detailGeneration) return; this.detailLoading.set(false); this.detailError.set(this.describe(cause, 'Détail du menu indisponible.')); },
       });
   }
-  closeDetail(): void { if (!this.saving()) { ++this.detailGeneration; this.selected.set(null); this.cloneOpen.set(false); } }
+  private loadVersions(menuId: number, generation: number): void {
+    this.versionLoading.set(true);
+    this.versionError.set('');
+    const getPage = (page: number) => this.http.get<ApiPage<MenuVersion>>(
+      `${API_BASE_URL}/professionnel/menus/${menuId}/versions`,
+      { params: new HttpParams().set('page', page).set('size', 100) },
+    );
+    getPage(0).pipe(
+      expand((result) => result.number + 1 < result.totalPages ? getPage(result.number + 1) : EMPTY),
+      reduce((all, result) => all.concat(result.content), [] as MenuVersion[]),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (versions) => {
+        if (generation !== this.detailGeneration) return;
+        this.versions.set(versions);
+        this.versionLoading.set(false);
+      },
+      error: (cause: unknown) => {
+        if (generation !== this.detailGeneration) return;
+        this.versionLoading.set(false);
+        this.versionError.set(this.describe(cause, 'Historique des versions indisponible.'));
+      },
+    });
+  }
+  retryVersions(): void {
+    const menu = this.selected();
+    if (menu) this.loadVersions(menu.id, this.detailGeneration);
+  }
+  toggleVersion(version: MenuVersion): void {
+    this.selectedVersion.set(this.selectedVersion()?.id === version.id ? null : version);
+  }
+  versionDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Date inconnue' : date.toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+  closeDetail(): void {
+    if (!this.saving()) {
+      ++this.detailGeneration;
+      this.selected.set(null);
+      this.cloneOpen.set(false);
+      this.selectedVersion.set(null);
+      this.versions.set([]);
+    }
+  }
   canEdit(menu: Menu): boolean { return menu.statut === 'BROUILLON' || menu.statut === 'EN_VALIDATION'; }
   editMenu(menu: Menu): void {
     if (!this.canEdit(menu)) return;
