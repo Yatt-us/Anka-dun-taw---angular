@@ -80,7 +80,11 @@
           <div class="detail-section"><h3>MENU ACTUEL</h3>
             <p class="menu-name">{{ selectedMenu() ? menuMealTitle(selectedMenu()!) : menuTitle(request.menuId) }}</p>
           </div>
-          <div class="detail-section"><h3>PROBLÈME SIGNALÉ</h3><p>{{ request.motif || 'Le patient souhaite adapter ce menu.' }}</p></div>
+          <div class="detail-section"><h3>PROBLÈME SIGNALÉ</h3><p>{{ request.motif || 'Le patient souhaite adapter ce menu.' }}</p>
+            @if (request.nombrePersonnes) { <p>Foyer : {{ request.nombrePersonnes }} personnes</p> }
+            @if (request.budgetFamilialHebdomadaire) { <p>Budget familial : {{ money(request.budgetFamilialHebdomadaire, 'XOF') }} par semaine</p> }
+            @if (request.contraintesFamiliales) { <p>Allergies, préférences et âges : {{ request.contraintesFamiliales }}</p> }
+          </div>
           <div class="detail-section"><h3>SOLUTION ALTERNATIVE</h3>
             <div class="solution-box">
               @if (hasDraftChanges()) {

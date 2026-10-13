@@ -83,6 +83,8 @@ Les listes administratives de quiz, défis et menus affichent aussi les brouillo
 
 Le menu latéral administrateur reste fixe pendant que le contenu défile. Le logo et les neuf rubriques principales suivent la maquette ; les rubriques supplémentaires se trouvent dans « Autres rubriques » au bas du menu. Les courriels de rendez-vous et de vérification professionnelle sont envoyés par le backend après l'action ; Angular n'envoie aucun message directement. Leur activation SMTP est décrite dans le README du backend.
 
+Le profil professionnel permet de renseigner un tarif de consultation facultatif, exprimé en FCFA, et de vérifier ou changer l'adresse e-mail avec un code reçu par SMTP. Les courriels de rendez-vous et de validation ne partent qu'après confirmation de l'adresse. Le diététicien voit séparément le nombre de personnes, le budget familial hebdomadaire et les contraintes d'une demande d'adaptation. Ces champs nécessitent les migrations backend 029 à 031 ; le paiement en ligne n'est pas implémenté.
+
 L'onglet administrateur « Conseils pratiques » présente seulement les conseils publiés. Leur création, modification et archivage sont réservés par le backend au nutritionniste auteur ; l'administration n'affiche donc aucune commande d'écriture pour ces contenus.
 
 ### Activer « Continuer avec Google »

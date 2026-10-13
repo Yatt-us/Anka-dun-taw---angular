@@ -45,6 +45,7 @@
       <div class="identity-section"><h3>QUALIFICATION</h3><p>{{ form.qualification || 'À renseigner' }}</p></div>
       @if (form.anneesExperience !== null) { <div class="identity-section"><h3>EXPÉRIENCE</h3><p>{{ form.anneesExperience }} an(s)</p></div> }
       @if (form.numeroOrdre) { <div class="identity-section"><h3>NUMÉRO PROFESSIONNEL</h3><p>{{ form.numeroOrdre }}</p></div> }
+      @if (form.tarifConsultation) { <div class="identity-section"><h3>TARIF DE CONSULTATION</h3><p>{{ form.tarifConsultation }} FCFA</p></div> }
     </section>
 
     <form class="details-card" #profileForm="ngForm" (ngSubmit)="save(profileForm)">
@@ -53,12 +54,24 @@
         <label>Prénom *<input name="prenom" [(ngModel)]="form.prenom" required maxlength="80" autocomplete="given-name" /></label>
         <label>Nom *<input name="nom" [(ngModel)]="form.nom" required maxlength="80" autocomplete="family-name" /></label>
         <label>Adresse e-mail <input [value]="profile()!.email || 'Non renseignée'" readonly aria-describedby="email-help" />
-          <small id="email-help">L’adresse e-mail ne peut pas être modifiée ici.</small></label>
+          <small id="email-help">{{ profile()!.emailVerifie ? 'Adresse vérifiée' : 'Adresse à vérifier pour recevoir les courriels' }}</small></label>
+        <div class="span-two">
+          <label>Vérifier ou changer l’e-mail
+            <input type="email" name="emailCandidate" [(ngModel)]="emailCandidate" [disabled]="emailBusy()" placeholder="nom@exemple.com" />
+          </label>
+          <button type="button" class="secondary-button" [disabled]="emailBusy()" (click)="requestEmailVerification()">Recevoir un code</button>
+          @if (emailCodeSent()) {
+            <label>Code reçu par e-mail <input name="emailCode" [(ngModel)]="emailCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" /></label>
+            <button type="button" class="secondary-button" [disabled]="emailBusy()" (click)="confirmEmailVerification()">Confirmer mon adresse</button>
+          }
+        </div>
         <label>Téléphone <input name="telephone" [(ngModel)]="form.telephone" type="tel" maxlength="30" autocomplete="tel" placeholder="+223 …" /></label>
         <label class="span-two">Spécialités *<input name="specialite" [(ngModel)]="form.specialite" required maxlength="160" placeholder="Ex. Nutrition infantile, diabète" />
           <small>Séparez plusieurs spécialités par une virgule.</small></label>
         <label>Qualification *<input name="qualification" [(ngModel)]="form.qualification" required maxlength="160" placeholder="Ex. Diplôme en diététique" /></label>
         <label>Années d’expérience <input name="anneesExperience" [(ngModel)]="form.anneesExperience" type="number" min="0" max="80" step="1" /></label>
+        <label>Tarif de consultation (FCFA) <input name="tarifConsultation" [(ngModel)]="form.tarifConsultation" type="number" min="1" max="99999999" step="1" placeholder="Ex. 3000" />
+          <small>Affiché avant la demande de rendez-vous. Le règlement se convient avec le patient.</small></label>
         <label>Numéro professionnel <input name="numeroOrdre" [(ngModel)]="form.numeroOrdre" maxlength="80" [readonly]="profile()!.statutVerification === 'VERIFIE'" />
           @if (profile()!.statutVerification === 'VERIFIE') { <small>Une modification demande une nouvelle vérification.</small> }</label>
         <label class="span-two">Biographie professionnelle
