@@ -133,3 +133,9 @@ npm run build
 La compilation Angular de production réussit. Elle vérifie la cohérence du code front, mais ne prouve pas que le backend, MariaDB et les comptes sont disponibles à l’exécution.
 
 Cette liaison couvre les parcours web décrits ci-dessus pour les trois rôles. La compilation ne remplace pas une vérification de bout en bout avec Spring Boot, MariaDB et des comptes réels. Le projet Flutter n’est pas modifié par cette intégration.
+
+## Prix régionaux dans l'administration
+
+Dans **Aliments locaux → Prix et saisonnalité**, le sélecteur de région détermine le prix présenté et exporté pour chaque aliment. La table charge les relevés de la page en un appel à `GET /api/v1/aliments/prix-actuels?zone=…&ids=…` et n'affiche que le plus récent dont la période inclut aujourd'hui dans cette région ; `—` signifie qu'aucun prix actuel n'y est disponible. Une erreur de chargement est affichée séparément et désactive l'export des prix. Le formulaire d'ajout de prix envoie toujours la région choisie pour le relevé. Le backend refuse les périodes qui se chevauchent pour un même aliment, une même région et une même unité (HTTP 409). Le détail de l'aliment conserve la liste de tous ses relevés.
+
+Les vues professionnelles qui ouvrent un menu par son identifiant nécessitent `GET /api/v1/professionnel/menus/{id}` sur le backend correspondant.

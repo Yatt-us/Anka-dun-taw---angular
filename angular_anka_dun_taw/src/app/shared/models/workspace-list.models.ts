@@ -35,6 +35,7 @@ export interface ApiPage<T> {
 
 export interface FoodPrice {
   id: number;
+  alimentId?: number;
   zone: string;
   prix: number;
   devise?: string;

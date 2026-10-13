@@ -47,7 +47,16 @@
         @for (category of categories(); track category.id) { <option [value]="category.id">{{ category.nom }}</option> }
       </select>
     </label>
+    @if (viewMode() === 'prices') {
+      <label class="category-select">
+        <span class="sr-only">Région du prix affiché</span>
+        <select [value]="priceZone()" (change)="setPriceZone($event)" aria-label="Région du prix affiché">
+          @for (zone of priceZones; track zone.value) { <option [value]="zone.value">Région: {{ zone.label }}</option> }
+        </select>
+      </label>
+    }
     @if (categoriesError()) { <span class="filter-warning" role="status">Catégories indisponibles</span> }
+    @if (pagePricesError() && viewMode() === 'prices') { <span class="filter-warning" role="alert">Prix indisponibles pour cette page. Réessayez.</span> }
     <button class="export-button" type="button" (click)="exportCsv()" [disabled]="exporting() || !pricesReady()">
       <app-icon name="download" /> {{ exporting() ? 'Export en cours…' : viewMode() === 'prices' ? 'Exporter la page CSV' : 'Exporter CSV' }}
     </button>
@@ -65,7 +74,7 @@
             <thead><tr>
               <th scope="col">Visuel</th><th scope="col">Nom de l’aliment</th><th scope="col">Catégorie</th>
               @if (viewMode() === 'prices') {
-                <th scope="col">Prix local</th><th scope="col">Zone</th><th scope="col">Saison</th>
+                <th scope="col">Prix local actuel</th><th scope="col">Zone</th><th scope="col">Saison</th>
                 <th scope="col">Période du prix</th>
               } @else {
                 <th scope="col">Calories/100g</th><th scope="col">Protéines</th><th scope="col">Lipides</th><th scope="col">Glucides</th>
@@ -85,7 +94,7 @@
                   <td data-label="Catégorie">{{ food.categorieNom || '—' }}</td>
                   @if (viewMode() === 'prices') {
                     <td data-label="Prix local" class="calories">{{ formatPrice(pagePrices()[food.id]) }}</td>
-                    <td data-label="Zone">{{ pagePrices()[food.id]?.zone || '—' }}</td>
+                    <td data-label="Zone">{{ priceZone() }}</td>
                     <td data-label="Saison">{{ season(food) }}</td>
                     <td data-label="Période du prix">{{ pagePrices()[food.id]?.dateDebut || '—' }}</td>
                   } @else {

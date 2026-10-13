@@ -61,6 +61,11 @@ export class AdminFoodsDataAccess {
     return this.http.get<FoodPrice[]>(`${API_BASE_URL}/aliments/${foodId}/prix`);
   }
 
+  currentPrices(zone: string, foodIds: number[]): Observable<FoodPrice[]> {
+    const params = new HttpParams().set('zone', zone).set('ids', foodIds.join(','));
+    return this.http.get<FoodPrice[]>(`${API_BASE_URL}/aliments/prix-actuels`, { params });
+  }
+
   deactivate(foodId: number): Observable<void> {
     return this.http.delete<void>(`${API_BASE_URL}/aliments/${foodId}`);
   }
