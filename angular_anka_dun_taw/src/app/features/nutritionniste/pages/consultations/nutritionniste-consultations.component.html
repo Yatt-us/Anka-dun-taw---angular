@@ -1,0 +1,54 @@
+<section class="consultations-page">
+  <header class="page-heading">
+    <div><h1>Demandes de consultation</h1><p>Gérez, acceptez ou refusez les demandes de suivi personnalisé de la communauté.</p></div>
+    <span class="pending-count">{{ pendingCount() }} en attente</span>
+  </header>
+
+  @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+  @if (actionError() && !refusalId()) { <p class="action-error" role="alert">{{ actionError() }}</p> }
+  <nav class="status-filters" aria-label="Filtrer les demandes">
+    <button type="button" [class.active]="filter() === 'all'" [attr.aria-current]="filter() === 'all' ? 'true' : null" (click)="setFilter('all')">Toutes ({{ relevant().length }})</button>
+    <button type="button" [class.active]="filter() === 'DEMANDE'" [attr.aria-current]="filter() === 'DEMANDE' ? 'true' : null" (click)="setFilter('DEMANDE')">En attente ({{ pendingCount() }})</button>
+    <button type="button" [class.active]="filter() === 'ACCEPTE'" [attr.aria-current]="filter() === 'ACCEPTE' ? 'true' : null" (click)="setFilter('ACCEPTE')">Acceptées ({{ acceptedCount() }})</button>
+    <button type="button" [class.active]="filter() === 'REFUSE'" [attr.aria-current]="filter() === 'REFUSE' ? 'true' : null" (click)="setFilter('REFUSE')">Refusées ({{ refusedCount() }})</button>
+  </nav>
+
+  @if (loading()) { <p class="state" role="status">Chargement des demandes…</p> }
+  @else if (error()) { <p class="state" role="alert">{{ error() }} <button type="button" (click)="load()">Réessayer</button></p> }
+  @else {
+    <div class="consultations-layout" [class.with-detail]="selected()">
+      <div class="request-list">
+        @for (item of visible(); track item.id) {
+          <article class="request-card" [class.selected]="selectedId() === item.id">
+            <button class="request-main" type="button" (click)="select(item)" [attr.aria-label]="'Consulter la demande de ' + name(item)">
+              <span class="request-top"><span class="identity"><span class="avatar" aria-hidden="true">{{ initials(item) }}</span><strong>{{ name(item) }}</strong></span>
+                <span class="request-meta"><time>{{ date(item) }}</time><span class="status" [class.accepted]="item.statut === 'ACCEPTE'" [class.refused]="item.statut === 'REFUSE'">{{ status(item) }}</span></span></span>
+              <span class="reason">Motif : « {{ item.motif || 'Non précisé' }} »</span>
+            </button>
+            @if (item.statut === 'DEMANDE') {
+              <div class="request-actions"><button type="button" class="outline-danger" [disabled]="busyId() !== null" (click)="startRefusal(item)">Refuser</button><button type="button" class="primary" [disabled]="busyId() !== null" (click)="accept(item)">{{ busyId() === item.id ? 'En cours…' : 'Accepter' }}</button></div>
+            }
+          </article>
+        } @empty { <p class="state">Aucune demande dans cette catégorie.</p> }
+      </div>
+      @if (selected(); as item) {
+        <aside class="request-detail" aria-label="Détail de la demande">
+          <div class="detail-heading"><div><small>DEMANDE SÉLECTIONNÉE</small><h2>{{ name(item) }}</h2></div><button type="button" (click)="selectedId.set(null)" aria-label="Fermer le détail">×</button></div>
+          <dl><div><dt>Statut</dt><dd>{{ status(item) }}</dd></div><div><dt>Date proposée</dt><dd>{{ date(item) }}</dd></div>@if (item.mode) { <div><dt>Mode</dt><dd>{{ item.mode }}</dd></div> }</dl>
+          <h3>Motif de la demande</h3><p class="detail-reason">{{ item.motif || 'Le patient n’a pas précisé de motif.' }}</p>
+          @if (item.commentaire) { <h3>Commentaire</h3><p class="detail-reason">{{ item.commentaire }}</p> }
+          @if (item.statut === 'DEMANDE') { <div class="detail-actions"><button type="button" class="outline-danger" [disabled]="busyId() !== null" (click)="startRefusal(item)">Refuser</button><button type="button" class="primary" [disabled]="busyId() !== null" (click)="accept(item)">{{ busyId() === item.id ? 'En cours…' : 'Accepter' }}</button></div> }
+        </aside>
+      }
+    </div>
+  }
+</section>
+
+@if (refusalId()) {
+  <div class="refusal-backdrop" role="presentation" (click)="cancelRefusal()" (keydown.escape)="cancelRefusal()"><section class="refusal-dialog" role="dialog" aria-modal="true" aria-labelledby="refusal-title" (click)="$event.stopPropagation()">
+    <h2 id="refusal-title">Refuser la demande</h2><p>Indiquez au patient pourquoi sa demande ne peut pas être acceptée.</p>
+    <label for="refusal-comment">Motif du refus</label><textarea id="refusal-comment" rows="4" maxlength="1000" [(ngModel)]="refusalComment" placeholder="Expliquez votre décision…"></textarea>
+    @if (actionError()) { <p class="dialog-error" role="alert">{{ actionError() }}</p> }
+    <div class="dialog-actions"><button type="button" (click)="cancelRefusal()" [disabled]="busyId() !== null">Annuler</button><button type="button" class="outline-danger" (click)="refuse()" [disabled]="busyId() !== null">{{ busyId() !== null ? 'Envoi…' : 'Confirmer le refus' }}</button></div>
+  </section></div>
+}

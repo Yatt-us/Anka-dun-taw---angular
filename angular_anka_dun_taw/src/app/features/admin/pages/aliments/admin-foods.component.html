@@ -1,0 +1,169 @@
+<section class="foods-page">
+  <header class="foods-heading" animate.enter="adt-page-enter">
+    <div class="heading-copy">
+      <h1>{{ viewMode() === 'prices' ? 'Prix et saisonnalité des aliments' : 'Gestion des Aliments Locaux' }}</h1>
+      <p>{{ viewMode() === 'prices' ? 'Suivez les prix locaux et les périodes de disponibilité des aliments.' : 'Répertoire des ressources nutritionnelles maliennes.' }}</p>
+    </div>
+    <div class="heading-actions">
+      <div class="global-search">
+        <app-icon name="search" />
+        <input type="search" aria-label="Recherche globale" placeholder="Recherche globale..."
+          [value]="globalSearch()" (input)="setGlobalSearch($event)" (keydown.escape)="globalSearch.set('')" maxlength="80" />
+        @if (globalSearch().trim().length > 1) {
+          <div class="global-results">
+            @if (globalLoading()) { <p role="status">Recherche en cours…</p> }
+            @else {
+              @for (item of globalResults(); track item.type + '-' + item.id) {
+                <button type="button" (click)="openGlobalResult(item)">
+                  <strong>{{ item.titre }}</strong><small>{{ item.type }}</small>
+                </button>
+              } @empty { <p>Aucun résultat.</p> }
+            }
+          </div>
+        }
+      </div>
+      <button class="primary-button" type="button" (click)="openEditor()"><app-icon name="plus" /> Ajouter un aliment</button>
+    </div>
+  </header>
+
+  <nav class="foods-views" aria-label="Vues des aliments">
+    <button type="button" [class.active]="viewMode() === 'nutrition'" [attr.aria-current]="viewMode() === 'nutrition' ? 'page' : null" (click)="switchView('nutrition')">Composition nutritionnelle</button>
+    <button type="button" [class.active]="viewMode() === 'prices'" [attr.aria-current]="viewMode() === 'prices' ? 'page' : null" (click)="switchView('prices')">Prix et saisonnalité</button>
+  </nav>
+
+  @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+  @if (actionError() && !pendingDeactivate()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+
+  <div class="foods-toolbar" aria-label="Filtres des aliments">
+    <label class="foods-search">
+      <app-icon name="search" />
+      <input type="search" placeholder="Rechercher un aliment..." aria-label="Rechercher un aliment"
+        [value]="search()" (input)="setSearch($event)" maxlength="80" />
+    </label>
+    <label class="category-select">
+      <span class="sr-only">Filtrer par catégorie</span>
+      <select [value]="categoryId() ?? ''" (change)="setCategory($event)">
+        <option value="">Catégorie: Toutes</option>
+        @for (category of categories(); track category.id) { <option [value]="category.id">{{ category.nom }}</option> }
+      </select>
+    </label>
+    @if (categoriesError()) { <span class="filter-warning" role="status">Catégories indisponibles</span> }
+    <button class="export-button" type="button" (click)="exportCsv()" [disabled]="exporting() || !pricesReady()">
+      <app-icon name="download" /> {{ exporting() ? 'Export en cours…' : viewMode() === 'prices' ? 'Exporter la page CSV' : 'Exporter CSV' }}
+    </button>
+  </div>
+
+  @if (state() === 'error') {
+    <div class="foods-table-card state" role="alert"><p>{{ error() }}</p><button type="button" class="outline-button" (click)="retry()">Réessayer</button></div>
+  } @else {
+    <div class="foods-table-card" [class.is-loading]="state() === 'loading'">
+      @if (state() === 'loading' && !result().content.length) {
+        <p class="state" role="status">Chargement des aliments…</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="foods-table">
+            <thead><tr>
+              <th scope="col">Visuel</th><th scope="col">Nom de l’aliment</th><th scope="col">Catégorie</th>
+              @if (viewMode() === 'prices') {
+                <th scope="col">Prix local</th><th scope="col">Zone</th><th scope="col">Saison</th>
+                <th scope="col">Période du prix</th>
+              } @else {
+                <th scope="col">Calories/100g</th><th scope="col">Protéines</th><th scope="col">Lipides</th><th scope="col">Glucides</th>
+              }
+              <th scope="col" class="actions-heading">Actions</th>
+            </tr></thead>
+            <tbody>
+              @for (food of result().content; track food.id) {
+                <tr [class.unavailable]="!food.disponible">
+                  <td data-label="Visuel"><span class="food-thumb">
+                    <app-icon name="leaf" />
+                    @if (food.imageUrl) { <img [src]="food.imageUrl" [alt]="'Photo de ' + food.nom" loading="lazy" (error)="imageError($event)" /> }
+                  </span></td>
+                  <td data-label="Aliment"><button class="food-name" type="button" (click)="openDetail(food)">{{ food.nom }}</button>
+                    @if (!food.disponible) { <small class="inactive-label">Indisponible</small> }
+                  </td>
+                  <td data-label="Catégorie">{{ food.categorieNom || '—' }}</td>
+                  @if (viewMode() === 'prices') {
+                    <td data-label="Prix local" class="calories">{{ formatPrice(pagePrices()[food.id]) }}</td>
+                    <td data-label="Zone">{{ pagePrices()[food.id]?.zone || '—' }}</td>
+                    <td data-label="Saison">{{ season(food) }}</td>
+                    <td data-label="Période du prix">{{ pagePrices()[food.id]?.dateDebut || '—' }}</td>
+                  } @else {
+                    <td data-label="Calories" class="calories">{{ formatMetric(food.calories, 'kcal') }}</td>
+                    <td data-label="Protéines">{{ formatMetric(food.proteines, 'g') }}</td>
+                    <td data-label="Lipides">{{ formatMetric(food.lipides, 'g') }}</td>
+                    <td data-label="Glucides">{{ formatMetric(food.glucides, 'g') }}</td>
+                  }
+                  <td data-label="Actions" class="actions-cell">
+                    <button class="row-action edit" type="button" (click)="viewMode() === 'prices' ? openPriceEditor(food) : openEditor(food)" [attr.aria-label]="(viewMode() === 'prices' ? 'Ajouter un prix pour ' : 'Modifier ') + food.nom" [title]="(viewMode() === 'prices' ? 'Ajouter un prix pour ' : 'Modifier ') + food.nom"><app-icon name="edit" /></button>
+                    @if (food.disponible) {
+                      <button class="row-action deactivate" type="button" (click)="confirmDeactivate(food)" [attr.aria-label]="'Désactiver ' + food.nom" [title]="'Désactiver ' + food.nom"><app-icon name="trash" /></button>
+                    }
+                  </td>
+                </tr>
+              } @empty { <tr><td colspan="8" class="empty">Aucun aliment ne correspond aux filtres.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+    @if (state() === 'loading' && result().content.length) { <p class="loading-note" role="status">Actualisation des aliments…</p> }
+    <div class="foods-pagination">
+      <span>Affichage de {{ firstVisible() }} à {{ lastVisible() }} sur {{ result().totalElements }} aliments référencés</span>
+      <nav aria-label="Pages des aliments">
+        <button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0">Précédent</button>
+        @for (number of pageNumbers(); track number) {
+          <button type="button" [class.current]="number === pageIndex()" [attr.aria-current]="number === pageIndex() ? 'page' : null" (click)="goToPage(number)">{{ number + 1 }}</button>
+        }
+        <button type="button" (click)="goToPage(pageIndex() + 1)" [disabled]="pageIndex() + 1 >= pageCount()">Suivant</button>
+      </nav>
+    </div>
+  }
+</section>
+
+@if (editorOpen()) {
+  <div class="foods-backdrop" role="presentation" (click)="closeEditor()" (keydown.escape)="closeEditor()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="foods-modal editor-modal" role="dialog" aria-modal="true" aria-label="Formulaire d’aliment" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <app-workspace-editor kind="food" [entityId]="editId()" (saved)="editorSaved()" (cancelled)="closeEditor()" />
+    </section>
+  </div>
+}
+
+@if (priceEditorFood(); as food) {
+  <div class="foods-backdrop" role="presentation" (click)="closePriceEditor()" (keydown.escape)="closePriceEditor()">
+    <section class="foods-modal editor-modal" role="dialog" aria-modal="true" [attr.aria-label]="'Ajouter un prix pour ' + food.nom" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <app-workspace-editor kind="price" [relatedId]="food.id" (saved)="priceSaved()" (cancelled)="closePriceEditor()" />
+    </section>
+  </div>
+}
+
+@if (selectedFood(); as food) {
+  <div class="foods-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="foods-modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="food-detail-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <div class="modal-heading"><div><p class="eyebrow">ALIMENT LOCAL</p><h2 id="food-detail-title">{{ food.nom }}</h2></div><button type="button" class="icon-close" (click)="closeDetail()" aria-label="Fermer"><app-icon name="close" /></button></div>
+      @if (food.imageUrl) { <img class="food-detail-image" [src]="food.imageUrl" [alt]="'Photo de ' + food.nom" (error)="imageError($event)" /> }
+      <p>{{ food.description || 'Aucune description renseignée.' }}</p>
+      <dl class="detail-grid">
+        <div><dt>Catégorie</dt><dd>{{ food.categorieNom || '—' }}</dd></div><div><dt>Calories / 100 g</dt><dd>{{ formatMetric(food.calories, 'kcal') }}</dd></div>
+        <div><dt>Protéines</dt><dd>{{ formatMetric(food.proteines, 'g') }}</dd></div><div><dt>Lipides</dt><dd>{{ formatMetric(food.lipides, 'g') }}</dd></div>
+        <div><dt>Glucides</dt><dd>{{ formatMetric(food.glucides, 'g') }}</dd></div><div><dt>Disponibilité</dt><dd>{{ food.disponible ? 'Disponible' : 'Indisponible' }}</dd></div>
+      </dl>
+      <h3>Prix par zone</h3>
+      @if (pricesLoading()) { <p role="status">Chargement des prix…</p> }
+      @else if (pricesError()) { <p>Prix indisponibles pour le moment.</p> }
+      @else { <ul class="prices-list">@for (price of foodPrices(); track price.id) { <li><span>{{ price.zone }}</span><strong>{{ formatMetric(price.prix, price.devise || 'FCFA') }}</strong></li> } @empty { <li>Aucun prix référencé.</li> }</ul> }
+      <div class="modal-actions"><button type="button" class="outline-button" (click)="closeDetail()">Fermer</button><button type="button" class="primary-button" (click)="openEditor(food)">Modifier l’aliment</button></div>
+    </section>
+  </div>
+}
+
+@if (pendingDeactivate(); as food) {
+  <div class="foods-backdrop" role="presentation" (click)="cancelDeactivate()" (keydown.escape)="cancelDeactivate()">
+    <section class="foods-modal confirmation-modal" role="alertdialog" aria-modal="true" aria-labelledby="deactivate-title" aria-describedby="deactivate-description" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <h2 id="deactivate-title">Désactiver {{ food.nom }} ?</h2>
+      <p id="deactivate-description">Cet aliment ne sera plus proposé comme disponible. Vous pourrez toujours consulter les données existantes.</p>
+      @if (actionError()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+      <div class="modal-actions"><button type="button" class="outline-button" (click)="cancelDeactivate()" [disabled]="busy()">Annuler</button><button type="button" class="danger-button" (click)="deactivate()" [disabled]="busy()">{{ busy() ? 'Désactivation…' : 'Désactiver' }}</button></div>
+    </section>
+  </div>
+}

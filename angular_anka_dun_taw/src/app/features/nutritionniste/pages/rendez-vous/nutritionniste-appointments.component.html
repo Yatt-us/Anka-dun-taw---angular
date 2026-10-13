@@ -1,0 +1,33 @@
+<section class="appointments-page">
+  <header class="page-heading"><div><h1>Rendez-vous professionnels</h1><p>Planifiez et suivez vos sessions de télé-nutrition.</p></div>
+    <div class="date-controls"><button type="button" (click)="shift(-1)" aria-label="Période précédente">‹</button><input type="date" [value]="selectedDate()" (change)="setDate($event)" aria-label="Date du calendrier" /><button type="button" (click)="shift(1)" aria-label="Période suivante">›</button><button type="button" (click)="today()">Aujourd’hui</button><div class="view-toggle"><button type="button" [class.active]="view() === 'day'" (click)="view.set('day')">Jour</button><button type="button" [class.active]="view() === 'week'" (click)="view.set('week')">Semaine</button></div></div>
+  </header>
+  @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+  @if (actionError() && !refusalId()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+  @if (loading()) { <p class="state" role="status">Chargement de l’agenda…</p> }
+  @else if (error()) { <p class="state" role="alert">{{ error() }} <button type="button" (click)="load()">Réessayer</button></p> }
+  @else {
+    <div class="appointments-grid">
+      <section class="schedule-panel"><h2>Mon emploi du temps {{ view() === 'day' ? 'du jour' : 'de la semaine' }}</h2>
+        <div class="schedule-list">
+          @for (item of schedule(); track item.id) {
+            <article class="schedule-row"><div class="schedule-time"><strong>{{ time(item.dateHeure) }}</strong>@if (view() === 'week') { <small>{{ date(item.dateHeure) }}</small> }</div><span class="color-line"></span><div><h3>{{ name(item) }}</h3><p>{{ item.motif || 'Consultation nutritionnelle' }}</p></div></article>
+          } @empty { <p class="empty">Aucun rendez-vous confirmé pour cette période.</p> }
+        </div>
+        <a class="manage-availability" routerLink="../disponibilites">Gérer mes disponibilités →</a>
+      </section>
+      <section class="pending-panel"><div class="panel-title"><h2>Demandes de rendez-vous ({{ pending().length }})</h2><p>Sélectionnez pour caler dans votre agenda.</p></div>
+        <div class="pending-list">
+          @for (item of pending(); track item.id) {
+            <article class="pending-card"><div class="pending-person"><span class="avatar" aria-hidden="true">{{ initials(item) }}</span><div><h3>{{ name(item) }}</h3><p>{{ item.motif || 'Consultation nutritionnelle' }}</p></div></div>
+              <div class="proposal"><strong>PROPOSITION DU PATIENT :</strong><span>{{ date(item.dateHeure) }} à {{ time(item.dateHeure) }}</span></div>
+              <div class="card-actions"><button type="button" class="refuse" [disabled]="busyId() !== null" (click)="startRefusal(item)">Refuser</button><button type="button" class="accept" [disabled]="busyId() !== null" (click)="accept(item)">{{ busyId() === item.id ? 'En cours…' : 'Accepter' }}</button></div>
+            </article>
+          } @empty { <p class="empty">Aucune demande en attente.</p> }
+        </div>
+      </section>
+    </div>
+  }
+</section>
+
+@if (refusalId()) { <div class="refusal-backdrop" role="presentation" (click)="cancelRefusal()" (keydown.escape)="cancelRefusal()"><section class="refusal-dialog" role="dialog" aria-modal="true" aria-labelledby="refusal-title" (click)="$event.stopPropagation()"><h2 id="refusal-title">Refuser le rendez-vous</h2><p>Précisez la raison du refus pour informer le patient.</p><label for="refusal-reason">Motif du refus</label><textarea id="refusal-reason" rows="4" maxlength="1000" [(ngModel)]="refusalComment"></textarea>@if (actionError()) { <p class="dialog-error" role="alert">{{ actionError() }}</p> }<div class="dialog-actions"><button type="button" (click)="cancelRefusal()" [disabled]="busyId() !== null">Annuler</button><button type="button" class="refuse" (click)="refuse()" [disabled]="busyId() !== null">{{ busyId() !== null ? 'Envoi…' : 'Confirmer le refus' }}</button></div></section></div> }

@@ -7,8 +7,9 @@ import { Observable, of, switchMap, tap } from 'rxjs';
 import { API_BASE_URL } from '../../../../core/config/api.config';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
+import { NutritionnisteProfileOverviewComponent } from '../../../nutritionniste/pages/profil/nutritionniste-profile-overview.component';
 
-interface ProfessionalProfile {
+export interface ProfessionalProfile {
   id: number; nom: string; prenom: string; email: string | null; telephone: string | null;
   photoProfilUrl: string | null; role: 'DIETETICIEN' | 'NUTRITIONNISTE';
   specialite: string; qualification: string; numeroOrdre: string | null;
@@ -25,7 +26,7 @@ interface ProfileForm {
 
 @Component({
   selector: 'app-professional-profile',
-  imports: [FormsModule, RouterLink, UiIconComponent],
+  imports: [FormsModule, RouterLink, UiIconComponent, NutritionnisteProfileOverviewComponent],
   templateUrl: './professional-profile.component.html',
   styleUrl: './professional-profile.component.css',
 })
@@ -39,6 +40,7 @@ export class ProfessionalProfileComponent {
   readonly error = signal('');
   readonly success = signal('');
   readonly photoEditorOpen = signal(false);
+  readonly editing = signal(false);
   readonly dateLabel = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
@@ -94,6 +96,7 @@ export class ProfessionalProfileComponent {
     this.error.set('');
     this.success.set('');
   }
+  closeEdit(): void { this.reset(); this.editing.set(false); }
 
   save(ngForm: NgForm): void {
     const profile = this.profile();
@@ -144,6 +147,7 @@ export class ProfessionalProfileComponent {
         }) };
         this.applyProfile(saved);
         this.success.set('Profil enregistré.');
+        if (saved.role === 'NUTRITIONNISTE') this.editing.set(false);
         if (identityChanged) this.refreshIdentity();
       },
       error: (cause: unknown) => {

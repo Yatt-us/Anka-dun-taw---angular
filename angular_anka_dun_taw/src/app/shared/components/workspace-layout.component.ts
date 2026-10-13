@@ -21,7 +21,7 @@ const ADMIN_PRIMARY_PATHS = [
   selector: 'app-workspace-layout',
   imports: [MatButtonModule, RouterLink, RouterLinkActive, RouterOutlet, UiIconComponent],
   templateUrl: './workspace-layout.component.html',
-  styleUrls: ['./workspace-layout.component.css', './workspace-admin-layout.component.css'],
+  styleUrls: ['./workspace-layout.component.css', './workspace-admin-layout.component.css', './workspace-nutrition-layout.component.css'],
 })
 export class WorkspaceLayoutComponent {
   private readonly route = inject(ActivatedRoute);

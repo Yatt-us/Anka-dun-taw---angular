@@ -1,0 +1,84 @@
+<section class="categories-page">
+  <header class="categories-heading" animate.enter="adt-page-enter">
+    <div><h1>Gestion des Catégories</h1><p>Regroupement des aliments selon leurs apports nutritionnels.</p></div>
+    <div class="heading-actions">
+      <div class="global-search"><app-icon name="search" />
+        <input type="search" aria-label="Recherche globale" placeholder="Recherche globale..." [value]="globalSearch()" (input)="setGlobalSearch($event)" (keydown.escape)="globalSearch.set('')" maxlength="80" />
+        @if (globalSearch().trim().length > 1) {
+          <div class="global-results">
+            @if (globalLoading()) { <p role="status">Recherche en cours…</p> }
+            @else {
+              @for (item of globalResults(); track item.type + '-' + item.id) { <button type="button" (click)="openGlobalResult(item)"><strong>{{ item.titre }}</strong><small>{{ item.type }}</small></button> }
+              @empty { <p>Aucun résultat.</p> }
+            }
+          </div>
+        }
+      </div>
+      <button type="button" class="primary-button" (click)="openEditor()"><app-icon name="plus" /> Nouvelle catégorie</button>
+    </div>
+  </header>
+
+  @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+  @if (actionError() && !pendingDeactivate()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+  <div class="category-tools">
+    <label class="category-search"><app-icon name="search" />
+      <input type="search" placeholder="Rechercher une catégorie..." aria-label="Rechercher une catégorie" [value]="query()" (input)="setQuery($event)" maxlength="80" />
+    </label>
+  </div>
+
+  @if (state() === 'error') {
+    <div class="state error" role="alert"><p>{{ error() }}</p><button type="button" class="outline-button" (click)="retry()">Réessayer</button></div>
+  } @else if (state() === 'loading' && !result().content.length) {
+    <div class="state" role="status">Chargement des catégories…</div>
+  } @else {
+    <div class="categories-grid" [class.is-loading]="state() === 'loading'">
+      @for (category of result().content; track category.id) {
+        <article class="category-card">
+          <div class="category-visual"><app-icon [name]="iconFor(category)" />
+            @if (category.imageUrl) { <img [src]="category.imageUrl" [alt]="'Illustration de la catégorie ' + category.nom" loading="lazy" (error)="imageError($event)" /> }
+          </div>
+          <div class="category-card-body">
+            <div class="category-card-meta"><span class="category-icon"><app-icon [name]="iconFor(category)" /></span><span class="count-pill">{{ countFor(category) }} aliments</span></div>
+            <h2>{{ category.nom }}</h2>
+            <p [title]="category.description || ''">{{ category.description || 'Aucune description renseignée.' }}</p>
+            <button type="button" class="manage-button" (click)="openCategory(category)">Gérer la catégorie</button>
+          </div>
+        </article>
+      } @empty { <p class="empty">Aucune catégorie ne correspond à la recherche.</p> }
+    </div>
+    @if (pageCount() > 1) {
+      <div class="categories-pagination"><span>{{ result().totalElements }} catégories</span><nav aria-label="Pages des catégories">
+        <button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0">Précédent</button>
+        @for (number of pageNumbers(); track number) { <button type="button" [class.current]="number === pageIndex()" [attr.aria-current]="number === pageIndex() ? 'page' : null" (click)="goToPage(number)">{{ number + 1 }}</button> }
+        <button type="button" (click)="goToPage(pageIndex() + 1)" [disabled]="pageIndex() + 1 >= pageCount()">Suivant</button>
+      </nav></div>
+    }
+  }
+</section>
+
+@if (editorOpen()) {
+  <div class="categories-backdrop" role="presentation" (click)="closeEditor()" (keydown.escape)="closeEditor()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="category-modal editor-modal" role="dialog" aria-modal="true" aria-label="Formulaire de catégorie" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <app-workspace-editor kind="category" [entityId]="editId()" (saved)="editorSaved()" (cancelled)="closeEditor()" />
+    </section>
+  </div>
+}
+@if (selected(); as category) {
+  <div class="categories-backdrop" role="presentation" (click)="closeCategory()" (keydown.escape)="closeCategory()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="category-modal" role="dialog" aria-modal="true" aria-labelledby="category-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <div class="modal-heading"><div><p class="eyebrow">CATÉGORIE ALIMENTAIRE</p><h2 id="category-title">{{ category.nom }}</h2></div><button type="button" class="close-button" (click)="closeCategory()" aria-label="Fermer"><app-icon name="close" /></button></div>
+      <p>{{ category.description || 'Aucune description renseignée.' }}</p>
+      <p class="category-summary"><strong>{{ countFor(category) }}</strong> aliments référencés</p>
+      <div class="modal-actions"><button type="button" class="outline-button" (click)="openFoods(category)">Voir les aliments</button><button type="button" class="outline-button" (click)="confirmDeactivate(category)">Désactiver</button><button type="button" class="primary-button" (click)="openEditor(category)">Modifier</button></div>
+    </section>
+  </div>
+}
+@if (pendingDeactivate(); as category) {
+  <div class="categories-backdrop" role="presentation" (click)="cancelDeactivate()" (keydown.escape)="cancelDeactivate()">
+    <section class="category-modal confirmation-modal" role="alertdialog" aria-modal="true" aria-labelledby="deactivate-category-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <h2 id="deactivate-category-title">Désactiver {{ category.nom }} ?</h2><p>La catégorie ne sera plus proposée dans le catalogue actif.</p>
+      @if (actionError()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+      <div class="modal-actions"><button type="button" class="outline-button" (click)="cancelDeactivate()" [disabled]="busy()">Annuler</button><button type="button" class="danger-button" (click)="deactivate()" [disabled]="busy()">{{ busy() ? 'Désactivation…' : 'Désactiver' }}</button></div>
+    </section>
+  </div>
+}

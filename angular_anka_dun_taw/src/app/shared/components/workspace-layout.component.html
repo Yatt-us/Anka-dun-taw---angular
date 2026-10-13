@@ -65,6 +65,11 @@
         </svg>
       </a>
     }
+    @if (actor().id === 'nutritionniste') {
+      <a class="nutrition-logo" routerLink="/espaces/nutritionniste/tableau-de-bord" aria-label="Anka Dùn Taw, tableau de bord">
+        <svg viewBox="206 64 263 198" aria-hidden="true" focusable="false"><image href="/images/logo-anka-dun-taw.png" width="677" height="369" /></svg>
+      </a>
+    }
     <div class="mobile-top">
       <button mat-icon-button (click)="menuOpen.set(true)" aria-label="Ouvrir le menu">☰</button
       ><span>{{ actor().title }}</span>

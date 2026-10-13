@@ -1,0 +1,44 @@
+<section class="questions-page">
+  <header class="questions-header">
+    <div><h1>Questions des utilisateurs</h1><p>Répondez aux préoccupations nutritionnelles de vos patients.</p></div>
+    <div class="questions-controls">
+      <label class="search"><app-icon name="search" /><input type="search" placeholder="Rechercher une question…" aria-label="Rechercher une question" [value]="search()" (input)="setSearch($event)" /></label>
+      <label class="filter"><span class="sr-only">Filtrer les questions</span><select [value]="filter()" (change)="setFilter($event)"><option value="all">Filtre : Toutes</option><option value="unread">Non lues</option></select></label>
+    </div>
+  </header>
+
+  @if (loading()) { <p class="state" role="status">Chargement des questions…</p> }
+  @else if (error()) { <p class="state" role="alert">Questions indisponibles. <button type="button" (click)="load()">Réessayer</button></p> }
+  @else {
+    <div class="question-list">
+      @for (item of filtered(); track item.id) {
+        <button class="question-card" type="button" (click)="select(item)">
+          <span class="avatar">{{ initials(item) }}</span>
+          <span class="question-body"><strong>{{ name(item) }}</strong><span>{{ item.dernierMessage || 'Ouvrir la conversation' }}</span></span>
+          <span class="question-meta">@if (item.dernierMessageA) { <time>{{ item.dernierMessageA | date:'short' }}</time> }
+            <small [class.unread]="item.messagesNonLus > 0">{{ item.messagesNonLus > 0 ? item.messagesNonLus + ' non lu(s)' : 'Lu' }}</small>
+          </span>
+        </button>
+      } @empty { <p class="state">Aucune question ne correspond à votre recherche.</p> }
+    </div>
+  }
+</section>
+
+@if (selected(); as item) {
+  <div class="backdrop" role="presentation" (click)="close()" (keydown.escape)="close()">
+    <section class="conversation-dialog" role="dialog" aria-modal="true" [attr.aria-label]="'Conversation avec ' + name(item)" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <header><div><h2>{{ name(item) }}</h2><p>Conversation nutritionnelle</p></div><button type="button" (click)="close()" aria-label="Fermer">×</button></header>
+      <div class="message-list">
+        @if (messagesLoading()) { <p role="status">Chargement des messages…</p> }
+        @else if (messagesError()) { <p role="alert">Messages indisponibles.</p> }
+        @else { @for (message of messages(); track message.id) {
+          <article class="message" [class.own]="isOwn(message)"><strong>{{ [message.auteurPrenom, message.auteurNom].join(' ') }}</strong><p>{{ message.contenu }}</p>@if (message.dateEnvoi) { <time>{{ message.dateEnvoi | date:'short' }}</time> }</article>
+        } @empty { <p>Aucun message.</p> } }
+      </div>
+      <div class="reply-box"><label for="question-reply">Votre réponse</label><textarea id="question-reply" rows="3" [value]="reply()" (input)="setReply($event)" maxlength="4000"></textarea>
+        @if (sendError()) { <p role="alert">{{ sendError() }}</p> }
+        <button type="button" (click)="send()" [disabled]="!reply().trim() || sending()">{{ sending() ? 'Envoi…' : 'Envoyer la réponse' }}</button>
+      </div>
+    </section>
+  </div>
+}

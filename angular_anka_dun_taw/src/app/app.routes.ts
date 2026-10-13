@@ -59,6 +59,42 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'aliments',
+        data: { section: 'aliments' },
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/aliments/admin-foods.component').then(
+            (m) => m.AdminFoodsComponent,
+          ),
+      },
+      {
+        path: 'categories',
+        data: { section: 'categories' },
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/categories/admin-categories.component').then(
+            (m) => m.AdminCategoriesComponent,
+          ),
+      },
+      {
+        path: 'recettes',
+        data: { section: 'recettes' },
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/recettes/admin-recipes-route.component').then(
+            (m) => m.AdminRecipesRouteComponent,
+          ),
+      },
+      {
+        path: 'contenus',
+        data: { section: 'contenus' },
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/contenus/admin-content.component').then(
+            (m) => m.AdminContentComponent,
+          ),
+      },
+      {
         path: 'suivi-utilisateurs',
         canActivate: [workspaceSectionGuard],
         loadComponent: () => import('./features/dieteticien/pages/suivi/dieteticien-tracking.component').then((m) => m.DieteticienTrackingComponent),
@@ -89,9 +125,30 @@ export const routes: Routes = [
         loadComponent: () => import('./features/professionnel/patients/professional-patients-route.component').then((m) => m.ProfessionalPatientsRouteComponent),
       },
       {
+        path: 'questions',
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/nutritionniste/pages/questions/nutritionniste-questions.component').then((m) => m.NutritionnisteQuestionsComponent),
+      },
+      {
+        path: 'recommandations',
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/nutritionniste/pages/conseils/nutritionniste-advice-route.component').then((m) => m.NutritionnisteAdviceRouteComponent),
+      },
+      {
+        path: 'consultations',
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/nutritionniste/pages/consultations/nutritionniste-consultations.component').then((m) => m.NutritionnisteConsultationsComponent),
+      },
+      {
+        path: 'rendez-vous',
+        data: { section: 'rendez-vous' },
+        canActivate: [workspaceSectionGuard],
+        loadComponent: () => import('./features/nutritionniste/pages/rendez-vous/nutritionniste-appointments-route.component').then((m) => m.NutritionnisteAppointmentsRouteComponent),
+      },
+      {
         path: 'parametres',
         canActivate: [workspaceSectionGuard],
-        loadComponent: () => import('./features/auth/pages/securite/security.component').then((m) => m.SecurityComponent),
+        loadComponent: () => import('./features/admin/pages/parametres/admin-settings-route.component').then((m) => m.AdminSettingsRouteComponent),
       },
       {
         path: 'disponibilites',

@@ -1,0 +1,14 @@
+<section class="overview-page">
+  <header class="overview-heading"><div><h1>Mon profil professionnel</h1><p>Consultez et éditez vos informations, disponibilités et statistiques.</p></div><button type="button" (click)="edit.emit()">Modifier le profil</button></header>
+  <div class="overview-grid"><div class="overview-main">
+    <section class="intro-card"><div class="intro-top"><span class="portrait" aria-hidden="true">{{ initials() }}@if (profile().photoProfilUrl; as photo) { <img [src]="photo" alt="" (error)="hideBrokenImage($event)" /> }</span><div><h2>{{ name() }}</h2><p class="qualification">{{ profile().qualification || 'Qualification à renseigner' }} · {{ profile().specialite || 'Spécialité à renseigner' }}</p><p class="verification">{{ profile().statutVerification === 'VERIFIE' ? 'Profil vérifié' : 'Vérification du profil : ' + profile().statutVerification.toLowerCase() }}</p></div></div>
+      <div class="bio"><h3>BIOGRAPHIE PROFESSIONNELLE</h3><p>{{ profile().biographie || 'Ajoutez une biographie pour présenter votre pratique à la communauté.' }}</p></div></section>
+    <h2 class="section-title">INDICATEURS D’ACTIVITÉ</h2><div class="stats-grid"><article><strong>{{ consultations() ?? '—' }}</strong><span>Consultations terminées</span></article><article><strong>{{ patients() ?? '—' }}</strong><span>Patients suivis</span></article><article><strong>{{ publishedAdvice() ?? '—' }}</strong><span>Conseils publiés</span></article><article><strong>{{ availableCount() ?? '—' }}</strong><span>Créneaux à venir</span></article></div>
+    <section class="info-card"><h2>Informations professionnelles</h2><dl><div><dt>Spécialités</dt><dd>{{ specialities().join(', ') || 'À renseigner' }}</dd></div><div><dt>Qualification</dt><dd>{{ profile().qualification || 'À renseigner' }}</dd></div><div><dt>Numéro d’ordre</dt><dd>{{ profile().numeroOrdre || 'Non renseigné' }}</dd></div><div><dt>Années d’expérience</dt><dd>{{ profile().anneesExperience === null ? 'Non renseigné' : profile().anneesExperience + ' ans' }}</dd></div></dl></section>
+  </div><aside class="availability-card"><h2>Prochains créneaux disponibles</h2><p class="availability-description">Créneaux ouverts aux consultations.</p>
+    @if (availabilityLoading()) { <p class="availability-state" role="status">Chargement des disponibilités…</p> }
+    @else if (availabilityError()) { <p class="availability-state" role="alert">Disponibilités indisponibles.</p> }
+    @else { <div class="slot-list">@for (slot of available(); track slot.id) { <div class="slot"><div><strong>{{ formatDate(slot.dateHeureDebut) }}</strong><span>{{ formatTime(slot.dateHeureDebut) }} – {{ formatTime(slot.dateHeureFin) }}</span></div><small>Disponible</small></div> } @empty { <p class="availability-state">Aucun créneau futur ouvert.</p> }</div> }
+    <a routerLink="../disponibilites">Gérer mes disponibilités →</a>
+  </aside></div>
+</section>

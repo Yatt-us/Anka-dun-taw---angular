@@ -1,3 +1,48 @@
+@if (actor() === 'nutritionniste') {
+  <section class="profile-page">
+    <header class="profile-header"><div><h1>Profils des utilisateurs</h1><p>Consultez et suivez la fiche nutritionnelle complète de vos patients.</p></div>
+      <label class="profile-search"><app-icon name="search" /><input type="search" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)" placeholder="Rechercher un profil…" aria-label="Rechercher un profil" /></label>
+    </header>
+    @if (error()) { <p class="error-banner" role="alert">{{ error() }} <button type="button" (click)="load()">Réessayer</button></p> }
+    @if (loading()) { <p class="table-state" role="status">Chargement des profils…</p> }
+    @else {
+      <div class="profile-layout">
+        <nav class="profile-list" aria-label="Profils des patients">
+          @for (patient of filteredPatients(); track patient.id) {
+            <button type="button" [class.selected]="selected()?.id === patient.id" (click)="select(patient)">
+              <span class="patient-avatar">{{ initials(patient.name) }}@if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }</span>
+              <span><strong>{{ patient.name }}</strong><small>{{ age(summaries()[patient.id]) || 'Patient n° ' + patient.id }}</small></span><app-icon name="arrow" />
+            </button>
+          } @empty { <p class="table-state">Aucun profil ne correspond à la recherche.</p> }
+        </nav>
+        @if (selected(); as patient) {
+          <article class="profile-detail">
+            <div class="profile-identity"><span class="patient-avatar large">{{ initials(patient.name) }}@if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }</span>
+              <div><h2>{{ patient.name }}</h2><p>{{ age(selectedDetails()) || 'Âge non renseigné' }} · {{ profile()?.zone || 'Zone non renseignée' }} · Patient n° {{ patient.id }}</p></div>
+              <a [routerLink]="'/espaces/nutritionniste/rendez-vous'" class="new-consultation">Voir les consultations</a>
+            </div>
+            @if (detailLoading()) { <p class="table-state" role="status">Chargement du dossier…</p> }
+            @else {
+              <div class="profile-sections">
+                <section><h3>Informations physiques</h3><div class="info-box"><div><span>Taille</span><strong>{{ profile()?.tailleCm != null ? profile()!.tailleCm + ' cm' : 'Non renseignée' }}</strong></div><div><span>Poids actuel</span><strong>{{ profile()?.poidsKg != null ? profile()!.poidsKg + ' kg' : 'Non renseigné' }}</strong></div><div><span>IMC</span><strong>{{ profile()?.imc ?? '—' }}</strong></div></div></section>
+                <section><h3>Objectifs nutritionnels</h3><div class="info-box goals-box">@for (goal of goals(); track goal.id) { <p><app-icon name="check" />{{ goal.description || goal.type }}</p> } @empty { <p>Aucun objectif renseigné.</p> }</div></section>
+                <section><h3>Budget alimentaire disponible</h3><div class="info-box"><div><span>Budget actif</span><strong class="green">{{ activeBudget(selectedDetails()) ? money(activeBudget(selectedDetails())!.montant, activeBudget(selectedDetails())!.devise) : 'Non renseigné' }}</strong></div><div><span>Période</span><strong>{{ activeBudget(selectedDetails())?.periode || '—' }}</strong></div></div></section>
+                <section><h3>Préférences et allergies</h3><div class="info-box preferences-box">@for (item of profile()?.preferences || []; track item.type + item.valeur) { <p><strong>{{ item.type === 'AIME' ? 'Aime' : item.type === 'ALLERGIE' ? 'Allergie' : 'Évite' }} :</strong> {{ item.valeur }}</p> } @empty { <p>Aucune préférence renseignée.</p> }
+                  @if (profile()?.allergies?.length) { <p><strong>Allergies :</strong> {{ profile()!.allergies!.join(', ') }}</p> }
+                </div></section>
+              </div>
+              <section class="profile-history"><h3>Historique de suivi</h3>
+                @if (historyLoading()) { <p role="status">Chargement de l’historique…</p> }
+                @else if (historyError()) { <p role="alert">Historique indisponible. <button type="button" (click)="retryHistory()">Réessayer</button></p> }
+                @else { @for (visit of selectedHistory(); track visit.id) { <div><time>{{ visit.dateHeure.slice(0,10) }}</time><span><strong>{{ visit.motif || 'Consultation terminée' }}</strong><small>Rendez-vous n° {{ visit.id }}</small></span></div> } @empty { <p>Aucun rendez-vous terminé dans l’historique.</p> } }
+              </section>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+} @else {
 <header class="patients-header">
   <div>
     <h1>{{ actor() === 'dieteticien' ? 'Mes Patients Diététiques' : 'Patients en contact' }}</h1>
@@ -144,4 +189,5 @@
       <a class="dialog-link" [routerLink]="actor() === 'dieteticien' ? '/espaces/dieteticien/rendez-vous' : '/espaces/nutritionniste/rendez-vous'">Voir les rendez-vous</a>
     </section>
   </div>
+}
 }

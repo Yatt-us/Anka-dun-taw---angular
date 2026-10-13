@@ -78,13 +78,13 @@ export class WorkspacePageComponent {
     combineLatest([this.route.parent!.paramMap, this.route.paramMap]).pipe(
       map(([parent, child]) => ({
         actor: parent.get('actor') ?? 'admin',
-        section: child.get('section') ?? '',
+        section: child.get('section') ?? this.route.snapshot.data['section'] ?? '',
       })),
     ),
     {
       initialValue: {
         actor: this.route.parent?.snapshot.paramMap.get('actor') ?? 'admin',
-        section: this.route.snapshot.paramMap.get('section') ?? '',
+        section: this.route.snapshot.paramMap.get('section') ?? this.route.snapshot.data['section'] ?? '',
       },
     },
   );

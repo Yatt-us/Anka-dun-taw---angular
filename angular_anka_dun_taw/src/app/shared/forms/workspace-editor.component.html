@@ -6,7 +6,7 @@
         @switch (kind()) {
           @case ('category') { Catégorie alimentaire }
           @case ('food') { Aliment local }
-          @case ('price') { Prix de l’aliment par zone }
+          @case ('price') { Prix de l’aliment par région }
           @case ('recipe') { Recette }
           @case ('menu') { Menu personnalisé }
           @case ('advice') { Conseil nutritionnel }
@@ -27,8 +27,9 @@
     <form #editorForm="ngForm" (ngSubmit)="submit(editorForm)" novalidate>
       <div class="field-grid">
         @for (field of fields(); track field.key) {
-          <label [class.wide]="field.type === 'textarea'">
+          <label [class.wide]="field.type === 'textarea' || (kind() === 'food' && field.key === 'imageUrl')">
             <span>{{ field.label }} @if (field.required) { <b aria-hidden="true">*</b> }</span>
+            @if (field.help) { <small class="field-help">{{ field.help }}</small> }
             @if (field.type === 'textarea') {
               <textarea [name]="field.key" [(ngModel)]="model[field.key]" [required]="!!field.required" rows="4"></textarea>
             } @else if (field.type === 'checkbox') {
@@ -39,10 +40,27 @@
                 @for (option of options(field); track option.value) { <option [ngValue]="option.value">{{ option.label }}</option> }
               </select>
             } @else {
-              <input [name]="field.key" [type]="field.type" [(ngModel)]="model[field.key]"
-                [required]="!!field.required" [attr.min]="field.min ?? null" [attr.max]="field.max ?? null" [attr.step]="field.type === 'number' ? 'any' : null" />
+              <input [name]="field.key" [type]="kind() === 'food' && field.key === 'imageUrl' ? 'text' : field.type" [(ngModel)]="model[field.key]"
+                [required]="!!field.required" [attr.min]="field.min ?? null" [attr.max]="field.max ?? null" [attr.maxlength]="kind() === 'food' && field.key === 'imageUrl' ? 500 : null" [attr.step]="field.type === 'number' ? 'any' : null"
+                (ngModelChange)="kind() === 'food' && field.key === 'imageUrl' ? imageUrlChanged() : null" />
             }
           </label>
+          @if (kind() === 'food' && field.key === 'imageUrl') {
+            <div class="food-upload">
+              <label class="upload-picker">
+                <span>Importer une image depuis votre appareil</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadFoodImage($event)" [disabled]="imageUploading()" />
+              </label>
+              <span class="upload-hint">JPEG, PNG ou WebP · 5 Mo maximum</span>
+              @if (imageUploading()) { <span class="upload-status" role="status">Téléversement de l’image…</span> }
+              @if (imageUploadError()) { <span class="upload-error" role="alert">{{ imageUploadError() }}</span> }
+            </div>
+            <div class="food-image-preview" aria-live="polite">
+              @if (foodImagePreview() && !imagePreviewFailed()) { <img [src]="foodImagePreview()" alt="Aperçu de l’image de l’aliment" (error)="imagePreviewError()" /> }
+              @else if (imagePreviewFailed()) { <span>L’image ne peut pas être chargée. Vérifiez que l’URL est accessible.</span> }
+              @else { <span>L’aperçu apparaîtra ici après avoir collé l’adresse d’une image.</span> }
+            </div>
+          }
         }
       </div>
       @if (kind() === 'recipe') {
@@ -101,8 +119,8 @@
       @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
       <footer>
         <button mat-button type="button" (click)="cancelled.emit()">Annuler</button>
-        <button class="submit" type="submit" [disabled]="busy() || loading()">
-          {{ busy() ? 'Enregistrement…' : entityId() ? 'Enregistrer les modifications' : kind() === 'profile' ? 'Enregistrer le profil' : 'Ajouter à la liste' }}
+        <button class="submit" type="submit" [disabled]="busy() || loading() || imageUploading()">
+          {{ imageUploading() ? 'Téléversement…' : busy() ? 'Enregistrement…' : entityId() ? 'Enregistrer les modifications' : kind() === 'profile' ? 'Enregistrer le profil' : 'Ajouter à la liste' }}
         </button>
       </footer>
     </form>
