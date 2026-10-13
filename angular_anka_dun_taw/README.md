@@ -31,6 +31,8 @@ Les appels Angular utilisent le chemin relatif `/api/v1`. Sur Vercel, le fichier
 
 Après le déploiement, ouvrir `https://<site-vercel>/api/v1/auth/google/configuration` : la réponse doit être du JSON. Si elle contient `<!doctype html>`, la règle de relais Vercel n’est pas active et l’application sert sa page d’accueil à la place de l’API. La session doit ensuite pouvoir être restaurée après un rechargement de la page grâce au cookie de renouvellement émis sur la même origine.
 
+Au-delà de 8 secondes d'attente sur la connexion, l'écran explique que le serveur peut être en cours de démarrage. Cela n'interrompt pas la requête ; sur l'instance Render gratuite, un réveil observé le 13 octobre 2026 a duré 225 secondes. Ce message ne réduit pas le temps de démarrage du service.
+
 ## Connexion et droits
 
 - `POST /api/v1/auth/connexion` reçoit l’identifiant et le mot de passe. Le JWT d’accès reste en mémoire dans Angular.
