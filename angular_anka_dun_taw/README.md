@@ -52,7 +52,7 @@ Si un professionnel est encore en attente, refusé ou suspendu, l’écran d’e
 | Espace | Écran | Sources principales |
 | --- | --- | --- |
 | Administrateur | Tableau de bord | `/admin/statistiques`, `/admin/rapports/activite`, `/admin/journal-activite` |
-| Administrateur | Utilisateurs, professionnels | `/admin/utilisateurs`, `/admin/professionnels` |
+| Administrateur | Utilisateurs, professionnels | `/admin/comptes`, `/admin/professionnels` |
 | Administrateur | Aliments, catégories, recettes | `/aliments`, `/categories-aliments`, `/admin/recettes` |
 | Administrateur | Contenus publiés, historique | `/conseils` en lecture seule, `/articles`, `/quiz`, `/admin/journal-activite` |
 | Administrateur | Quiz, défis, badges | `/admin/quiz`, `/admin/defis`, `/badges` et routes d’écriture `/admin/quiz`, `/admin/defis`, `/admin/badges` |
