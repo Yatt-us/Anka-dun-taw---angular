@@ -7,7 +7,7 @@ import { WorkspaceEditorService, EditorKind, Choice } from './workspace-editor.s
 
 type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'url' | 'checkbox';
 interface Field {
-  key: string; label: string; type: FieldType; required?: boolean; min?: number; max?: number;
+  key: string; label: string; type: FieldType; required?: boolean; min?: number; max?: number; maxLength?: number;
   options?: { value: string | number; label: string }[]; lookup?: 'foods' | 'categories' | 'recipes'; help?: string;
 }
 interface Ingredient { alimentId: number | null; quantite: number | null; unite: string }
@@ -30,10 +30,10 @@ const FIELDS: Record<EditorKind, Field[]> = {
     { key: 'groupeAssiette', label: 'Groupe de l’assiette', type: 'select', options: choice(['LEGUMES_FRUITS', 'CEREALES_FECULENTS', 'PROTEINES', 'AUTRES']) },
   ],
   food: [
-    { key: 'nom', label: 'Nom de l’aliment', type: 'text', required: true },
-    { key: 'description', label: 'Description', type: 'textarea' },
-    { key: 'utilisation', label: 'Utilisation', type: 'text' },
-    { key: 'uniteMesure', label: 'Unité de mesure', type: 'text', required: true },
+    { key: 'nom', label: 'Nom de l’aliment', type: 'text', required: true, maxLength: 140 },
+    { key: 'description', label: 'Description', type: 'textarea', maxLength: 1500 },
+    { key: 'utilisation', label: 'Utilisation', type: 'text', maxLength: 1000 },
+    { key: 'uniteMesure', label: 'Unité de mesure', type: 'text', required: true, maxLength: 40 },
     { key: 'origine', label: 'Provenance du produit', type: 'select', required: true, help: 'Indique si le produit est local ou importé. La région de provenance du prix se renseigne dans sa fiche de prix.', options: [
       { value: 'LOCAL', label: 'Local' }, { value: 'IMPORTE', label: 'Importé' },
       { value: 'MIXTE', label: 'Mixte' }, { value: 'NON_RENSEIGNE', label: 'Non renseignée' },
@@ -150,6 +150,8 @@ export class WorkspaceEditorComponent {
   private localImageObjectUrl = '';
   readonly foods = signal<Choice[]>([]);
   readonly categories = signal<Choice[]>([]);
+  readonly categoryChoicesLoading = signal(false);
+  readonly categoryChoicesError = signal(false);
   readonly recipes = signal<Choice[]>([]);
   model: Record<string, string | number | boolean | null> = {};
   ingredients: Ingredient[] = [{ alimentId: null, quantite: null, unite: 'g' }];
@@ -169,7 +171,7 @@ export class WorkspaceEditorComponent {
       this.imagePreviewFailed.set(false);
       this.imageUploadError.set('');
       this.clearLocalImagePreview();
-      if (kind === 'food') this.api.choices('categories-aliments').subscribe({ next: (page) => this.categories.set(page.content), error: () => this.error.set('Chargement des catégories impossible.') });
+      if (kind === 'food') this.loadCategoryChoices();
       if (kind === 'recipe') this.api.choices('aliments').subscribe({ next: (page) => this.foods.set(page.content), error: () => this.error.set('Chargement des aliments impossible.') });
       if (kind === 'menu') this.api.choices('recettes').subscribe({ next: (page) => this.recipes.set(page.content), error: () => this.error.set('Chargement des recettes impossible.') });
       if (id && initialData) {
@@ -185,6 +187,19 @@ export class WorkspaceEditorComponent {
         });
         onCleanup(() => sub.unsubscribe());
       }
+    });
+  }
+
+  loadCategoryChoices(): void {
+    this.categoryChoicesLoading.set(true);
+    this.categoryChoicesError.set(false);
+    this.api.choices('categories-aliments').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (page) => {
+        this.categories.set(page.content);
+        this.categoryChoicesLoading.set(false);
+        this.categoryChoicesError.set(page.content.length === 0);
+      },
+      error: () => { this.categoryChoicesLoading.set(false); this.categoryChoicesError.set(true); },
     });
   }
 
@@ -299,7 +314,13 @@ export class WorkspaceEditorComponent {
   submit(form: NgForm): void {
     this.error.set('');
     if (this.imageUploading()) { this.error.set('Attendez la fin du téléversement de l’image.'); return; }
-    if (form.invalid) { form.control.markAllAsTouched(); return; }
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      const invalid = Object.entries(form.controls).filter(([, control]) => control.invalid)
+        .map(([name]) => FIELDS[this.kind()].find((field) => field.key === name)?.label ?? name);
+      this.error.set(`Vérifiez les champs suivants : ${invalid.join(', ')}.`);
+      return;
+    }
     const kind = this.kind();
     const allowed = new Set(FIELDS[kind].map((field) => field.key));
     const payload: Record<string, unknown> = Object.fromEntries(Object.entries(this.model).filter(
@@ -358,7 +379,11 @@ export class WorkspaceEditorComponent {
       error: (error: unknown) => {
         this.busy.set(false);
         this.error.set(error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
-          ? error.error.message : 'Enregistrement impossible. Vérifiez les informations puis réessayez.');
+          ? error.error.message : error instanceof HttpErrorResponse && error.status === 0
+            ? 'Le serveur ne répond pas. Patientez pendant son démarrage puis réessayez.'
+            : error instanceof HttpErrorResponse
+              ? `Enregistrement impossible (HTTP ${error.status}). Réessayez ou vérifiez les données.`
+              : 'Enregistrement impossible. Vérifiez les informations puis réessayez.');
       },
     });
   }
