@@ -1,0 +1,71 @@
+<section class="content-page">
+  <header class="content-heading" animate.enter="adt-page-enter">
+    <div><h1>Contenus Éducatifs</h1><p>Gérez les quiz, les défis nutritionnels et les conseils de sensibilisation.</p></div>
+    <div class="heading-actions">
+      @if (draftCount()) { <span class="draft-indicator">{{ draftCount() }} brouillon{{ draftCount() > 1 ? 's' : '' }} à finaliser</span> }
+      <label class="content-search"><app-icon name="search" /><input type="search" aria-label="Rechercher un contenu" placeholder="Recherche..." [value]="query()" (input)="setQuery($event)" maxlength="80" /></label>
+    </div>
+  </header>
+  <nav class="content-tabs" aria-label="Types de contenus">
+    <button type="button" [class.active]="tab() === 'quiz'" [attr.aria-current]="tab() === 'quiz' ? 'page' : null" (click)="selectTab('quiz')">Quiz nutritionnels</button>
+    <button type="button" [class.active]="tab() === 'defis'" [attr.aria-current]="tab() === 'defis' ? 'page' : null" (click)="selectTab('defis')">Défis hebdomadaires</button>
+    <button type="button" [class.active]="tab() === 'conseils'" [attr.aria-current]="tab() === 'conseils' ? 'page' : null" (click)="selectTab('conseils')">Conseils pratiques</button>
+    <button type="button" [class.active]="tab() === 'jour'" [attr.aria-current]="tab() === 'jour' ? 'page' : null" (click)="selectTab('jour')">Question du jour</button>
+  </nav>
+  @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+  @if (actionError() && !selected()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+
+  <div class="content-toolbar">
+    @if (tab() === 'quiz' || tab() === 'jour' || tab() === 'defis') {
+      @if (tab() === 'quiz') { <label class="filter-select"><span class="sr-only">Filtrer les questions du jour</span><select [value]="dayFilter()" (change)="setDayFilter($event)"><option value="all">Type: Tous</option><option value="scheduled">Question du jour</option><option value="ordinary">Quiz classiques</option></select></label> }
+      <label class="filter-select"><span class="sr-only">Filtrer par statut</span><select [value]="statusFilter()" (change)="setStatus($event)"><option value="">Statut: Tous</option><option value="PUBLIE">Publié</option><option value="BROUILLON">Brouillon</option><option value="ARCHIVE">Archivé</option></select></label>
+    }
+    <button type="button" class="primary-button" (click)="newContent()"><app-icon name="plus" /> {{ tab() === 'defis' ? 'Nouveau défi' : tab() === 'conseils' ? 'Nouveau conseil' : 'Nouveau quiz' }}</button>
+  </div>
+
+  @if (activeState() === 'error') { <div class="state error" role="alert"><p>{{ error() }}</p><button type="button" class="outline-button" (click)="reload()">Réessayer</button></div> }
+  @else if (activeState() === 'loading') { <div class="state" role="status">Chargement des contenus…</div> }
+  @else {
+    @if (tab() === 'quiz' || tab() === 'jour') {
+      <div class="content-table-card"><div class="table-scroll"><table class="content-table"><thead><tr><th scope="col">Titre du quiz</th><th scope="col">Type</th><th scope="col">Questions</th><th scope="col">Question du jour</th><th scope="col">Statut</th><th scope="col" class="actions-heading">Actions</th></tr></thead><tbody>
+        @for (quiz of visibleQuizzes(); track quiz.id) { <tr>
+          <td data-label="Quiz"><button type="button" class="row-title" (click)="openQuiz(quiz)">{{ quiz.contenu.titre }}</button></td>
+          <td data-label="Type">{{ quiz.contenu.dateQuestionDuJour ? 'Question du jour' : 'Quiz nutritionnel' }}</td>
+          <td data-label="Questions">{{ quiz.contenu.questions?.length ?? 0 }} q.</td>
+          <td data-label="Question du jour">{{ formatDate(quiz.contenu.dateQuestionDuJour) }}</td>
+          <td data-label="Statut"><span class="status-pill" [class.draft]="quiz.statut === 'BROUILLON'" [class.archived]="quiz.statut === 'ARCHIVE'">{{ quiz.statut === 'PUBLIE' ? 'Publié' : quiz.statut === 'BROUILLON' ? 'Brouillon' : 'Archivé' }}</span></td>
+          <td data-label="Actions" class="actions-cell"><button type="button" class="row-action edit" [attr.aria-label]="'Gérer ' + quiz.contenu.titre" (click)="openQuiz(quiz)"><app-icon name="edit" /></button>
+            @if (quiz.statut === 'PUBLIE') { <button type="button" class="row-action archive" [attr.aria-label]="'Archiver ' + quiz.contenu.titre" (click)="openQuiz(quiz)"><app-icon name="trash" /></button> }
+          </td>
+        </tr> } @empty { <tr><td colspan="6" class="empty-cell">Aucun quiz ne correspond aux filtres.</td></tr> }
+      </tbody></table></div></div>
+      @if (tab() === 'quiz') { <section class="challenge-preview"><h2>Aperçu des défis en cours et planifiés</h2><div class="preview-grid">
+        @for (challenge of featuredChallenges(); track challenge.id) { <button type="button" class="preview-card" (click)="openChallenge(challenge)"><span class="preview-heading"><strong>{{ challenge.titre }}</strong><small>{{ challengeState(challenge) }}</small></span><span class="preview-dates">Période: {{ formatDate(challenge.dateDebut) }} – {{ formatDate(challenge.dateFin) }}</span><span class="preview-points">{{ challenge.nombrePoints }} points</span></button> }
+        @empty { <p class="empty-preview">Aucun défi publié pour le moment.</p> }
+      </div></section> }
+    } @else if (tab() === 'defis') {
+      <div class="challenge-grid">
+        @for (challenge of visibleChallenges(); track challenge.id) { <article class="challenge-card"><div class="preview-heading"><h2>{{ challenge.titre }}</h2><span class="status-pill" [class.draft]="challenge.statut === 'BROUILLON'">{{ challengeState(challenge) }}</span></div><p>{{ challenge.description || challenge.objectif || 'Aucune description renseignée.' }}</p><p class="preview-dates">{{ formatDate(challenge.dateDebut) }} – {{ formatDate(challenge.dateFin) }}</p><div class="challenge-footer"><strong>{{ challenge.nombrePoints }} points</strong><button type="button" class="outline-button" (click)="openChallenge(challenge)">Gérer le défi</button></div></article> }
+        @empty { <p class="empty-preview">Aucun défi ne correspond à la recherche.</p> }
+      </div>
+    } @else {
+      <div class="content-table-card"><div class="table-scroll"><table class="content-table advice-table"><thead><tr><th scope="col">Conseil</th><th scope="col">Catégorie</th><th scope="col">Publication</th><th scope="col">Statut</th><th scope="col" class="actions-heading">Actions</th></tr></thead><tbody>
+        @for (item of visibleAdvice(); track item.id) { <tr><td data-label="Conseil"><button type="button" class="row-title" (click)="openAdvice(item)">{{ item.titre }}</button></td><td data-label="Catégorie">{{ item.categorie || '—' }}</td><td data-label="Publication">{{ formatDate(item.datePublication) }}</td><td data-label="Statut"><span class="status-pill">{{ item.statut }}</span></td><td data-label="Actions" class="actions-cell"><button type="button" class="row-action edit" [attr.aria-label]="'Gérer ' + item.titre" (click)="openAdvice(item)"><app-icon name="edit" /></button></td></tr> }
+        @empty { <tr><td colspan="5" class="empty-cell">Aucun conseil publié pour le moment.</td></tr> }
+      </tbody></table></div></div>
+    }
+    @if (pageCount() > 1) { <div class="content-pagination"><span>{{ activeItems().length }} contenus</span><nav aria-label="Pages des contenus"><button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0">Précédent</button>
+      @for (number of pageNumbers(); track number) { <button type="button" [class.current]="number === pageIndex()" [attr.aria-current]="number === pageIndex() ? 'page' : null" (click)="goToPage(number)">{{ number + 1 }}</button> }
+      <button type="button" (click)="goToPage(pageIndex() + 1)" [disabled]="pageIndex() + 1 >= pageCount()">Suivant</button></nav></div> }
+  }
+</section>
+
+@if (editorKind(); as kind) { <div class="content-backdrop" role="presentation" (click)="closeEditor()" (keydown.escape)="closeEditor()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave"><section class="content-modal editor-modal" role="dialog" aria-modal="true" aria-label="Formulaire de contenu" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()"><app-workspace-editor [kind]="kind" [entityId]="editId()" (saved)="editorSaved()" (cancelled)="closeEditor()" /></section></div> }
+@if (selected(); as item) { <div class="content-backdrop" role="presentation" (click)="closeSelection()" (keydown.escape)="closeSelection()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave"><section class="content-modal" role="dialog" aria-modal="true" aria-labelledby="content-detail-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()"><div class="modal-heading"><div><p class="eyebrow">{{ item.kind === 'quiz' ? 'QUIZ' : item.kind === 'challenge' ? 'DÉFI' : 'CONSEIL' }}</p><h2 id="content-detail-title">{{ item.title }}</h2></div><button type="button" class="close-button" (click)="closeSelection()" aria-label="Fermer"><app-icon name="close" /></button></div><p>Statut : {{ item.status }}</p>
+    @if (item.status !== 'BROUILLON') { <p class="immutable-note">Les contenus publiés sont consultables ici. Les modifications se font sur un brouillon.</p> }
+    @if (actionError()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+    <div class="modal-actions"><button type="button" class="outline-button" (click)="closeSelection()">Fermer</button>
+      @if (item.status === 'BROUILLON') { <button type="button" class="outline-button" (click)="edit(item)">Modifier</button>@if (item.kind !== 'advice') { <button type="button" class="primary-button" (click)="perform('publish',item)" [disabled]="busy()">Publier</button> } }
+      @if (item.status === 'PUBLIE' || item.status === 'PUBLIEE') { <button type="button" class="outline-button" (click)="perform('archive',item)" [disabled]="busy()">Archiver</button> }
+    </div>
+  </section></div> }

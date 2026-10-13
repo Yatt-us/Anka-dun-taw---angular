@@ -1,4 +1,4 @@
-:host { display: block; width: calc(100% + 95px); margin-left: -62px; color: #243431; }
+:host { display: block; width: 100%; min-width: 0; color: #243431; }
 .menu-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 50px; }
 .menu-header h1 { margin: 0 0 5px; color: var(--brand-navy); font-size: clamp(21px, 1.9vw, 27px); line-height: 1.25; font-weight: 700; }
 .menu-header p, .muted, .advice-card p { margin: 0; color: #708079; font-size: 12px; line-height: 1.55; }

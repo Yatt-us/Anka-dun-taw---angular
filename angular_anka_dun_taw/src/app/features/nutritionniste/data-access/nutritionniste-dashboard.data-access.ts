@@ -21,6 +21,8 @@ export interface NutritionistAppointment {
   statut: 'DEMANDE' | 'ACCEPTE' | 'REFUSE' | 'ANNULE' | 'TERMINE';
 }
 
+export interface BeneficiarySummary { id: number; nom: string; prenom: string }
+
 interface Page<T> {
   content: T[];
   number: number;
@@ -71,6 +73,12 @@ export class NutritionistDashboardApi {
   adviceCount(): Observable<Page<unknown>> {
     return this.http.get<Page<unknown>>(`${API_BASE_URL}/conseils/mes-conseils`, {
       params: new HttpParams().set('size', '1'),
+    });
+  }
+
+  beneficiaries(): Observable<Page<BeneficiarySummary>> {
+    return this.http.get<Page<BeneficiarySummary>>(`${API_BASE_URL}/professionnel/beneficiaires`, {
+      params: new HttpParams().set('size', '100'),
     });
   }
 }

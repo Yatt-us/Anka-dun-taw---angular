@@ -4,21 +4,24 @@ import { MatCardModule } from '@angular/material/card';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import {
   NutritionistAppointment,
   NutritionistDashboardApi,
   ProfessionalConversation,
+  BeneficiarySummary,
 } from '../../data-access/nutritionniste-dashboard.data-access';
 
 @Component({
   selector: 'app-nutritionniste-dashboard',
   imports: [DatePipe, MatCardModule, MatButtonModule, RouterLink, UiIconComponent],
   templateUrl: './nutritionniste-dashboard.component.html',
-  styleUrl: '../../../../shared/components/dashboard.css',
+  styleUrls: ['../../../../shared/components/dashboard.css', './nutritionniste-dashboard.component.css'],
 })
 export class NutritionnisteDashboardComponent implements OnInit {
   private readonly api = inject(NutritionistDashboardApi);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly numberFormat = new Intl.NumberFormat('fr-FR');
   private readonly today = new Date();
@@ -38,15 +41,14 @@ export class NutritionnisteDashboardComponent implements OnInit {
   readonly conversations = signal<ProfessionalConversation[] | null>(null);
   readonly requestedCount = signal<number | null>(null);
   readonly appointments = signal<NutritionistAppointment[] | null>(null);
-  readonly articleCount = signal<number | null>(null);
-  readonly adviceCount = signal<number | null>(null);
+  readonly beneficiaries = signal<BeneficiarySummary[]>([]);
   readonly conversationsError = signal(false);
   readonly requestedError = signal(false);
   readonly appointmentsError = signal(false);
-  readonly articlesError = signal(false);
-  readonly adviceError = signal(false);
-  readonly showConversationsList = signal(false);
-  readonly showAppointmentsList = signal(false);
+  readonly greeting = computed(() => {
+    const user = this.auth.currentUser();
+    return user ? `Bonjour, ${[user.prenom, user.nom].filter(Boolean).join(' ')}` : 'Bonjour';
+  });
 
   readonly todayAppointments = computed(() => {
     const appointments = this.appointments();
@@ -57,7 +59,7 @@ export class NutritionnisteDashboardComponent implements OnInit {
   });
   readonly metrics = computed(() => [
     {
-      label: 'Messages non lus',
+      label: 'Questions en attente',
       value: this.value(
         this.conversations()?.reduce(
           (total, conversation) => total + conversation.messagesNonLus,
@@ -65,42 +67,25 @@ export class NutritionnisteDashboardComponent implements OnInit {
         ),
         this.conversationsError(),
       ),
-      detail: this.conversationsError() ? 'Données indisponibles' : '',
+      detail: this.conversationsError() ? 'Données indisponibles' : 'Messages non lus',
       icon: 'mail',
       tone: '',
     },
     {
       label: 'Demandes de consultation',
       value: this.value(this.requestedCount(), this.requestedError()),
-      detail: this.requestedError() ? 'Données indisponibles' : '',
+      detail: this.requestedError() ? 'Données indisponibles' : 'Nouvelles demandes',
       icon: 'book',
       tone: 'orange',
     },
     {
       label: 'Rendez-vous aujourd’hui',
       value: this.value(this.todayAppointments()?.length, this.appointmentsError()),
-      detail: this.appointmentsError() ? 'Données indisponibles' : '',
+      detail: this.appointmentsError() ? 'Données indisponibles' : 'Sessions prévues',
       icon: 'calendar',
       tone: 'yellow',
     },
-    {
-      label: 'Mes articles',
-      value: this.value(this.articleCount(), this.articlesError()),
-      detail: this.articlesError() ? 'Données indisponibles' : '',
-      icon: 'book',
-      tone: '',
-    },
-    {
-      label: 'Mes conseils',
-      value: this.value(this.adviceCount(), this.adviceError()),
-      detail: this.adviceError() ? 'Données indisponibles' : '',
-      icon: 'leaf',
-      tone: '',
-    },
   ]);
-
-  toggleConversationsList(): void { this.showConversationsList.update((visible) => !visible); }
-  toggleAppointmentsList(): void { this.showAppointmentsList.update((visible) => !visible); }
 
   ngOnInit(): void {
     this.api
@@ -124,20 +109,9 @@ export class NutritionnisteDashboardComponent implements OnInit {
         next: (appointments) => this.appointments.set(appointments),
         error: () => this.appointmentsError.set(true),
       });
-    this.api
-      .articleCount()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (page) => this.articleCount.set(page.totalElements),
-        error: () => this.articlesError.set(true),
-      });
-    this.api
-      .adviceCount()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (page) => this.adviceCount.set(page.totalElements),
-        error: () => this.adviceError.set(true),
-      });
+    this.api.beneficiaries().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (page) => this.beneficiaries.set(page.content),
+    });
   }
 
   conversationName(conversation: ProfessionalConversation): string {
@@ -154,6 +128,11 @@ export class NutritionnisteDashboardComponent implements OnInit {
 
   appointmentTime(dateTime: string): string {
     return dateTime?.slice(11, 16).replace(':', 'h') || '—';
+  }
+
+  appointmentName(id: number): string {
+    const beneficiary = this.beneficiaries().find((person) => person.id === id);
+    return beneficiary ? [beneficiary.prenom, beneficiary.nom].filter(Boolean).join(' ') : `Patient n° ${id}`;
   }
 
   private value(count: number | null | undefined, failed: boolean): string {

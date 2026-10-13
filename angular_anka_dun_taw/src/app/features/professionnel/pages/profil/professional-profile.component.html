@@ -1,8 +1,13 @@
+@if (profile()?.role !== 'NUTRITIONNISTE' || editing()) {
 <header class="profile-header">
   <div><h1>Mon Profil Professionnel</h1>
     <p>Gérez vos informations publiques et vos disponibilités sur l’application.</p></div>
+  @if (profile()?.role === 'NUTRITIONNISTE') { <button class="back-to-overview" type="button" (click)="closeEdit()">Retour au profil</button> }
+  @else {
   <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
+  }
 </header>
+}
 
 @if (loading()) {
   <p class="state" role="status">Chargement de votre profil…</p>
@@ -12,6 +17,9 @@
 } @else {
   @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
   @if (success()) { <p class="notice success" role="status">{{ success() }}</p> }
+  @if (profile()!.role === 'NUTRITIONNISTE' && !editing()) {
+    <app-nutritionniste-profile-overview [profile]="profile()!" (edit)="editing.set(true)" />
+  } @else {
   <div class="profile-grid">
     <section class="identity-card" aria-label="Aperçu du profil professionnel">
       <div class="portrait">{{ initials() }}
@@ -68,4 +76,5 @@
       </div>
     </form>
   </div>
+  }
 }

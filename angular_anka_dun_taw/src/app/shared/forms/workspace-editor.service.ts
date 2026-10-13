@@ -29,6 +29,12 @@ export class WorkspaceEditorService {
     return id ? this.http.put(`${path}/${id}`, payload) : this.http.post(path, payload);
   }
 
+  uploadFoodImage(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${API_BASE_URL}/aliments/images`, formData);
+  }
+
   action(path: string, payload: object = {}): Observable<unknown> {
     return this.http.post(`${API_BASE_URL}${path}`, payload);
   }

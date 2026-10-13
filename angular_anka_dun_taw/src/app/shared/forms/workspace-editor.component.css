@@ -7,7 +7,17 @@ h2 { margin: 4px 0 0; font-size: 19px; color: var(--ink); }
 h3 { font-size: 15px; margin: 0; }
 .eyebrow { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: .08em; color: var(--green); }
 .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.food-upload { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.food-upload .upload-picker { display: inline-flex; align-items: center; gap: 10px; padding: 10px 13px; border: 1px solid #d9e0d7; border-radius: 9px; background: #fffefa; cursor: pointer; }
+.food-upload .upload-picker input { width: min(100%, 290px); padding: 0; border: 0; background: transparent; font-size: 12px; }
+.food-upload .upload-picker input:focus { box-shadow: none; }
+.upload-hint, .upload-status, .upload-error { color: var(--muted); font-size: 12px; }
+.upload-status { color: var(--green); }
+.upload-error { color: var(--red); }
+.food-image-preview { grid-column: 1 / -1; display: grid; place-items: center; min-height: 150px; padding: 12px; border: 1px dashed #cbd9cc; border-radius: 10px; background: #f8faf6; color: var(--muted); font-size: 13px; text-align: center; }
+.food-image-preview img { display: block; width: min(100%, 360px); height: 180px; object-fit: cover; border-radius: 8px; }
 label { min-width: 0; display: grid; gap: 7px; color: var(--ink); font-size: 12px; font-weight: 500; }
+.field-help { color: var(--muted); font-size: 11px; font-weight: 400; line-height: 1.45; }
 label.wide { grid-column: 1 / -1; }
 label b { color: var(--red); }
 input, select, textarea { width: 100%; box-sizing: border-box; border: 1px solid #d9e0d7; border-radius: 9px; background: #fffefa; color: var(--ink); font: inherit; font-size: 13px; padding: 11px 12px; outline: none; }
@@ -33,3 +43,18 @@ footer { margin-top: 26px; justify-content: flex-end; }
 @media (max-width: 600px) { .field-grid, .repeat-row, .meal-row { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .proposition-row { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .submit { transition: none; } .submit:hover:not(:disabled) { transform: none; } }
+
+/* Taille de lecture de l'éditeur dans l'espace administrateur. */
+:host-context(.admin) { font-size: 18px; }
+:host-context(.admin) h2 { font-size: 24px; }
+:host-context(.admin) h3 { font-size: 20px; }
+:host-context(.admin) .editor-description { font-size: 17px; }
+:host-context(.admin) .eyebrow { font-size: 15px; }
+:host-context(.admin) label { font-size: 18px; }
+:host-context(.admin) .field-help { font-size: 14px; }
+:host-context(.admin) input,
+:host-context(.admin) select,
+:host-context(.admin) textarea { font-size: 18px; }
+:host-context(.admin) .form-error { font-size: 16px; }
+:host-context(.admin) .submit,
+:host-context(.admin) .close-form { min-height: 46px; font-size: 16px; }

@@ -12,14 +12,21 @@ import { ActorId } from '../../../shared/components/workspace-config';
 interface ApiPage<T> { content: T[]; number: number; totalPages: number; totalElements: number }
 interface PatientSummary { id: number; nom: string; prenom: string; photoProfilUrl?: string | null }
 interface Patient { id: number; name: string; lastName: string; photoProfilUrl?: string | null }
+interface FoodPreference {
+  type: 'AIME' | 'EVITE' | 'ALLERGIE' | 'RESTRICTION' | 'REGIME_ALIMENTAIRE';
+  valeur: string;
+}
 interface NutritionProfile {
+  id: number; nom?: string; statut?: string; objectifId?: number | null; budgetActifId?: number | null;
   zone?: string; poidsKg?: number; tailleCm?: number; imc?: number;
+  dateNaissance?: string;
   niveauActivite?: string; modeBudget?: string; allergies?: string[];
-  alimentsPreferes?: string[]; alimentsAEviter?: string[]; commentaireSante?: string;
+  preferences?: FoodPreference[]; commentaireSante?: string;
 }
 interface Goal { id: number; description?: string; type?: string; statut?: string; progressionPourcentage?: number }
 interface Budget { id: number; montant: number; devise?: string; periode?: string; actif?: boolean }
 interface DailyBudget { date: string; montantDisponible: number; plafond: number; devise?: string }
+interface AppointmentHistory { id: number; utilisateurId: number; dateHeure: string; motif?: string; statut: string }
 interface PatientDetails { profile: NutritionProfile | null; goals: Goal[]; budgets: Budget[] }
 
 @Component({
@@ -42,6 +49,10 @@ export class PatientsComponent {
   readonly goals = signal<Goal[]>([]);
   readonly budgets = signal<Budget[]>([]);
   readonly dailyBudget = signal<DailyBudget | null>(null);
+  readonly history = signal<AppointmentHistory[]>([]);
+  readonly historyLoading = signal(false);
+  readonly historyError = signal(false);
+  readonly historyLoaded = signal(false);
   readonly loading = signal(false);
   readonly detailLoading = signal(false);
   readonly error = signal('');
@@ -63,6 +74,13 @@ export class PatientsComponent {
         ? b.lastName.localeCompare(a.lastName, 'fr') || b.name.localeCompare(a.name, 'fr')
         : a.lastName.localeCompare(b.lastName, 'fr') || a.name.localeCompare(b.name, 'fr'));
   });
+  readonly selectedDetails = computed<PatientDetails>(() => ({
+    profile: this.profile(), goals: this.goals(), budgets: this.budgets(),
+  }));
+  readonly selectedHistory = computed(() => this.history()
+    .filter((item) => item.utilisateurId === this.selected()?.id)
+    .sort((a, b) => b.dateHeure.localeCompare(a.dateHeure))
+    .slice(0, 5));
   readonly visiblePatients = computed(() => this.filteredPatients().slice(
     this.patientPage() * this.patientPageSize,
     (this.patientPage() + 1) * this.patientPageSize,
@@ -70,7 +88,7 @@ export class PatientsComponent {
   readonly dateLabel = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
-  selectedDate = new Date().toISOString().slice(0, 10);
+  selectedDate = this.localDate(new Date());
 
   constructor() {
     effect(() => { this.actor(); this.load(); });
@@ -105,6 +123,7 @@ export class PatientsComponent {
         this.patientPage.set(0);
         this.loading.set(false);
         this.loadVisibleDetails();
+        if (this.actor() === 'nutritionniste' && items.length) this.select(this.patients()[0]);
       },
       error: () => {
         if (generation !== this.loadGeneration) return;
@@ -117,6 +136,14 @@ export class PatientsComponent {
   onSearch(value: string): void {
     this.searchQuery.set(value);
     this.patientPage.set(0);
+    if (this.actor() === 'nutritionniste') {
+      const selected = this.selected();
+      if (!selected || !this.filteredPatients().some((patient) => patient.id === selected.id)) {
+        const first = this.filteredPatients()[0];
+        if (first) this.select(first);
+        else this.selected.set(null);
+      }
+    }
     clearTimeout(this.detailsTimer);
     this.detailsTimer = setTimeout(() => this.loadVisibleDetails(), 250);
   }
@@ -168,6 +195,7 @@ export class PatientsComponent {
     this.budgets.set([]);
     this.dailyBudget.set(null);
     this.detailError.set('');
+    if (this.actor() === 'nutritionniste' && !this.historyLoaded() && !this.historyLoading()) this.loadHistory();
     const cached = this.summaries()[patient.id];
     if (cached) {
       this.setDetail(cached);
@@ -188,23 +216,42 @@ export class PatientsComponent {
     this.budgets.set(details.budgets);
   }
   activeBudget(details: PatientDetails | undefined): Budget | null {
-    return details?.budgets.find((budget) => budget.actif) ?? details?.budgets[0] ?? null;
+    if (!details) return null;
+    const budgetId = details.profile?.budgetActifId;
+    return details.budgets.find((budget) => budget.id === budgetId)
+      ?? details.budgets.find((budget) => budget.actif)
+      ?? null;
   }
   mainGoal(details: PatientDetails | undefined): string {
-    const goal = details?.goals.find((item) => item.statut === 'EN_COURS') ?? details?.goals[0];
+    const goal = details?.goals.find((item) => item.id === details.profile?.objectifId)
+      ?? details?.goals.find((item) => item.statut === 'EN_COURS')
+      ?? details?.goals[0];
     return goal?.description || goal?.type || 'Aucun objectif disponible';
   }
   profileLabel(details: PatientDetails | undefined): string {
     const profile = details?.profile;
-    return profile?.modeBudget || profile?.niveauActivite || (profile ? 'Profil nutritionnel renseigné' : 'Profil indisponible');
+    return profile?.nom?.trim() || (profile ? 'Profil nutritionnel actif' : 'Profil indisponible');
+  }
+  age(details: PatientDetails | undefined): string {
+    const date = details?.profile?.dateNaissance;
+    if (!date) return '';
+    const birth = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(birth.getTime())) return '';
+    const today = new Date();
+    let years = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) years--;
+    return years >= 0 ? `${years} ans` : '';
   }
   constraints(details: PatientDetails | undefined): { text: string; kind: 'positive' | 'negative' }[] {
     const profile = details?.profile;
-    return [
-      ...(profile?.alimentsPreferes ?? []).map((text) => ({ text, kind: 'positive' as const })),
-      ...(profile?.allergies ?? []).map((text) => ({ text, kind: 'negative' as const })),
-      ...(profile?.alimentsAEviter ?? []).map((text) => ({ text, kind: 'negative' as const })),
-    ].slice(0, 3);
+    const preferences = (profile?.preferences ?? [])
+      .filter((item) => item.valeur?.trim() && item.type !== 'REGIME_ALIMENTAIRE')
+      .map((item) => ({ text: item.valeur.trim(), kind: item.type === 'AIME' ? 'positive' as const : 'negative' as const }));
+    const allergies = (profile?.allergies ?? []).map((text) => ({ text, kind: 'negative' as const }));
+    return [...preferences, ...allergies]
+      .filter((item, index, items) => items.findIndex((other) =>
+        other.text.toLocaleLowerCase('fr') === item.text.toLocaleLowerCase('fr')) === index)
+      .slice(0, 3);
   }
   money(amount: number, devise?: string): string {
     const number = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount);
@@ -221,4 +268,29 @@ export class PatientsComponent {
       });
   }
   closeDetail(): void { this.selected.set(null); }
+  retryHistory(): void { this.loadHistory(); }
+
+  private loadHistory(): void {
+    this.historyLoading.set(true);
+    this.historyError.set(false);
+    const getPage = (number: number) => this.http.get<ApiPage<AppointmentHistory>>(
+      `${API_BASE_URL}/professionnel/rendez-vous`,
+      { params: new HttpParams().set('statut', 'TERMINE').set('page', number).set('size', 100).set('sort', 'dateHeure,desc') },
+    );
+    getPage(0).pipe(
+      expand((page) => page.number + 1 < page.totalPages ? getPage(page.number + 1) : EMPTY),
+      reduce((all, page) => all.concat(page.content), [] as AppointmentHistory[]),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (items) => { this.history.set(items); this.historyLoaded.set(true); this.historyLoading.set(false); },
+      error: () => { this.historyError.set(true); this.historyLoading.set(false); },
+    });
+  }
+
+  private localDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 }

@@ -1,0 +1,24 @@
+:host{display:block;min-width:0;width:100%}
+.nutrition-header{padding-bottom:22px;border-bottom:1px solid #e9dccb;margin-bottom:24px}
+.nutrition-header h1{font-size:clamp(26px,2vw,34px);color:#0d3264;line-height:1.2}
+.nutrition-header p{font-size:16px;color:#303d39}
+.nutrition-header .date-chip{font-size:14px;color:#243533}
+.nutrition-metrics{gap:18px;margin-bottom:24px}
+.nutrition-metrics .metric{min-height:112px;padding:20px;border-radius:12px;box-shadow:0 5px 18px #1b2e2209}
+.nutrition-metrics .metric-label{font-size:16px;color:#23342e}
+.nutrition-metrics .metric strong{font-size:28px;color:#10242c}
+.nutrition-metrics .metric small{font-size:13px}
+.nutrition-columns{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+.nutrition-columns .panel{min-height:370px;padding:22px;border-radius:13px}
+.nutrition-columns .panel h2{font-size:20px;font-weight:750}
+.nutrition-columns .text-link{font-size:15px;color:#0074ab}
+.nutrition-columns .question{padding:16px;margin-top:10px;border-radius:9px;background:#fcf7ef}
+.nutrition-columns .question strong,.nutrition-columns .appointment strong{font-size:16px;font-weight:700}
+.nutrition-columns .question p{font-size:15px;color:#0074ab}
+.nutrition-columns .question small{font-size:14px;color:#4c5d55}
+.nutrition-columns .question time{font-size:12px}
+.nutrition-columns .appointment{padding:17px 8px;gap:14px}
+.nutrition-columns .appointment time{width:55px;font-size:15px;color:#0d3264}
+.nutrition-columns .tag{font-size:13px}
+@media(max-width:1000px){.nutrition-columns{grid-template-columns:1fr}}
+@media(max-width:700px){.nutrition-header{align-items:flex-start}.nutrition-metrics{grid-template-columns:1fr}.nutrition-columns .panel{min-height:0}.nutrition-metrics .metric{min-height:90px}}

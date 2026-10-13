@@ -1,4 +1,4 @@
-:host { display:block; width:calc(100% + 95px); margin-left:-62px; min-width:0; color:#1e2c24; }
+:host { display:block; width:100%; min-width:0; color:#1e2c24; }
 .page-header { display:flex; justify-content:space-between; align-items:center; gap:22px; margin-bottom:35px; }
 .page-header h1 { margin:0 0 5px; color:var(--brand-navy,#0b3063); font-size:clamp(21px,1.85vw,27px); line-height:1.25; }
 .page-header p { margin:0; color:#37463e; font-size:12px; line-height:1.5; }

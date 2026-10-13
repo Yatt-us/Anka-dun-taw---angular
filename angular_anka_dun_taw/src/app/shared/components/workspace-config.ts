@@ -76,7 +76,7 @@ export const ACTORS: Record<ActorId, ActorConfig> = {
     navigation: [
       { label: 'Vue d’ensemble', path: 'tableau-de-bord', icon: 'grid' },
       { label: 'Questions utilisateurs', path: 'questions', icon: 'message' },
-      { label: 'Patients en contact', path: 'patients', icon: 'users' },
+      { label: 'Profils utilisateurs', path: 'patients', icon: 'user' },
       { label: 'Conseils nutritionnels', path: 'recommandations', icon: 'book' },
       { label: 'Demandes de consultation', path: 'consultations', icon: 'refresh' },
       { label: 'Rendez-vous', path: 'rendez-vous', icon: 'calendar' },

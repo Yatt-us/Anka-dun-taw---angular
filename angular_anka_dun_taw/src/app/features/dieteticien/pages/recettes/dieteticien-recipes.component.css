@@ -1,4 +1,4 @@
-:host { display:block; width:calc(100% + 95px); margin-left:-62px; min-width:0; color:#22312b; }
+:host { display:block; width:100%; min-width:0; color:#22312b; }
 .recipes-page { min-width:0; }
 .page-header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:30px; padding-bottom:15px; border-bottom:1px solid #e9e3d9; }
 h1 { margin:0 0 5px; color:var(--brand-navy,#0b3267); font-size:clamp(21px,1.85vw,27px); line-height:1.2; }

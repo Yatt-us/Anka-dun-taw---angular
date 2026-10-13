@@ -1,0 +1,99 @@
+<section class="recipes-page">
+  <header class="recipes-heading" animate.enter="adt-page-enter">
+    <div><h1>Gestion des Recettes</h1><p>Recettes traditionnelles équilibrées et validées par nos professionnels.</p></div>
+    <div class="heading-actions">
+      <div class="global-search"><app-icon name="search" />
+        <input type="search" aria-label="Recherche globale" placeholder="Recherche globale..." [value]="globalSearch()" (input)="setGlobalSearch($event)" (keydown.escape)="globalSearch.set('')" maxlength="80" />
+        @if (globalSearch().trim().length > 1) {
+          <div class="global-results">
+            @if (globalLoading()) { <p role="status">Recherche en cours…</p> }
+            @else {
+              @for (item of globalResults(); track item.type + '-' + item.id) { <button type="button" (click)="openGlobalResult(item)"><strong>{{ item.titre }}</strong><small>{{ item.type }}</small></button> }
+              @empty { <p>Aucun résultat.</p> }
+            }
+          </div>
+        }
+      </div>
+      <button type="button" class="primary-button" (click)="openEditor()"><app-icon name="plus" /> Ajouter une recette</button>
+    </div>
+  </header>
+  @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+  @if (actionError() && !pendingArchive()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+
+  <div class="recipes-toolbar" aria-label="Filtres des recettes">
+    <label class="recipes-search"><app-icon name="search" /><input type="search" aria-label="Rechercher une recette" placeholder="Rechercher une recette..." [value]="query()" (input)="setQuery($event)" maxlength="80" /></label>
+    <label class="filter-select"><span class="sr-only">Filtrer par budget</span><select [value]="budget()" (change)="setBudget($event)">
+      <option value="all">Budget: Tous</option><option value="eco">Éco · 500 FCFA/pers. max</option><option value="medium">Moyen · 501–1 000 FCFA/pers.</option><option value="high">Élevé · plus de 1 000 FCFA/pers.</option><option value="unknown">Coût non renseigné</option>
+    </select></label>
+    <label class="filter-select"><span class="sr-only">Filtrer par durée</span><select [value]="duration()" (change)="setDuration($event)">
+      <option value="0">Temps: Tous</option><option value="30">30 min ou moins</option><option value="45">45 min ou moins</option><option value="60">60 min ou moins</option>
+    </select></label>
+    <label class="filter-select status-select"><span class="sr-only">Filtrer par statut</span><select [value]="status()" (change)="setStatus($event)">
+      <option value="PUBLIEE">Publiées</option><option value="BROUILLON">Brouillons</option><option value="ARCHIVEE">Archivées</option>
+    </select></label>
+  </div>
+  @if (costLoading() && budget() !== 'all') { <p class="cost-status" role="status">Estimation des coûts à Bamako en cours… Les résultats apparaissent progressivement.</p> }
+  @if (loadingMore()) { <p class="cost-status" role="status">Chargement des autres recettes…</p> }
+
+  @if (state() === 'error') {
+    <div class="state error" role="alert"><p>{{ error() }}</p><button type="button" class="outline-button" (click)="retry()">Réessayer</button></div>
+  } @else if (state() === 'loading' && !allRecipes().length) {
+    <div class="state" role="status">Chargement des recettes…</div>
+  } @else {
+    <div class="recipes-grid" [class.is-loading]="state() === 'loading'">
+      @for (recipe of visible(); track recipe.id) {
+        <article class="recipe-card">
+          <div class="recipe-visual"><app-icon name="book" />
+            @if (recipe.imageUrl) { <img [src]="recipe.imageUrl" [alt]="'Photo de ' + recipe.nom" loading="lazy" (error)="imageError($event)" /> }
+            <span class="recipe-badge" [class.draft]="recipe.statut === 'BROUILLON'" [class.archived]="recipe.statut === 'ARCHIVEE'">{{ recipe.statut === 'PUBLIEE' ? 'Publiée' : recipe.statut === 'BROUILLON' ? 'Brouillon' : 'Archivée' }}</span>
+          </div>
+          <div class="recipe-card-body"><h2>{{ recipe.nom }}</h2>
+            <div class="recipe-metrics"><span><app-icon name="clock" /> {{ durationLabel(recipe) }}</span><span [title]="'Coût estimé par personne à Bamako'">{{ budgetLabel(recipe) }}</span><span>{{ recipe.nombrePersonnes ?? '—' }} pers.</span></div>
+            <div class="recipe-card-bottom"><span>{{ recipe.difficulte === 'DIFFICILE' ? 'Difficulté élevée' : recipe.difficulte === 'MOYEN' ? 'Difficulté moyenne' : 'Cuisine locale' }}</span>
+              <div class="recipe-actions"><button type="button" class="row-action edit" [attr.aria-label]="'Consulter ' + recipe.nom" (click)="openDetail(recipe)"><app-icon name="edit" /></button>
+                @if (recipe.statut === 'PUBLIEE') { <button type="button" class="row-action archive" [attr.aria-label]="'Archiver ' + recipe.nom" (click)="confirmArchive(recipe)"><app-icon name="trash" /></button> }
+              </div>
+            </div>
+          </div>
+        </article>
+      } @empty { <p class="empty">Aucune recette ne correspond aux filtres.</p> }
+    </div>
+    <div class="recipes-pagination"><span>Affichage de {{ firstVisible() }} à {{ lastVisible() }} sur {{ filtered().length }} recettes {{ status() === 'PUBLIEE' ? 'publiées' : status() === 'BROUILLON' ? 'en brouillon' : 'archivées' }}</span>
+      <nav aria-label="Pages des recettes"><button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0">Précédent</button>
+        @for (number of pageNumbers(); track number) { <button type="button" [class.current]="number === pageIndex()" [attr.aria-current]="number === pageIndex() ? 'page' : null" (click)="goToPage(number)">{{ number + 1 }}</button> }
+        <button type="button" (click)="goToPage(pageIndex() + 1)" [disabled]="pageIndex() + 1 >= pageCount()">Suivant</button>
+      </nav>
+    </div>
+  }
+</section>
+
+@if (editorOpen()) {
+  <div class="recipes-backdrop" role="presentation" (click)="closeEditor()" (keydown.escape)="closeEditor()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="recipe-modal editor-modal" role="dialog" aria-modal="true" aria-label="Formulaire de recette" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()"><app-workspace-editor kind="recipe" [entityId]="editId()" (saved)="editorSaved()" (cancelled)="closeEditor()" /></section>
+  </div>
+}
+@if (selected(); as recipe) {
+  <div class="recipes-backdrop" role="presentation" (click)="closeDetail()" (keydown.escape)="closeDetail()" animate.enter="adt-detail-enter" animate.leave="adt-detail-leave">
+    <section class="recipe-modal" role="dialog" aria-modal="true" aria-labelledby="recipe-detail-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <div class="modal-heading"><div><p class="eyebrow">RECETTE {{ recipe.statut === 'PUBLIEE' ? 'PUBLIÉE' : recipe.statut === 'BROUILLON' ? 'EN BROUILLON' : 'ARCHIVÉE' }}</p><h2 id="recipe-detail-title">{{ recipe.nom }}</h2></div><button type="button" class="close-button" (click)="closeDetail()" aria-label="Fermer"><app-icon name="close" /></button></div>
+      @if (detailLoading()) { <p role="status">Chargement de la recette…</p> }
+      <p>{{ recipe.description || 'Aucune description renseignée.' }}</p>
+      <div class="detail-metrics"><span>{{ durationLabel(recipe) }}</span><span>{{ recipe.nombrePersonnes ?? '—' }} personnes</span><span>{{ budgetLabel(recipe) }}</span></div>
+      @if (recipe.ingredients?.length) { <h3>Ingrédients</h3><ul>@for (ingredient of recipe.ingredients; track ingredient.alimentId) { <li>{{ ingredient.alimentNom || 'Aliment n° ' + ingredient.alimentId }} · {{ ingredient.quantite ?? '—' }} {{ ingredient.unite || '' }}</li> }</ul> }
+      @if (recipe.instructions) { <h3>Préparation</h3><p class="instructions">{{ recipe.instructions }}</p> }
+      @if (recipe.statut === 'PUBLIEE') { <p class="immutable-note">Une recette publiée est figée par le backend. Créez une nouvelle recette pour la réviser.</p> }
+      @if (actionError()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+      <div class="modal-actions"><button type="button" class="outline-button" (click)="closeDetail()">Fermer</button>
+        @if (recipe.statut === 'BROUILLON') { <button type="button" class="outline-button" (click)="openEditor(recipe)">Modifier</button><button type="button" class="primary-button" (click)="publish(recipe)" [disabled]="busy()">{{ busy() ? 'Publication…' : 'Publier' }}</button> }
+        @if (recipe.statut === 'PUBLIEE') { <button type="button" class="outline-button" (click)="confirmArchive(recipe)">Archiver</button> }
+      </div>
+    </section>
+  </div>
+}
+@if (pendingArchive(); as recipe) {
+  <div class="recipes-backdrop" role="presentation" (click)="cancelArchive()" (keydown.escape)="cancelArchive()"><section class="recipe-modal confirmation-modal" role="alertdialog" aria-modal="true" aria-labelledby="archive-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+    <h2 id="archive-title">Archiver {{ recipe.nom }} ?</h2><p>Cette recette ne sera plus visible dans le catalogue publié.</p>
+    @if (actionError()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+    <div class="modal-actions"><button type="button" class="outline-button" (click)="cancelArchive()" [disabled]="busy()">Annuler</button><button type="button" class="danger-button" (click)="archive()" [disabled]="busy()">{{ busy() ? 'Archivage…' : 'Archiver' }}</button></div>
+  </section></div>
+}
