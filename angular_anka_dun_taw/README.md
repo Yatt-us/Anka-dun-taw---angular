@@ -151,3 +151,6 @@ Dans **Aliments locaux → Prix et saisonnalité**, le sélecteur de région dé
 Les vues professionnelles qui ouvrent un menu par son identifiant nécessitent `GET /api/v1/professionnel/menus/{id}` sur le backend correspondant.
 
 Dans **Menus publiés**, le détail d'un menu affiche aussi ses versions conservées par `GET /api/v1/professionnel/menus/{id}/versions`. Ouvrir une version montre le titre, le statut, les bénéficiaires et les repas enregistrés à cette date, y compris les portions et coûts. Le chargement et les erreurs de cet historique sont indépendants du détail courant. Cette vue nécessite le backend et la migration `028_versions_menus` correspondants ; les versions plus anciennes que la migration ne peuvent pas être reconstituées.
+
+
+Dans l’espace administrateur, **Historique** présente les événements avec un libellé d’action en français, le type d’objet, sa référence, la date et le nom de l’acteur. L’écran n’affiche pas la description technique contenant les verbes ou routes HTTP ; les anciennes lignes déjà enregistrées suivent le même affichage.
