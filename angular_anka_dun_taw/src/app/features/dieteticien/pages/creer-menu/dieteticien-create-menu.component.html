@@ -98,7 +98,7 @@
         <label class="field">Zone du patient
           <select name="zone" [(ngModel)]="zone" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()">
             <option value="">Choisir une zone</option>
-            @for (item of zones; track item) { <option [value]="item">{{ item }}</option> }
+            @for (item of zones(); track item.code) { <option [value]="item.code">{{ item.libelle }}</option> }
           </select>
         </label>
         <label class="field">Type de menu

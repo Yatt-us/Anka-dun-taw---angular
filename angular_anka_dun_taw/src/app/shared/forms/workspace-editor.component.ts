@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { WorkspaceEditorService, EditorKind, Choice } from './workspace-editor.service';
+import { ZoneOption, ZonesDataAccess } from '../data-access/zones.data-access';
 
 type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'url' | 'checkbox';
 interface Field {
@@ -14,12 +15,6 @@ interface Ingredient { alimentId: number | null; quantite: number | null; unite:
 interface Meal { recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
 interface QuizQuestion { enonce: string; points: number; explication: string; propositions: { texte: string; correcte: boolean }[] }
 
-const ZONES = ['KAYES', 'KOULIKORO', 'SIKASSO', 'SEGOU', 'MOPTI', 'TOMBOUCTOU', 'GAO', 'KIDAL', 'BAMAKO'];
-const REGION_LABELS: Record<string, string> = {
-  KAYES: 'Kayes', KOULIKORO: 'Koulikoro', SIKASSO: 'Sikasso', SEGOU: 'Ségou', MOPTI: 'Mopti',
-  TOMBOUCTOU: 'Tombouctou', GAO: 'Gao', KIDAL: 'Kidal', BAMAKO: 'District de Bamako',
-};
-const regionChoices = () => ZONES.map((value) => ({ value, label: REGION_LABELS[value] ?? value }));
 const ALLERGENES = ['ARACHIDE', 'LAIT', 'OEUF', 'POISSON', 'CRUSTACES', 'FRUITS_A_COQUE', 'SOJA', 'GLUTEN', 'SESAME'];
 const choice = (values: string[]) => values.map((value) => ({ value, label: value.replaceAll('_', ' ') }));
 const FIELDS: Record<EditorKind, Field[]> = {
@@ -51,7 +46,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
     { key: 'moisFinSaison', label: 'Fin de saison (mois 1 à 12)', type: 'number', min: 1, max: 12 },
   ],
   price: [
-    { key: 'zone', label: 'Région du relevé de prix', type: 'select', required: true, help: 'Le prix dépend du marché local. Ajoutez un relevé distinct pour chaque région où le prix diffère.', options: regionChoices() },
+    { key: 'zone', label: 'Région du relevé de prix', type: 'select', required: true, help: 'Le prix dépend du marché local. Ajoutez un relevé distinct pour chaque région où le prix diffère.' },
     { key: 'prix', label: 'Prix en F CFA', type: 'number', required: true, min: 0 },
     { key: 'quantiteReference', label: 'Quantité de référence', type: 'number', required: true, min: 0.001 },
     { key: 'unite', label: 'Unité', type: 'text', required: true },
@@ -74,7 +69,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
     { key: 'type', label: 'Type de menu', type: 'select', required: true, options: choice(['PERSONNALISE', 'PETIT_BUDGET', 'FAMILIAL']) },
     { key: 'dateDebut', label: 'Date de début', type: 'date', required: true },
     { key: 'dateFin', label: 'Date de fin', type: 'date' },
-    { key: 'zone', label: 'Région du patient', type: 'select', options: regionChoices() },
+    { key: 'zone', label: 'Région du patient', type: 'select' },
     { key: 'beneficiaireIds', label: 'N° des bénéficiaires (séparés par une virgule)', type: 'text', required: true },
     { key: 'objectifId', label: 'N° de l’objectif nutritionnel (facultatif)', type: 'number', min: 1 },
     { key: 'budgetId', label: 'N° du budget (facultatif)', type: 'number', min: 1 },
@@ -132,6 +127,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
 })
 export class WorkspaceEditorComponent {
   private readonly api = inject(WorkspaceEditorService);
+  private readonly zonesApi = inject(ZonesDataAccess);
   private readonly destroyRef = inject(DestroyRef);
   readonly kind = input.required<EditorKind>();
   readonly entityId = input<number>();
@@ -153,12 +149,17 @@ export class WorkspaceEditorComponent {
   readonly categoryChoicesLoading = signal(false);
   readonly categoryChoicesError = signal(false);
   readonly recipes = signal<Choice[]>([]);
+  readonly zones = signal<ZoneOption[]>([]);
   model: Record<string, string | number | boolean | null> = {};
   ingredients: Ingredient[] = [{ alimentId: null, quantite: null, unite: 'g' }];
   meals: Meal[] = [{ recetteId: null, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1 }];
   quizQuestions: QuizQuestion[] = [this.newQuestion()];
 
   constructor() {
+    this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (zones) => this.zones.set(zones),
+      error: () => this.error.set('Impossible de charger les régions.'),
+    });
     this.destroyRef.onDestroy(() => this.clearLocalImagePreview());
     effect((onCleanup) => {
       const kind = this.kind();
@@ -235,6 +236,7 @@ export class WorkspaceEditorComponent {
   }
 
   options(field: Field): { value: string | number; label: string }[] {
+    if (field.key === 'zone') return this.zones().map((zone) => ({ value: zone.code, label: zone.libelle }));
     const source = field.lookup === 'foods' ? this.foods() : field.lookup === 'categories' ? this.categories() : this.recipes();
     return field.lookup ? source.map((item) => ({ value: item.id, label: item.nom })) : field.options ?? [];
   }
