@@ -11,7 +11,7 @@
           @for (patient of filteredPatients(); track patient.id) {
             <button type="button" [class.selected]="selected()?.id === patient.id" (click)="select(patient)">
               <span class="patient-avatar">{{ initials(patient.name) }}@if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }</span>
-              <span><strong>{{ patient.name }}</strong><small>{{ age(summaries()[patient.id]) || 'Patient n° ' + patient.id }}</small></span><app-icon name="arrow" />
+              <span><strong>{{ patient.name }}</strong><small>{{ age(summaries()[patient.id]) || 'Patient n° ' + patient.id }}</small></span>
             </button>
           } @empty { <p class="table-state">Aucun profil ne correspond à la recherche.</p> }
         </nav>

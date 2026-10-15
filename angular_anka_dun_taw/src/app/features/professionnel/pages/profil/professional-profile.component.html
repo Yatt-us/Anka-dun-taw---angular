@@ -79,10 +79,10 @@
       </fieldset>
       <div class="settings-block"><div><h3>Disponibilités</h3>
           <p>Ajoutez ou retirez vos créneaux de rendez-vous depuis la page dédiée.</p></div>
-        <a routerLink="../disponibilites">Gérer mes disponibilités →</a></div>
+        <a routerLink="../disponibilites">Gérer mes disponibilités</a></div>
       <div class="settings-block"><div><h3>Notifications</h3>
           <p>Consultez les alertes et messages reçus dans votre espace.</p></div>
-        <a routerLink="../notifications">Voir mes notifications →</a></div>
+        <a routerLink="../notifications">Voir mes notifications</a></div>
       <div class="form-actions">
         <button type="button" class="secondary-button" [disabled]="saving() || !dirty()" (click)="reset()">Annuler les modifications</button>
         <button type="submit" class="primary-button" [disabled]="saving() || !dirty()">{{ saving() ? 'Enregistrement…' : 'Enregistrer les modifications' }}</button>

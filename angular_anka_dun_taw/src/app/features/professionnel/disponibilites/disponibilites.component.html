@@ -15,7 +15,7 @@
       @else if (!slots().length) { <p>Aucun créneau pour le moment.</p> }
       @else {
         @for (slot of slots(); track slot.id) {
-          <div class="slot"><div><strong>{{ format(slot.dateHeureDebut) }}</strong><span> → {{ format(slot.dateHeureFin) }}</span><small>{{ slot.statut }}</small></div>
+          <div class="slot"><div><strong>{{ format(slot.dateHeureDebut) }}</strong><span> à {{ format(slot.dateHeureFin) }}</span><small>{{ slot.statut }}</small></div>
             <button type="button" class="secondary" [disabled]="saving()" (click)="remove(slot.id)">Retirer</button></div>
         }
         <div class="pagination"><button type="button" class="secondary" [disabled]="page() === 0 || loading()" (click)="changePage(-1)">Précédent</button>

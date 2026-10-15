@@ -23,21 +23,6 @@
       }
     </nav>
     <div class="sidebar-bottom">
-      @if (actor().id === 'admin' && secondaryNavigation().length) {
-        <button class="admin-more" type="button" [attr.aria-expanded]="moreOpen()"
-          aria-controls="admin-more-rubrics" (click)="moreOpen.set(!moreOpen())">
-          <app-icon name="grid" /><span>Autres rubriques</span>
-        </button>
-        @if (moreOpen()) {
-          <div class="admin-more-list" id="admin-more-rubrics">
-            @for (item of secondaryNavigation(); track item.path) {
-              <a [routerLink]="['/espaces', actor().id, item.path]" routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page"
-                (click)="menuOpen.set(false); moreOpen.set(false)"><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a>
-            }
-          </div>
-        }
-      }
       <a class="change-space" routerLink="/espaces" title="Mon espace" aria-label="Mon espace"><app-icon name="grid" />Mon espace</a>
       <button mat-button class="change-space" type="button" (click)="logout()" title="Se déconnecter" aria-label="Se déconnecter">
         <app-icon name="logout" />Se déconnecter

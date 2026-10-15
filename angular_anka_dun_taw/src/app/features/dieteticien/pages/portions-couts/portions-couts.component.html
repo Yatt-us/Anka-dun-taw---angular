@@ -31,6 +31,6 @@
         </section><div class="info-card"><strong>Simulation indicative</strong><p>Les portions modifiées ici ne sont pas enregistrées dans le menu. Le backend fournit les coûts par repas, sans prix par ingrédient. Le budget n’est comparé que si sa période et la période du menu coïncident.</p></div></aside>
       </div>
     }
-    <nav class="pager" aria-label="Pagination des menus"><button type="button" [disabled]="page() === 0 || loading()" (click)="changePage(-1)">← Précédent</button><span>Page {{ page() + 1 }} sur {{ totalPages() }}</span><button type="button" [disabled]="page() + 1 >= totalPages() || loading()" (click)="changePage(1)">Suivant →</button></nav>
+    <nav class="pager" aria-label="Pagination des menus"><button type="button" [disabled]="page() === 0 || loading()" (click)="changePage(-1)">Précédent</button><span>Page {{ page() + 1 }} sur {{ totalPages() }}</span><button type="button" [disabled]="page() + 1 >= totalPages() || loading()" (click)="changePage(1)">Suivant</button></nav>
   }
 </section>

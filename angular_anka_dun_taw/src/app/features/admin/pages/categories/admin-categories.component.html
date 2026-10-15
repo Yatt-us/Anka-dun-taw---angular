@@ -24,6 +24,7 @@
     <label class="category-search"><app-icon name="search" />
       <input type="search" placeholder="Rechercher une catégorie..." aria-label="Rechercher une catégorie" [value]="query()" (input)="setQuery($event)" maxlength="80" />
     </label>
+    <label class="category-status-filter"><span class="sr-only">Afficher les catégories</span><select [value]="categoryStatus()" (change)="setCategoryStatus($event)"><option value="active">Catégories actives</option><option value="disabled">Catégories désactivées</option></select></label>
   </div>
 
   @if (state() === 'error') {
@@ -38,13 +39,13 @@
             @if (category.imageUrl) { <img [src]="category.imageUrl" [alt]="'Illustration de la catégorie ' + category.nom" loading="lazy" (error)="imageError($event)" /> }
           </div>
           <div class="category-card-body">
-            <div class="category-card-meta"><span class="category-icon"><app-icon [name]="iconFor(category)" /></span><span class="count-pill">{{ countFor(category) }} aliments</span></div>
+            <div class="category-card-meta"><span class="category-icon"><app-icon [name]="iconFor(category)" /></span><span class="count-pill">{{ countFor(category) }} aliments</span>@if (category.active === false) { <span class="disabled-pill">Désactivée</span> }</div>
             <h2>{{ category.nom }}</h2>
             <p [title]="category.description || ''">{{ category.description || 'Aucune description renseignée.' }}</p>
             <button type="button" class="manage-button" (click)="openCategory(category)">Gérer la catégorie</button>
           </div>
         </article>
-      } @empty { <p class="empty">Aucune catégorie ne correspond à la recherche.</p> }
+      } @empty { <p class="empty">{{ categoryStatus() === 'disabled' ? 'Aucune catégorie désactivée ne correspond à la recherche.' : 'Aucune catégorie active ne correspond à la recherche.' }}</p> }
     </div>
     @if (pageCount() > 1) {
       <div class="categories-pagination"><span>{{ result().totalElements }} catégories</span><nav aria-label="Pages des catégories">
@@ -69,7 +70,8 @@
       <div class="modal-heading"><div><p class="eyebrow">CATÉGORIE ALIMENTAIRE</p><h2 id="category-title">{{ category.nom }}</h2></div><button type="button" class="close-button" (click)="closeCategory()" aria-label="Fermer"><app-icon name="close" /></button></div>
       <p>{{ category.description || 'Aucune description renseignée.' }}</p>
       <p class="category-summary"><strong>{{ countFor(category) }}</strong> aliments référencés</p>
-      <div class="modal-actions"><button type="button" class="outline-button" (click)="openFoods(category)">Voir les aliments</button><button type="button" class="outline-button" (click)="confirmDeactivate(category)">Désactiver</button><button type="button" class="primary-button" (click)="openEditor(category)">Modifier</button></div>
+      @if (category.active === false) { <p class="disabled-note">Cette catégorie est désactivée et n’est plus proposée dans le catalogue.</p> }
+      <div class="modal-actions">@if (category.active !== false) { <button type="button" class="outline-button" (click)="openFoods(category)">Voir les aliments</button><button type="button" class="outline-button" (click)="confirmDeactivate(category)">Désactiver</button><button type="button" class="primary-button" (click)="openEditor(category)">Modifier</button> }</div>
     </section>
   </div>
 }

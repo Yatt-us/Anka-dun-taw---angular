@@ -52,7 +52,7 @@
           </span>
           <strong class="request-subject">{{ requestSubject(request) }}</strong>
           @if (requestDescription(request); as description) { <span class="request-excerpt">{{ description }}</span> }
-          <span class="request-bottom"><span>Menu concerné : <strong>{{ menuTitle(request.menuId) }}</strong></span><span class="request-action">{{ request.statut === 'EN_ATTENTE' || request.statut === 'EN_COURS' ? 'Traiter la demande' : 'Voir la demande' }} →</span></span>
+          <span class="request-bottom"><span>Menu concerné : <strong>{{ menuTitle(request.menuId) }}</strong></span><span class="request-action">{{ request.statut === 'EN_ATTENTE' || request.statut === 'EN_COURS' ? 'Traiter la demande' : 'Voir la demande' }}</span></span>
         </button>
       } @empty {
         <div class="empty-state">

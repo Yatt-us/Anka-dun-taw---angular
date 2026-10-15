@@ -11,7 +11,7 @@
 
     <section class="form-column" aria-labelledby="account-title">
       <div class="form-panel">
-        <a class="return-link" routerLink="/connexion">← Retour à la connexion</a>
+        <a class="return-link" routerLink="/connexion">Retour à la connexion</a>
         <h1 id="account-title">{{ mode() === 'inscription' ? 'Inscription' : title() }}</h1>
         @if (mode() !== 'inscription') { <p class="intro">{{ description() }}</p> }
 
@@ -46,7 +46,7 @@
                 <label>Mot de passe *<input type="password" minlength="8" name="motDePasse" [(ngModel)]="motDePasse" required autocomplete="new-password" /></label>
                 <label>Confirmer le mot de passe *<input type="password" minlength="8" name="confirmationMotDePasse" [(ngModel)]="confirmationMotDePasse" required autocomplete="new-password" /></label>
               </div>
-              <button class="primary-button" type="submit">Continuer <span aria-hidden="true">→</span></button>
+              <button class="primary-button" type="submit">Continuer</button>
             } @else {
               <div class="field-grid">
                 <label>Téléphone{{ signupMethod() === 'google' ? ' (facultatif)' : '' }}<input name="telephone" [(ngModel)]="telephone" autocomplete="tel" placeholder="+223…" /></label>
@@ -66,7 +66,7 @@
                 @if (busy()) { <p class="hint" role="status">Création du profil professionnel…</p> }
               }
               @if (signupMethod() === 'password') {
-                <button class="step-back" type="button" (click)="signupStep.set(1)">← Informations personnelles</button>
+                <button class="step-back" type="button" (click)="signupStep.set(1)">Informations personnelles</button>
               }
             }
           </form>
