@@ -36,7 +36,9 @@ export class WorkspaceLayoutComponent {
   readonly profilePhotoError = signal(false);
   readonly profileName = computed(() => {
     const user = this.auth.currentUser();
-    return user ? `${user.prenom} ${user.nom}`.trim() : 'Mon compte';
+    if (!user) return 'Mon compte';
+    if (this.actor().id === 'admin') return `${user.prenom?.[0] ?? ''}. ${user.nom}`.trim();
+    return `${user.prenom} ${user.nom}`.trim();
   });
   readonly profileInitials = computed(() => {
     const user = this.auth.currentUser();

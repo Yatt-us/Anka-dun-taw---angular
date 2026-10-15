@@ -33,11 +33,12 @@
       <div class="profile">
         <span class="avatar">
           @if (profilePhoto(); as photo) { <img [src]="photo" alt="" (error)="profilePhotoError.set(true)" /> }
+          @else if (actor().id === 'admin') { <app-icon name="user" /> }
           @else { {{ profileInitials() }} }
         </span>
         <div>
           <strong>{{ profileName() }}</strong
-          ><small>{{ actor().shortTitle }}</small>
+          ><small>{{ actor().id === 'admin' ? 'Super Admin' : actor().shortTitle }}</small>
         </div>
       </div>
     </div>
