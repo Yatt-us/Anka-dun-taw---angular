@@ -53,6 +53,12 @@ export class AdminFoodsDataAccess {
     });
   }
 
+  disabledCategories(page = 0, size = 12, query = ''): Observable<AdminFoodPage<AdminFoodCategory>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (query) params = params.set('q', query);
+    return this.http.get<AdminFoodPage<AdminFoodCategory>>(`${API_BASE_URL}/categories-aliments/desactivees`, { params });
+  }
+
   deactivateCategory(categoryId: number): Observable<void> {
     return this.http.delete<void>(`${API_BASE_URL}/categories-aliments/${categoryId}`);
   }

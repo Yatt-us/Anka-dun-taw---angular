@@ -45,7 +45,6 @@
           <a class="appointment" routerLink="../rendez-vous">
             <time>{{ appointmentTime(meeting.dateHeure) }}</time>
             <div><strong>{{ appointmentName(meeting.utilisateurId) }}</strong><span class="tag">{{ meeting.motif || 'Consultation' }}</span></div>
-            <app-icon name="arrow" />
           </a>
         } @empty { <p class="empty">Aucun rendez-vous accepté aujourd’hui.</p> }
       </div>

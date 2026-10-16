@@ -9,6 +9,6 @@
     @if (availabilityLoading()) { <p class="availability-state" role="status">Chargement des disponibilités…</p> }
     @else if (availabilityError()) { <p class="availability-state" role="alert">Disponibilités indisponibles.</p> }
     @else { <div class="slot-list">@for (slot of available(); track slot.id) { <div class="slot"><div><strong>{{ formatDate(slot.dateHeureDebut) }}</strong><span>{{ formatTime(slot.dateHeureDebut) }} – {{ formatTime(slot.dateHeureFin) }}</span></div><small>Disponible</small></div> } @empty { <p class="availability-state">Aucun créneau futur ouvert.</p> }</div> }
-    <a routerLink="../disponibilites">Gérer mes disponibilités →</a>
+    <a routerLink="../disponibilites">Gérer mes disponibilités</a>
   </aside></div>
 </section>

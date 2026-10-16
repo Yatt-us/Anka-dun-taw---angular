@@ -18,7 +18,7 @@ const PATHS: Record<string, string> = {
   refresh: 'M20 7v5h-5M4 17v-5h5m-4-5a8 8 0 0 1 13-2l2 3M4 16l2 3a8 8 0 0 0 13-2',
   user: 'M20 21v-2a8 8 0 0 0-16 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
   mail: 'M3 5h18v14H3Zm0 0 9 8 9-8',
-  arrow: 'm9 5 7 7-7 7',
+  archive: 'M3 4h18v4H3Zm2 4v12h14V8m-10 4h6m-6 4h6',
   logout: 'M9 3H3v18h6m5-14 5 5-5 5m-7-5h13',
   search: 'M21 21l-6-6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0',
   download: 'M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4',

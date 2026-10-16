@@ -10,7 +10,7 @@ import { EditorKind } from '../../../shared/forms/workspace-editor.service';
 interface Food { id: number; nom: string; description?: string; imageUrl?: string | null; categorieNom?: string; origine?: string; calories?: number; disponible: boolean }
 interface Category { id: number; nom: string; description?: string; imageUrl?: string | null; groupeAssiette?: string; active: boolean }
 interface Recipe { id: number; nom: string; description?: string; imageUrl?: string | null; dureePreparationMinutes?: number; nombrePersonnes?: number; statut?: string }
-interface Journal { id: number; dateHeure?: string; acteurId?: number; action?: string; typeEntite?: string; idEntite?: number; resultat?: string; description?: string }
+interface Journal { id: number; dateHeure?: string; acteurId?: number; acteurNom?: string; acteurPrenom?: string; acteurRole?: string; action?: string; typeEntite?: string; idEntite?: number; resultat?: string; description?: string }
 interface Menu { id: number; titre: string; description?: string; imageUrl?: string | null; type?: string; dateDebut?: string; statut?: string; beneficiaireIds?: number[]; coutTotalEstime?: number; devise?: string }
 interface Advice { id: number; titre: string; contenu?: string; imageUrl?: string | null; categorie?: string; statut?: string; validateurId?: number | null }
 interface Article { id: number; titre: string; contenu?: string; imageUrl?: string | null; theme?: string; statut?: string }
@@ -65,9 +65,9 @@ export class AdminWorkspaceDataAccess {
       })));
       case 'contenus': return this.publishedContent(page, size);
       case 'historique': return this.paged<Journal>('/admin/journal-activite', page, size, (item) => ({
-        key: `journal-${item.id}`, title: item.action ? formatStatusLabel(item.action) : 'Activité',
-        subtitle: item.description || [item.typeEntite, item.idEntite != null ? `n° ${item.idEntite}` : null].filter(Boolean).join(' ') || 'Détail non renseigné',
-        value: `${formatApiDate(item.dateHeure)} · Acteur n° ${item.acteurId ?? '—'}`,
+        key: `journal-${item.id}`, title: journalActionLabel(item.action),
+        subtitle: journalEntityLabel(item.typeEntite, item.idEntite),
+        value: `${formatApiDate(item.dateHeure)} · ${journalActorLabel(item)}`,
         ...statusBadge(item.resultat),
       }));
       default: return null;
@@ -166,4 +166,31 @@ export class AdminWorkspaceDataAccess {
       subtitle: ['Article', item.theme ? formatStatusLabel(item.theme) : null].filter(Boolean).join(' · '),
       value: shortSummary(item.contenu), ...statusBadge(item.statut) };
   }
+}
+
+function journalActionLabel(action?: string): string {
+  const labels: Record<string, string> = {
+    CONSULTATION: 'Consultation', CREATION: 'Création', MODIFICATION: 'Modification',
+    SUPPRESSION: 'Suppression', CONNEXION: 'Connexion', DECONNEXION: 'Déconnexion',
+    PUBLICATION: 'Publication', VALIDATION: 'Validation', ARCHIVAGE: 'Archivage',
+    ACCEPTATION: 'Acceptation', REFUS: 'Refus', ANNULATION: 'Annulation',
+    ADMINISTRATION: 'Administration', AUTRE: 'Activité',
+  };
+  return action ? labels[action] ?? 'Activité' : 'Activité';
+}
+
+function journalEntityLabel(type?: string, id?: number): string {
+  const labels: Record<string, string> = {
+    ALIMENTS: 'Aliments locaux', CATEGORIES_ALIMENTS: 'Catégories alimentaires',
+    PERSONNE: 'Compte', UTILISATEURS: 'Comptes utilisateurs', PROFESSIONNELS: 'Professionnels',
+    RENDEZ_VOUS: 'Rendez-vous', QUIZ: 'Quiz', DEFIS: 'Défis', RECETTES: 'Recettes', MENUS: 'Menus',
+  };
+  const entity = type ? labels[type] ?? formatStatusLabel(type) : 'Détail non renseigné';
+  return id == null ? entity : `${entity} · n° ${id}`;
+}
+
+function journalActorLabel(item: Journal): string {
+  const name = [item.acteurPrenom, item.acteurNom].filter(Boolean).join(' ');
+  if (name) return item.acteurRole ? `${name} · ${formatStatusLabel(item.acteurRole)}` : name;
+  return item.acteurId == null ? 'Action système' : `Compte n° ${item.acteurId}`;
 }

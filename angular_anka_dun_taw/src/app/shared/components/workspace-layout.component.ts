@@ -13,10 +13,6 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ACTORS, isActorId } from './workspace-config';
 import { UiIconComponent } from './ui-icon.component';
 
-const ADMIN_PRIMARY_PATHS = [
-  'tableau-de-bord', 'utilisateurs', 'professionnels', 'aliments',
-  'categories', 'recettes', 'contenus', 'parametres', 'historique',
-];
 @Component({
   selector: 'app-workspace-layout',
   imports: [MatButtonModule, RouterLink, RouterLinkActive, RouterOutlet, UiIconComponent],
@@ -34,19 +30,15 @@ export class WorkspaceLayoutComponent {
     const id = this.actorId();
     return ACTORS[isActorId(id) ? id : 'admin'];
   });
-  readonly primaryNavigation = computed(() => this.actor().id === 'admin'
-    ? ADMIN_PRIMARY_PATHS.flatMap((path) => this.actor().navigation.filter((item) => item.path === path))
-    : this.actor().navigation);
-  readonly secondaryNavigation = computed(() => this.actor().id === 'admin'
-    ? this.actor().navigation.filter((item) => !ADMIN_PRIMARY_PATHS.includes(item.path))
-    : []);
-  readonly moreOpen = signal(false);
+  readonly primaryNavigation = computed(() => this.actor().navigation);
   readonly menuOpen = signal(false);
   readonly logoutError = signal<string | null>(null);
   readonly profilePhotoError = signal(false);
   readonly profileName = computed(() => {
     const user = this.auth.currentUser();
-    return user ? `${user.prenom} ${user.nom}`.trim() : 'Mon compte';
+    if (!user) return 'Mon compte';
+    if (this.actor().id === 'admin') return `${user.prenom?.[0] ?? ''}. ${user.nom}`.trim();
+    return `${user.prenom} ${user.nom}`.trim();
   });
   readonly profileInitials = computed(() => {
     const user = this.auth.currentUser();

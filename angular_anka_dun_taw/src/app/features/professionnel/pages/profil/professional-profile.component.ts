@@ -14,6 +14,8 @@ export interface ProfessionalProfile {
   photoProfilUrl: string | null; role: 'DIETETICIEN' | 'NUTRITIONNISTE';
   specialite: string; qualification: string; numeroOrdre: string | null;
   anneesExperience: number | null; biographie: string | null; statutVerification: string;
+  emailVerifie?: boolean;
+  tarifConsultation?: number | null;
 }
 interface IdentityResponse {
   nom: string; prenom: string; telephone: string | null; photoProfilUrl: string | null;
@@ -22,6 +24,7 @@ interface ProfileForm {
   nom: string; prenom: string; telephone: string; photoProfilUrl: string;
   specialite: string; qualification: string; numeroOrdre: string;
   anneesExperience: number | null; biographie: string;
+  tarifConsultation: number | null;
 }
 
 @Component({
@@ -41,6 +44,10 @@ export class ProfessionalProfileComponent {
   readonly success = signal('');
   readonly photoEditorOpen = signal(false);
   readonly editing = signal(false);
+  readonly emailCodeSent = signal(false);
+  readonly emailBusy = signal(false);
+  emailCandidate = '';
+  emailCode = '';
   readonly dateLabel = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
@@ -64,7 +71,7 @@ export class ProfessionalProfileComponent {
 
   private blankForm(): ProfileForm {
     return { nom: '', prenom: '', telephone: '', photoProfilUrl: '', specialite: '',
-      qualification: '', numeroOrdre: '', anneesExperience: null, biographie: '' };
+      qualification: '', numeroOrdre: '', anneesExperience: null, biographie: '', tarifConsultation: null };
   }
   private fromProfile(profile: ProfessionalProfile): ProfileForm {
     return {
@@ -72,18 +79,46 @@ export class ProfessionalProfileComponent {
       photoProfilUrl: profile.photoProfilUrl ?? '', specialite: profile.specialite ?? '',
       qualification: profile.qualification ?? '', numeroOrdre: profile.numeroOrdre ?? '',
       anneesExperience: profile.anneesExperience ?? null, biographie: profile.biographie ?? '',
+      tarifConsultation: profile.tarifConsultation ?? null,
     };
   }
   private applyProfile(profile: ProfessionalProfile): void {
     this.profile.set(profile);
+    this.emailCandidate = profile.email ?? '';
     this.form = this.fromProfile(profile);
     this.original = this.normalized(this.form);
+  }
+  requestEmailVerification(): void {
+    if (this.emailBusy()) return;
+    const email = this.emailCandidate.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.error.set('Indiquez une adresse e-mail valide.'); return;
+    }
+    this.emailBusy.set(true); this.error.set(''); this.success.set('');
+    this.http.post(`${API_BASE_URL}/me/email-verification/demander`, { email })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => { this.emailBusy.set(false); this.emailCodeSent.set(true); this.success.set('Un code a été envoyé. Il expire dans 20 minutes.'); },
+        error: (cause: unknown) => { this.emailBusy.set(false); this.error.set(this.describe(cause, 'Impossible d’envoyer le code.')); },
+      });
+  }
+  confirmEmailVerification(): void {
+    if (this.emailBusy() || !/^[0-9]{6}$/.test(this.emailCode.trim())) {
+      this.error.set('Saisissez le code à six chiffres reçu par e-mail.'); return;
+    }
+    this.emailBusy.set(true); this.error.set('');
+    this.http.post(`${API_BASE_URL}/me/email-verification/confirmer`, { code: this.emailCode.trim() })
+      .pipe(switchMap(() => this.http.get<ProfessionalProfile>(`${API_BASE_URL}/professionnels/me`)),
+        takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (profile) => { this.emailBusy.set(false); this.emailCodeSent.set(false); this.emailCode = ''; this.applyProfile(profile); this.success.set('Adresse e-mail vérifiée.'); },
+        error: (cause: unknown) => { this.emailBusy.set(false); this.error.set(this.describe(cause, 'Code invalide ou expiré.')); },
+      });
   }
   private normalized(form: ProfileForm): ProfileForm {
     return { ...form, nom: form.nom.trim(), prenom: form.prenom.trim(), telephone: form.telephone.trim(),
       photoProfilUrl: form.photoProfilUrl.trim(), specialite: form.specialite.trim(),
       qualification: form.qualification.trim(), numeroOrdre: form.numeroOrdre.trim(),
-      biographie: form.biographie.trim(), anneesExperience: form.anneesExperience == null ? null : Number(form.anneesExperience) };
+      biographie: form.biographie.trim(), anneesExperience: form.anneesExperience == null ? null : Number(form.anneesExperience),
+      tarifConsultation: form.tarifConsultation == null ? null : Number(form.tarifConsultation) };
   }
   dirty(): boolean { return this.profile() !== null &&
     JSON.stringify(this.normalized(this.form)) !== JSON.stringify(this.original); }
@@ -114,9 +149,12 @@ export class ProfessionalProfileComponent {
     if (form.anneesExperience !== null && (!Number.isInteger(form.anneesExperience) || form.anneesExperience < 0 || form.anneesExperience > 80)) {
       this.error.set('Les années d’expérience doivent être comprises entre 0 et 80.'); return;
     }
+    if (form.tarifConsultation !== null && (!Number.isFinite(form.tarifConsultation) || form.tarifConsultation <= 0 || form.tarifConsultation > 99999999)) {
+      this.error.set('Indiquez un tarif de consultation positif en FCFA.'); return;
+    }
     const identityChanged = ['nom', 'prenom', 'telephone', 'photoProfilUrl'].some((key) =>
       form[key as keyof ProfileForm] !== this.original[key as keyof ProfileForm]);
-    const professionalChanged = ['specialite', 'qualification', 'numeroOrdre', 'anneesExperience', 'biographie'].some((key) =>
+    const professionalChanged = ['specialite', 'qualification', 'numeroOrdre', 'anneesExperience', 'biographie', 'tarifConsultation'].some((key) =>
       form[key as keyof ProfileForm] !== this.original[key as keyof ProfileForm]);
     if (!identityChanged && !professionalChanged) { this.success.set('Aucune modification à enregistrer.'); return; }
     this.saving.set(true);
@@ -133,6 +171,7 @@ export class ProfessionalProfileComponent {
           specialite: form.specialite, qualification: form.qualification,
           numeroOrdre: form.numeroOrdre || null,
           anneesExperience: form.anneesExperience, biographie: form.biographie || null,
+          tarifConsultation: form.tarifConsultation,
         })
       : of(null);
     personalUpdate.pipe(

@@ -40,6 +40,7 @@ export class AdminContentComponent {
   readonly editorKind = signal<EditorKind | null>(null);
   readonly editId = signal<number | undefined>(undefined);
   readonly selected = signal<Selection | null>(null);
+  readonly deleteConfirmation = signal(false);
   readonly busy = signal(false);
 
   readonly filteredQuizzes = computed(() => {
@@ -119,6 +120,7 @@ export class AdminContentComponent {
   }
   newContent(): void {
     if (this.tab() === 'conseils') return;
+    this.deleteConfirmation.set(false);
     this.editId.set(undefined);
     this.editorKind.set(this.tab() === 'defis' ? 'challenge' : 'quiz');
     this.actionError.set('');
@@ -126,16 +128,39 @@ export class AdminContentComponent {
   edit(selection: Selection): void {
     if (selection.kind === 'advice') return;
     this.selected.set(null);
+    this.deleteConfirmation.set(false);
     if (selection.status !== 'BROUILLON') { this.selected.set(selection); return; }
     this.editId.set(selection.id);
     this.editorKind.set(selection.kind);
   }
   closeEditor(): void { this.editorKind.set(null); }
   editorSaved(): void { this.editorKind.set(null); this.message.set('Contenu enregistré.'); this.reload(); }
-  openQuiz(quiz: AdminQuiz): void { this.selected.set({ kind: 'quiz', id: quiz.id, title: quiz.contenu.titre, status: quiz.statut }); this.actionError.set(''); }
-  openChallenge(challenge: AdminChallenge): void { this.selected.set({ kind: 'challenge', id: challenge.id, title: challenge.titre, status: challenge.statut }); this.actionError.set(''); }
-  openAdvice(item: AdminAdvice): void { this.selected.set({ kind: 'advice', id: item.id, title: item.titre, status: item.statut }); this.actionError.set(''); }
-  closeSelection(): void { this.selected.set(null); }
+  openQuiz(quiz: AdminQuiz): void { this.deleteConfirmation.set(false); this.selected.set({ kind: 'quiz', id: quiz.id, title: quiz.contenu.titre, status: quiz.statut }); this.actionError.set(''); }
+  openDeleteQuiz(quiz: AdminQuiz): void {
+    this.confirmDraftDeletion({ kind: 'quiz', id: quiz.id, title: quiz.contenu.titre, status: quiz.statut });
+  }
+  openChallenge(challenge: AdminChallenge): void { this.deleteConfirmation.set(false); this.selected.set({ kind: 'challenge', id: challenge.id, title: challenge.titre, status: challenge.statut }); this.actionError.set(''); }
+  openAdvice(item: AdminAdvice): void { this.deleteConfirmation.set(false); this.selected.set({ kind: 'advice', id: item.id, title: item.titre, status: item.statut }); this.actionError.set(''); }
+  closeSelection(): void { this.selected.set(null); this.deleteConfirmation.set(false); }
+  confirmDraftDeletion(item: Selection): void {
+    if (item.kind !== 'quiz' || item.status !== 'BROUILLON') return;
+    this.selected.set(item);
+    this.deleteConfirmation.set(true);
+    this.actionError.set('');
+  }
+  deleteDraftQuiz(item: Selection): void {
+    if (this.busy() || item.kind !== 'quiz' || item.status !== 'BROUILLON') return;
+    this.busy.set(true);
+    this.api.deleteDraftQuiz(item.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.closeSelection();
+        this.message.set('Quiz en brouillon supprimé.');
+        this.reload();
+      },
+      error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
+    });
+  }
   perform(action: 'publish' | 'archive', item: Selection): void {
     if (this.busy() || item.kind === 'advice') return;
     this.busy.set(true);

@@ -35,6 +35,7 @@
           <td data-label="Question du jour">{{ formatDate(quiz.contenu.dateQuestionDuJour) }}</td>
           <td data-label="Statut"><span class="status-pill" [class.draft]="quiz.statut === 'BROUILLON'" [class.archived]="quiz.statut === 'ARCHIVE'">{{ quiz.statut === 'PUBLIE' ? 'Publié' : quiz.statut === 'BROUILLON' ? 'Brouillon' : 'Archivé' }}</span></td>
           <td data-label="Actions" class="actions-cell"><button type="button" class="row-action edit" [attr.aria-label]="'Gérer ' + quiz.contenu.titre" (click)="openQuiz(quiz)"><app-icon name="edit" /></button>
+            @if (quiz.statut === 'BROUILLON') { <button type="button" class="row-action archive" [attr.aria-label]="'Supprimer le brouillon ' + quiz.contenu.titre" (click)="openDeleteQuiz(quiz)"><app-icon name="trash" /></button> }
             @if (quiz.statut === 'PUBLIE') { <button type="button" class="row-action archive" [attr.aria-label]="'Archiver ' + quiz.contenu.titre" (click)="openQuiz(quiz)"><app-icon name="trash" /></button> }
           </td>
         </tr> } @empty { <tr><td colspan="6" class="empty-cell">Aucun quiz ne correspond aux filtres.</td></tr> }
@@ -65,8 +66,10 @@
     @if (item.kind === 'advice') { <p class="immutable-note">Les conseils sont publiés et gérés par les nutritionnistes. Cette vue est en lecture seule.</p> }
     @else if (item.status !== 'BROUILLON') { <p class="immutable-note">Les contenus publiés sont consultables ici. Les modifications se font sur un brouillon.</p> }
     @if (actionError()) { <p class="error-message" role="alert">{{ actionError() }}</p> }
+    @if (deleteConfirmation()) { <p class="delete-warning" role="alert">Supprimer définitivement ce quiz en brouillon et ses questions ? Cette action ne peut pas être annulée.</p> }
     <div class="modal-actions"><button type="button" class="outline-button" (click)="closeSelection()">Fermer</button>
-      @if (item.kind !== 'advice' && item.status === 'BROUILLON') { <button type="button" class="outline-button" (click)="edit(item)">Modifier</button><button type="button" class="primary-button" (click)="perform('publish',item)" [disabled]="busy()">Publier</button> }
+      @if (item.kind === 'quiz' && item.status === 'BROUILLON' && deleteConfirmation()) { <button type="button" class="outline-button" (click)="deleteConfirmation.set(false)" [disabled]="busy()">Annuler</button><button type="button" class="danger-button" (click)="deleteDraftQuiz(item)" [disabled]="busy()">{{ busy() ? 'Suppression…' : 'Confirmer la suppression' }}</button> }
+      @else if (item.kind !== 'advice' && item.status === 'BROUILLON') { <button type="button" class="outline-button" (click)="edit(item)">Modifier</button>@if (item.kind === 'quiz') { <button type="button" class="danger-outline-button" (click)="confirmDraftDeletion(item)">Supprimer</button> }<button type="button" class="primary-button" (click)="perform('publish',item)" [disabled]="busy()">Publier</button> }
       @if (item.kind !== 'advice' && (item.status === 'PUBLIE' || item.status === 'PUBLIEE')) { <button type="button" class="outline-button" (click)="perform('archive',item)" [disabled]="busy()">Archiver</button> }
     </div>
   </section></div> }

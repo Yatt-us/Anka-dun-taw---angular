@@ -184,10 +184,6 @@
         background: #fff4d9;
         color: #9a741e;
       }
-      .card-arrow {
-        font-size: 18px;
-        color: #91a097;
-      }
       .role-label {
         font-size: 8px;
         letter-spacing: 1.3px;
@@ -209,15 +205,11 @@
         margin-top: auto;
         padding-top: 19px;
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
         color: var(--green);
         font-size: 11px;
         font-weight: 700;
-      }
-      .role-action b {
-        font-size: 18px;
-        font-weight: 500;
       }
       .notice {
         display: flex;
