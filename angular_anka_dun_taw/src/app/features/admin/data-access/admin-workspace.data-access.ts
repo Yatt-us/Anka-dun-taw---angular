@@ -10,14 +10,14 @@ import { EditorKind } from '../../../shared/forms/workspace-editor.service';
 interface Food { id: number; nom: string; description?: string; imageUrl?: string | null; categorieNom?: string; origine?: string; calories?: number; disponible: boolean }
 interface Category { id: number; nom: string; description?: string; imageUrl?: string | null; groupeAssiette?: string; active: boolean }
 interface Recipe { id: number; nom: string; description?: string; imageUrl?: string | null; dureePreparationMinutes?: number; nombrePersonnes?: number; statut?: string }
-interface Journal { id: number; dateHeure?: string; acteurId?: number; action?: string; typeEntite?: string; idEntite?: number; resultat?: string; description?: string }
+interface Journal { id: number; dateHeure?: string; acteurId?: number; acteurNom?: string; acteurPrenom?: string; acteurRole?: string; action?: string; typeEntite?: string; idEntite?: number; resultat?: string; description?: string }
 interface Menu { id: number; titre: string; description?: string; imageUrl?: string | null; type?: string; dateDebut?: string; statut?: string; beneficiaireIds?: number[]; coutTotalEstime?: number; devise?: string }
 interface Advice { id: number; titre: string; contenu?: string; imageUrl?: string | null; categorie?: string; statut?: string; validateurId?: number | null }
 interface Article { id: number; titre: string; contenu?: string; imageUrl?: string | null; theme?: string; statut?: string }
 interface Quiz { id: number; titre: string; description?: string; imageUrl?: string | null; scoreMaximum?: number }
 interface AdminQuiz { id: number; statut: string; scoreMaximum: number; contenu: { titre: string; description?: string; imageUrl?: string | null } }
 interface Challenge { id: number; titre: string; imageUrl?: string | null; objectif?: string; nombrePoints?: number; dateFin?: string; statut?: string }
-interface Badge { id: number; nom: string; imageUrl?: string | null; description?: string; points?: number; conditionObtention?: string }
+interface Badge { id: number; nom: string; imageUrl?: string | null; description?: string; points?: number; conditionObtention?: string; actif?: boolean }
 
 @Injectable({ providedIn: 'root' })
 export class AdminWorkspaceDataAccess {
@@ -55,19 +55,19 @@ export class AdminWorkspaceDataAccess {
         value: `${item.nombrePoints ?? 0} point(s) · ${formatApiDate(item.dateFin)}`, ...statusBadge(item.statut),
         detail: { kind: 'challenge', editKind: item.statut === 'BROUILLON' ? 'challenge' : undefined, showChallengeProgress: true },
       }), status ? { statut: status } : {});
-      case 'badges': return this.http.get<Badge[]>(`${API_BASE_URL}/badges`).pipe(map((items) => ({
+      case 'badges': return this.http.get<Badge[]>(`${API_BASE_URL}/admin/badges`).pipe(map((items) => ({
         rows: items.slice(page * size, (page + 1) * size).map((item): WorkspaceRow => ({
           key: `badge-${item.id}`, title: item.nom, subtitle: shortSummary(item.description), imageUrl: item.imageUrl,
           value: `${item.points ?? 0} point(s) · ${item.conditionObtention || 'Condition non renseignée'}`,
-          badge: 'Actif', badgeTone: 'green',
-          detail: { kind: 'badge', showBadgeAssignment: true },
+          badge: item.actif === false ? 'Archivé' : 'Actif', badgeTone: item.actif === false ? 'neutral' : 'green',
+          detail: { kind: 'badge', editKind: 'badge', showBadgeAssignment: item.actif !== false },
         })), total: items.length,
       })));
       case 'contenus': return this.publishedContent(page, size);
       case 'historique': return this.paged<Journal>('/admin/journal-activite', page, size, (item) => ({
-        key: `journal-${item.id}`, title: item.action ? formatStatusLabel(item.action) : 'Activité',
-        subtitle: item.description || [item.typeEntite, item.idEntite != null ? `n° ${item.idEntite}` : null].filter(Boolean).join(' ') || 'Détail non renseigné',
-        value: `${formatApiDate(item.dateHeure)} · Acteur n° ${item.acteurId ?? '—'}`,
+        key: `journal-${item.id}`, title: journalActionLabel(item.action),
+        subtitle: journalEntityLabel(item.typeEntite, item.idEntite),
+        value: `${formatApiDate(item.dateHeure)} · ${journalActorLabel(item)}`,
         ...statusBadge(item.resultat),
       }));
       default: return null;
@@ -82,6 +82,9 @@ export class AdminWorkspaceDataAccess {
   }
 
   actionsFor(key: string, badge: string, id: number): WorkspaceAction[] {
+    if (key.startsWith('badge-')) return badge === 'Actif'
+      ? [{ label: 'Archiver', path: `/admin/badges/${id}`, method: 'DELETE' }]
+      : [{ label: 'Réactiver', path: `/admin/badges/${id}/reactiver` }];
     if (key.startsWith('recipe-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/recettes/${id}/publier` }];
       if (badge === 'Publié' || badge === 'Publiée') return [{ label: 'Archiver', path: `/recettes/${id}/archiver` }];
@@ -166,4 +169,31 @@ export class AdminWorkspaceDataAccess {
       subtitle: ['Article', item.theme ? formatStatusLabel(item.theme) : null].filter(Boolean).join(' · '),
       value: shortSummary(item.contenu), ...statusBadge(item.statut) };
   }
+}
+
+function journalActionLabel(action?: string): string {
+  const labels: Record<string, string> = {
+    CONSULTATION: 'Consultation', CREATION: 'Création', MODIFICATION: 'Modification',
+    SUPPRESSION: 'Suppression', CONNEXION: 'Connexion', DECONNEXION: 'Déconnexion',
+    PUBLICATION: 'Publication', VALIDATION: 'Validation', ARCHIVAGE: 'Archivage',
+    ACCEPTATION: 'Acceptation', REFUS: 'Refus', ANNULATION: 'Annulation',
+    ADMINISTRATION: 'Administration', AUTRE: 'Activité',
+  };
+  return action ? labels[action] ?? 'Activité' : 'Activité';
+}
+
+function journalEntityLabel(type?: string, id?: number): string {
+  const labels: Record<string, string> = {
+    ALIMENTS: 'Aliments locaux', CATEGORIES_ALIMENTS: 'Catégories alimentaires',
+    PERSONNE: 'Compte', UTILISATEURS: 'Comptes utilisateurs', PROFESSIONNELS: 'Professionnels',
+    RENDEZ_VOUS: 'Rendez-vous', QUIZ: 'Quiz', DEFIS: 'Défis', RECETTES: 'Recettes', MENUS: 'Menus',
+  };
+  const entity = type ? labels[type] ?? formatStatusLabel(type) : 'Détail non renseigné';
+  return id == null ? entity : `${entity} · n° ${id}`;
+}
+
+function journalActorLabel(item: Journal): string {
+  const name = [item.acteurPrenom, item.acteurNom].filter(Boolean).join(' ');
+  if (name) return item.acteurRole ? `${name} · ${formatStatusLabel(item.acteurRole)}` : name;
+  return item.acteurId == null ? 'Action système' : `Compte n° ${item.acteurId}`;
 }

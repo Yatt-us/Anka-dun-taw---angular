@@ -26,8 +26,7 @@
               [attr.aria-disabled]="!canOpen('admin')"
             >
               <div class="role-card-top">
-                <span class="role-icon">AD</span
-                ><span class="card-arrow" aria-hidden="true">↗</span>
+                <span class="role-icon">AD</span>
               </div>
               <span class="role-label">ESPACE 01</span>
               <h2>Administrateur</h2>
@@ -35,10 +34,7 @@
                 Gérez les comptes, les professionnels, les aliments et les contenus de la
                 plateforme.
               </p>
-              <span class="role-action"
-                >{{ canOpen('admin') ? 'Ouvrir l’espace' : 'Accès réservé' }}
-                <b aria-hidden="true">→</b></span
-              >
+              <span class="role-action">{{ canOpen('admin') ? 'Ouvrir l’espace' : 'Accès réservé' }}</span>
             </a>
           }
           @if (ownActor() === 'dieteticien') {
@@ -49,8 +45,7 @@
               [attr.aria-disabled]="!canOpen('dieteticien')"
             >
               <div class="role-card-top">
-                <span class="role-icon">DT</span
-                ><span class="card-arrow" aria-hidden="true">↗</span>
+                <span class="role-icon">DT</span>
               </div>
               <span class="role-label">ESPACE 02</span>
               <h2>Diététicien(ne)</h2>
@@ -58,10 +53,7 @@
                 Suivez vos patients et composez des menus adaptés à leurs objectifs et à leur
                 budget.
               </p>
-              <span class="role-action"
-                >{{ canOpen('dieteticien') ? 'Ouvrir l’espace' : 'Accès réservé' }}
-                <b aria-hidden="true">→</b></span
-              >
+              <span class="role-action">{{ canOpen('dieteticien') ? 'Ouvrir l’espace' : 'Accès réservé' }}</span>
             </a>
           }
           @if (ownActor() === 'nutritionniste') {
@@ -74,18 +66,14 @@
               [attr.aria-disabled]="!canOpen('nutritionniste')"
             >
               <div class="role-card-top">
-                <span class="role-icon">NT</span
-                ><span class="card-arrow" aria-hidden="true">↗</span>
+                <span class="role-icon">NT</span>
               </div>
               <span class="role-label">ESPACE 03</span>
               <h2>Nutritionniste</h2>
               <p>
                 Organisez les consultations, répondez aux questions et partagez vos recommandations.
               </p>
-              <span class="role-action"
-                >{{ canOpen('nutritionniste') ? 'Ouvrir l’espace' : 'Accès réservé' }}
-                <b aria-hidden="true">→</b></span
-              >
+              <span class="role-action">{{ canOpen('nutritionniste') ? 'Ouvrir l’espace' : 'Accès réservé' }}</span>
             </a>
           }
         </div>

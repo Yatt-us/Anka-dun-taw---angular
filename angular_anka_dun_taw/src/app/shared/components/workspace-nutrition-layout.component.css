@@ -1,24 +1,142 @@
-.app-frame.nutritionniste{grid-template-columns:210px minmax(0,1fr);background:#fcf8f0}
-.nutritionniste main{position:relative}
-.nutritionniste .nutrition-logo{position:sticky;top:22px;z-index:31;display:block;width:116px;height:88px;margin:22px 0 4px -68px}
-.nutritionniste .nutrition-logo svg{display:block;width:100%;height:100%}
-.nutritionniste .sidebar{top:120px;align-self:start;width:92px;height:calc(100dvh - 145px);min-height:620px;margin:0 0 24px 28px;padding:16px 9px;overflow:visible;border:0;border-radius:28px;background:#fff;box-shadow:0 4px 14px #17375120}
-.nutritionniste .brand{display:none}
-.nutritionniste nav{display:flex;flex:1 1 auto;flex-direction:column;align-items:center;gap:5px;min-height:0;overflow:visible}
-.nutritionniste nav a{position:relative;z-index:1;display:flex;justify-content:center;flex:0 0 43px;width:48px;min-height:43px;padding:10px;border-radius:12px;color:#3a4b46;font-size:12px}
-.nutritionniste nav a:hover{transform:none;background:#eaf3f6;color:#006da7}
-.nutritionniste nav a.active,.nutritionniste nav a.active:hover{z-index:2;align-self:flex-start;justify-content:flex-start;gap:8px;width:max-content;min-width:165px;margin-left:18px;padding:10px 13px;border-radius:17px;background:#0074ab;color:#fff;box-shadow:0 3px 8px #10374b2b}
-.nutritionniste nav a span{display:none}.nutritionniste nav a.active span{display:inline;font-size:12px;font-weight:700;line-height:1.2;white-space:normal}
-.nutritionniste nav app-icon{flex:0 0 18px;width:18px;height:18px}
-.nutritionniste .sidebar-bottom{flex:0 0 auto;margin-top:auto;padding-top:8px}
-.nutritionniste .change-space{justify-content:center;width:45px;min-height:34px;margin:0 auto 2px;padding:7px;color:#465a50;font-size:0}
-.nutritionniste .change-space app-icon{width:18px;height:18px}
-.nutritionniste .profile{display:flex;flex-direction:column;gap:4px;margin-top:5px;padding:3px 0 0;border:0;background:transparent;text-align:center}
-.nutritionniste .profile .avatar{width:33px;height:33px;background:#e5eef0;color:#0d3264}
-.nutritionniste .profile strong{max-width:85px;overflow:hidden;color:#283c39;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
-.nutritionniste .profile small{display:none}
-.nutritionniste .page-area{max-width:1600px;padding:22px 38px 45px 14px}
-.nutritionniste footer{display:none}
-@media(max-width:1100px) and (min-width:761px){.app-frame.nutritionniste{grid-template-columns:185px minmax(0,1fr)}.nutritionniste .sidebar{margin-left:18px}.nutritionniste .nutrition-logo{margin-left:-55px}.nutritionniste .page-area{padding:22px 22px 36px 12px}}
-@media(max-height:780px) and (min-width:761px){.nutritionniste .sidebar{top:92px;height:calc(100dvh - 105px);min-height:0;overflow-y:auto}.nutritionniste nav{flex:0 0 auto;overflow:visible}.nutritionniste nav a.active{align-self:center;justify-content:center;width:48px;min-width:0;margin-left:0}.nutritionniste nav a.active span{display:none}.nutritionniste .sidebar-bottom{margin-top:auto}}
-@media(max-width:760px){.app-frame.nutritionniste{display:block}.nutritionniste .sidebar{position:fixed;top:0;width:min(280px,86vw);height:100dvh;min-height:0;margin:0;padding:24px 14px;overflow-y:auto;border-radius:0;transform:translateX(-100%)}.nutritionniste.menu-open .sidebar{transform:translateX(0)}.nutritionniste .brand{display:flex}.nutritionniste .nutrition-logo{display:none}.nutritionniste nav{align-items:stretch;flex:0 0 auto;overflow:visible}.nutritionniste nav a,.nutritionniste nav a.active,.nutritionniste nav a.active:hover{justify-content:flex-start;width:100%;min-width:0;min-height:46px;margin:0;padding:9px 12px}.nutritionniste nav a span,.nutritionniste nav a.active span{display:inline;font-size:14px}.nutritionniste .sidebar-bottom{margin-top:auto}.nutritionniste .change-space{justify-content:flex-start;width:100%;font-size:13px}.nutritionniste .profile{flex-direction:row;text-align:left}.nutritionniste .profile small{display:block}.nutritionniste .page-area{padding:24px 16px 38px}}
+/* Rail vertical des professionnelles, aligné sur la maquette. */
+.app-frame.nutritionniste {
+  grid-template-columns: 230px minmax(0, 1fr);
+  background: #fcf8f0;
+}
+.nutritionniste main { position: relative; }
+.nutritionniste .nutrition-logo { display: none; }
+.nutritionniste .sidebar {
+  position: sticky;
+  box-sizing: border-box;
+  top: 28px;
+  width: 200px;
+  height: calc(100dvh - 56px);
+  min-height: 620px;
+  margin: 28px 0 28px 30px;
+  padding: 18px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.nutritionniste .sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: 84px;
+  border-radius: 30px;
+  background: white;
+  box-shadow: 0 6px 18px #17375124;
+  pointer-events: none;
+}
+.nutritionniste .brand { display: none; }
+.nutritionniste nav { position: relative; z-index: 1; display: flex; flex: 1 1 auto; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 0; padding-left: 9px; overflow: visible; scrollbar-width: none; }
+.nutritionniste nav a {
+  position: relative;
+  z-index: 1;
+  justify-content: center;
+  flex: 0 0 43px;
+  width: 48px;
+  min-height: 43px;
+  padding: 10px;
+  border-radius: 15px;
+  color: #465a50;
+  font-size: 12px;
+}
+.nutritionniste nav a:hover { transform: none; background: #edf5ef; color: #2d6a4f; }
+.nutritionniste nav a.active,
+.nutritionniste nav a.active:hover {
+  z-index: 2;
+  align-self: flex-start;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  gap: 9px;
+  width: max-content;
+  min-width: 130px;
+  max-width: 140px;
+  box-sizing: border-box;
+  margin-left: 25px;
+  padding: 11px 13px;
+  border-radius: 18px;
+  background: #006aa4;
+  color: white;
+  box-shadow: 0 4px 10px #123a5333;
+}
+.nutritionniste nav a span { display: none; }
+.nutritionniste nav a.active span { display: inline; white-space: normal; font-size: 12px; font-weight: 700; line-height: 1.2; }
+.nutritionniste nav app-icon { flex: 0 0 19px; width: 19px; height: 19px; }
+.nutritionniste .sidebar-bottom { position: relative; z-index: 1; flex: 0 0 auto; width: 84px; margin-top: auto; padding-top: 12px; }
+.nutritionniste .change-space { display: none; }
+.nutritionniste .logout-error { display: none; }
+.nutritionniste .profile {
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 4px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+.nutritionniste .profile .avatar { width: 34px; height: 34px; margin: 0 auto; background: #e5f0e8; color: #2d6a4f; }
+.nutritionniste .profile strong { max-width: 80px; overflow: hidden; color: #283c39; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.nutritionniste .profile small { display: none; }
+.nutritionniste .page-area { max-width: 1600px; padding: 40px 42px 45px 18px; }
+.nutritionniste footer { display: none; }
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  .app-frame.nutritionniste { grid-template-columns: 210px minmax(0, 1fr); }
+  .nutritionniste .sidebar { width: 190px; margin-left: 20px; }
+  .nutritionniste .page-area { padding: 28px 24px 36px 18px; }
+}
+
+@media (max-height: 780px) and (min-width: 761px) {
+  .nutritionniste .sidebar { min-height: 0; overflow-y: auto; }
+  .nutritionniste nav { flex: 0 0 auto; }
+  .nutritionniste nav a { flex-basis: 38px; min-height: 38px; }
+}
+
+@media (max-width: 760px) {
+  .app-frame.nutritionniste { display: block; }
+  .nutritionniste .sidebar {
+    position: fixed;
+    top: 0;
+    width: min(280px, 86vw);
+    height: 100dvh;
+    min-height: 0;
+    margin: 0;
+    padding: 24px 14px;
+    overflow-y: auto;
+    border-radius: 0 22px 22px 0;
+    background: white;
+    transform: translateX(-100%);
+  }
+  .nutritionniste .sidebar::before { display: none; }
+  .nutritionniste.menu-open .sidebar { transform: translateX(0); }
+  .nutritionniste .brand { display: flex; width: 110px; height: 86px; margin: 0 auto 18px; }
+  .nutritionniste .sidebar-bottom { width: 100%; }
+  .nutritionniste .nutrition-logo { display: none; }
+  .nutritionniste nav { align-items: stretch; flex: 0 0 auto; padding-left: 0; overflow: visible; }
+  .nutritionniste nav a,
+  .nutritionniste nav a.active,
+  .nutritionniste nav a.active:hover {
+    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding: 9px 12px;
+  }
+  .nutritionniste nav a span,
+  .nutritionniste nav a.active span { display: inline; font-size: 14px; }
+  .nutritionniste .sidebar-bottom { margin-top: auto; }
+  .nutritionniste .change-space { display: flex; justify-content: flex-start; width: 100%; font-size: 13px; }
+  .nutritionniste .logout-error { display: block; }
+  .nutritionniste .profile { flex-direction: row; text-align: left; }
+  .nutritionniste .profile small { display: block; }
+  .nutritionniste .page-area { padding: 24px 16px 38px; }
+}

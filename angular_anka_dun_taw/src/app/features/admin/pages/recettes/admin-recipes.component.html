@@ -51,7 +51,7 @@
             <div class="recipe-metrics"><span><app-icon name="clock" /> {{ durationLabel(recipe) }}</span><span [title]="'Coût estimé par personne à Bamako'">{{ budgetLabel(recipe) }}</span><span>{{ recipe.nombrePersonnes ?? '—' }} pers.</span></div>
             <div class="recipe-card-bottom"><span>{{ recipe.difficulte === 'DIFFICILE' ? 'Difficulté élevée' : recipe.difficulte === 'MOYEN' ? 'Difficulté moyenne' : 'Cuisine locale' }}</span>
               <div class="recipe-actions"><button type="button" class="row-action edit" [attr.aria-label]="'Consulter ' + recipe.nom" (click)="openDetail(recipe)"><app-icon name="edit" /></button>
-                @if (recipe.statut === 'PUBLIEE') { <button type="button" class="row-action archive" [attr.aria-label]="'Archiver ' + recipe.nom" (click)="confirmArchive(recipe)"><app-icon name="trash" /></button> }
+                @if (recipe.statut === 'PUBLIEE') { <button type="button" class="row-action archive" [attr.aria-label]="'Archiver ' + recipe.nom" title="Archiver" (click)="confirmArchive(recipe)"><app-icon name="archive" /></button> }
               </div>
             </div>
           </div>

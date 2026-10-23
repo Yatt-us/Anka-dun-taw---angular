@@ -11,7 +11,7 @@
 
     <section class="form-column" aria-labelledby="account-title">
       <div class="form-panel">
-        <a class="return-link" routerLink="/connexion">← Retour à la connexion</a>
+        <a class="return-link" routerLink="/connexion">Retour à la connexion</a>
         <h1 id="account-title">{{ mode() === 'inscription' ? 'Inscription' : title() }}</h1>
         @if (mode() !== 'inscription') { <p class="intro">{{ description() }}</p> }
 
@@ -19,14 +19,25 @@
         @if (error()) { <p class="feedback error" role="alert">{{ error() }}</p> }
 
         @if (mode() === 'inscription') {
-          <div class="step-line" aria-label="Étape {{ signupStep() }} sur 2">
-            <span>{{ signupMethod() === 'google' ? 'Profil professionnel' : signupStep() === 1 ? 'Vos informations' : 'Votre activité' }}</span>
-            <span>{{ signupMethod() === 'google' ? 'Google' : signupStep() === 1 ? '01 / 02' : '02 / 02' }}</span>
+          <div class="step-line" aria-label="Étape {{ signupStep() }} sur {{ signupStep() === 3 ? 3 : 2 }}">
+            <span>{{ signupStep() === 3 ? 'Vérification e-mail' : signupMethod() === 'google' ? 'Profil professionnel' : signupStep() === 1 ? 'Vos informations' : 'Votre activité' }}</span>
+            <span>{{ signupStep() === 3 ? '03 / 03' : signupMethod() === 'google' ? 'Google' : signupStep() === 1 ? '01 / 02' : '02 / 02' }}</span>
           </div>
-          <div class="step-track"><span [class.complete]="signupStep() === 2"></span></div>
+          <div class="step-track"><span [class.complete]="signupStep() >= 2"></span></div>
 
-          <form #signupForm="ngForm" (ngSubmit)="signupStep() === 1 ? continueSignup(signupForm.valid === true) : signup(signupForm.valid === true)">
-            @if (signupStep() === 1 && signupMethod() === 'password') {
+          <form #signupForm="ngForm" (ngSubmit)="signupStep() === 1 ? continueSignup(signupForm.valid === true) : signupStep() === 2 ? signup(signupForm.valid === true) : confirmSignupEmail(signupForm.valid === true)">
+            @if (signupStep() === 3) {
+              <p class="intro">Confirmez que vous pouvez recevoir les courriels de rendez-vous et les notifications liées à votre compte.</p>
+              <label>Adresse e-mail<input type="email" name="emailConfirmation" [ngModel]="email" disabled /></label>
+              @if (!signupEmailVerified()) {
+                <label>Code reçu par e-mail<input name="verificationCode" [(ngModel)]="verificationCode" required minlength="6" maxlength="6" inputmode="numeric" autocomplete="one-time-code" /></label>
+                <button class="primary-button" type="submit" [disabled]="busy()">{{ busy() ? 'Vérification…' : 'Confirmer mon e-mail' }}</button>
+                <button class="step-back" type="button" (click)="resendSignupEmailCode()" [disabled]="busy()">Renvoyer le code</button>
+              } @else {
+                <p class="feedback success" role="status">Adresse vérifiée. Votre profil professionnel attend la validation de l’administrateur.</p>
+              }
+              <a class="step-back" routerLink="/connexion">Retour à la connexion</a>
+            } @else if (signupStep() === 1 && signupMethod() === 'password') {
               <div class="field-grid">
                 <label>Prénom *<input name="prenom" [(ngModel)]="prenom" required autocomplete="given-name" /></label>
                 <label>Nom *<input name="nom" [(ngModel)]="nom" required autocomplete="family-name" /></label>
@@ -35,7 +46,7 @@
                 <label>Mot de passe *<input type="password" minlength="8" name="motDePasse" [(ngModel)]="motDePasse" required autocomplete="new-password" /></label>
                 <label>Confirmer le mot de passe *<input type="password" minlength="8" name="confirmationMotDePasse" [(ngModel)]="confirmationMotDePasse" required autocomplete="new-password" /></label>
               </div>
-              <button class="primary-button" type="submit">Continuer <span aria-hidden="true">→</span></button>
+              <button class="primary-button" type="submit">Continuer</button>
             } @else {
               <div class="field-grid">
                 <label>Téléphone{{ signupMethod() === 'google' ? ' (facultatif)' : '' }}<input name="telephone" [(ngModel)]="telephone" autocomplete="tel" placeholder="+223…" /></label>
@@ -55,17 +66,17 @@
                 @if (busy()) { <p class="hint" role="status">Création du profil professionnel…</p> }
               }
               @if (signupMethod() === 'password') {
-                <button class="step-back" type="button" (click)="signupStep.set(1)">← Informations personnelles</button>
+                <button class="step-back" type="button" (click)="signupStep.set(1)">Informations personnelles</button>
               }
             }
           </form>
-          <p class="hint">Votre profil sera vérifié avant l’accès aux outils professionnels.</p>
-          <div class="form-footer">
+          @if (signupStep() !== 3) { <p class="hint">Votre profil sera vérifié avant l’accès aux outils professionnels.</p> }
+          @if (signupStep() !== 3) { <div class="form-footer">
             <button type="button" (click)="setSignupMethod(signupMethod() === 'google' ? 'password' : 'google')">
               {{ signupMethod() === 'google' ? 'Utiliser un mot de passe' : 'Continuer avec Google' }}
             </button>
             <a routerLink="/connexion">Se connecter</a>
-          </div>
+          </div> }
         } @else if (mode() === 'oubli') {
           <form #forgotForm="ngForm" (ngSubmit)="forgot(forgotForm.valid === true)">
             <label>Adresse e-mail du compte *<input type="email" name="emailOubli" [(ngModel)]="recoveryEmail" required autocomplete="email" /></label>

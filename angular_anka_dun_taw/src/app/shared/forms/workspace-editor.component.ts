@@ -4,22 +4,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { WorkspaceEditorService, EditorKind, Choice } from './workspace-editor.service';
+import { ZoneOption, ZonesDataAccess } from '../data-access/zones.data-access';
 
 type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'url' | 'checkbox';
 interface Field {
-  key: string; label: string; type: FieldType; required?: boolean; min?: number; max?: number;
+  key: string; label: string; type: FieldType; required?: boolean; min?: number; max?: number; maxLength?: number;
   options?: { value: string | number; label: string }[]; lookup?: 'foods' | 'categories' | 'recipes'; help?: string;
 }
 interface Ingredient { alimentId: number | null; quantite: number | null; unite: string }
 interface Meal { recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
 interface QuizQuestion { enonce: string; points: number; explication: string; propositions: { texte: string; correcte: boolean }[] }
 
-const ZONES = ['KAYES', 'KOULIKORO', 'SIKASSO', 'SEGOU', 'MOPTI', 'TOMBOUCTOU', 'GAO', 'KIDAL', 'BAMAKO'];
-const REGION_LABELS: Record<string, string> = {
-  KAYES: 'Kayes', KOULIKORO: 'Koulikoro', SIKASSO: 'Sikasso', SEGOU: 'Ségou', MOPTI: 'Mopti',
-  TOMBOUCTOU: 'Tombouctou', GAO: 'Gao', KIDAL: 'Kidal', BAMAKO: 'District de Bamako',
-};
-const regionChoices = () => ZONES.map((value) => ({ value, label: REGION_LABELS[value] ?? value }));
 const ALLERGENES = ['ARACHIDE', 'LAIT', 'OEUF', 'POISSON', 'CRUSTACES', 'FRUITS_A_COQUE', 'SOJA', 'GLUTEN', 'SESAME'];
 const choice = (values: string[]) => values.map((value) => ({ value, label: value.replaceAll('_', ' ') }));
 const FIELDS: Record<EditorKind, Field[]> = {
@@ -30,10 +25,10 @@ const FIELDS: Record<EditorKind, Field[]> = {
     { key: 'groupeAssiette', label: 'Groupe de l’assiette', type: 'select', options: choice(['LEGUMES_FRUITS', 'CEREALES_FECULENTS', 'PROTEINES', 'AUTRES']) },
   ],
   food: [
-    { key: 'nom', label: 'Nom de l’aliment', type: 'text', required: true },
-    { key: 'description', label: 'Description', type: 'textarea' },
-    { key: 'utilisation', label: 'Utilisation', type: 'text' },
-    { key: 'uniteMesure', label: 'Unité de mesure', type: 'text', required: true },
+    { key: 'nom', label: 'Nom de l’aliment', type: 'text', required: true, maxLength: 140 },
+    { key: 'description', label: 'Description', type: 'textarea', maxLength: 1500 },
+    { key: 'utilisation', label: 'Utilisation', type: 'text', maxLength: 1000 },
+    { key: 'uniteMesure', label: 'Unité de mesure', type: 'text', required: true, maxLength: 40 },
     { key: 'origine', label: 'Provenance du produit', type: 'select', required: true, help: 'Indique si le produit est local ou importé. La région de provenance du prix se renseigne dans sa fiche de prix.', options: [
       { value: 'LOCAL', label: 'Local' }, { value: 'IMPORTE', label: 'Importé' },
       { value: 'MIXTE', label: 'Mixte' }, { value: 'NON_RENSEIGNE', label: 'Non renseignée' },
@@ -51,7 +46,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
     { key: 'moisFinSaison', label: 'Fin de saison (mois 1 à 12)', type: 'number', min: 1, max: 12 },
   ],
   price: [
-    { key: 'zone', label: 'Région du relevé de prix', type: 'select', required: true, help: 'Le prix dépend du marché local. Ajoutez un relevé distinct pour chaque région où le prix diffère.', options: regionChoices() },
+    { key: 'zone', label: 'Région du relevé de prix', type: 'select', required: true, help: 'Le prix dépend du marché local. Ajoutez un relevé distinct pour chaque région où le prix diffère.' },
     { key: 'prix', label: 'Prix en F CFA', type: 'number', required: true, min: 0 },
     { key: 'quantiteReference', label: 'Quantité de référence', type: 'number', required: true, min: 0.001 },
     { key: 'unite', label: 'Unité', type: 'text', required: true },
@@ -74,7 +69,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
     { key: 'type', label: 'Type de menu', type: 'select', required: true, options: choice(['PERSONNALISE', 'PETIT_BUDGET', 'FAMILIAL']) },
     { key: 'dateDebut', label: 'Date de début', type: 'date', required: true },
     { key: 'dateFin', label: 'Date de fin', type: 'date' },
-    { key: 'zone', label: 'Région du patient', type: 'select', options: regionChoices() },
+    { key: 'zone', label: 'Région du patient', type: 'select' },
     { key: 'beneficiaireIds', label: 'N° des bénéficiaires (séparés par une virgule)', type: 'text', required: true },
     { key: 'objectifId', label: 'N° de l’objectif nutritionnel (facultatif)', type: 'number', min: 1 },
     { key: 'budgetId', label: 'N° du budget (facultatif)', type: 'number', min: 1 },
@@ -132,6 +127,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
 })
 export class WorkspaceEditorComponent {
   private readonly api = inject(WorkspaceEditorService);
+  private readonly zonesApi = inject(ZonesDataAccess);
   private readonly destroyRef = inject(DestroyRef);
   readonly kind = input.required<EditorKind>();
   readonly entityId = input<number>();
@@ -150,13 +146,20 @@ export class WorkspaceEditorComponent {
   private localImageObjectUrl = '';
   readonly foods = signal<Choice[]>([]);
   readonly categories = signal<Choice[]>([]);
+  readonly categoryChoicesLoading = signal(false);
+  readonly categoryChoicesError = signal(false);
   readonly recipes = signal<Choice[]>([]);
+  readonly zones = signal<ZoneOption[]>([]);
   model: Record<string, string | number | boolean | null> = {};
   ingredients: Ingredient[] = [{ alimentId: null, quantite: null, unite: 'g' }];
   meals: Meal[] = [{ recetteId: null, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1 }];
   quizQuestions: QuizQuestion[] = [this.newQuestion()];
 
   constructor() {
+    this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (zones) => this.zones.set(zones),
+      error: () => this.error.set('Impossible de charger les régions.'),
+    });
     this.destroyRef.onDestroy(() => this.clearLocalImagePreview());
     effect((onCleanup) => {
       const kind = this.kind();
@@ -169,7 +172,7 @@ export class WorkspaceEditorComponent {
       this.imagePreviewFailed.set(false);
       this.imageUploadError.set('');
       this.clearLocalImagePreview();
-      if (kind === 'food') this.api.choices('categories-aliments').subscribe({ next: (page) => this.categories.set(page.content), error: () => this.error.set('Chargement des catégories impossible.') });
+      if (kind === 'food') this.loadCategoryChoices();
       if (kind === 'recipe') this.api.choices('aliments').subscribe({ next: (page) => this.foods.set(page.content), error: () => this.error.set('Chargement des aliments impossible.') });
       if (kind === 'menu') this.api.choices('recettes').subscribe({ next: (page) => this.recipes.set(page.content), error: () => this.error.set('Chargement des recettes impossible.') });
       if (id && initialData) {
@@ -185,6 +188,19 @@ export class WorkspaceEditorComponent {
         });
         onCleanup(() => sub.unsubscribe());
       }
+    });
+  }
+
+  loadCategoryChoices(): void {
+    this.categoryChoicesLoading.set(true);
+    this.categoryChoicesError.set(false);
+    this.api.choices('categories-aliments').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (page) => {
+        this.categories.set(page.content);
+        this.categoryChoicesLoading.set(false);
+        this.categoryChoicesError.set(page.content.length === 0);
+      },
+      error: () => { this.categoryChoicesLoading.set(false); this.categoryChoicesError.set(true); },
     });
   }
 
@@ -220,6 +236,7 @@ export class WorkspaceEditorComponent {
   }
 
   options(field: Field): { value: string | number; label: string }[] {
+    if (field.key === 'zone') return this.zones().map((zone) => ({ value: zone.code, label: zone.libelle }));
     const source = field.lookup === 'foods' ? this.foods() : field.lookup === 'categories' ? this.categories() : this.recipes();
     return field.lookup ? source.map((item) => ({ value: item.id, label: item.nom })) : field.options ?? [];
   }
@@ -299,7 +316,13 @@ export class WorkspaceEditorComponent {
   submit(form: NgForm): void {
     this.error.set('');
     if (this.imageUploading()) { this.error.set('Attendez la fin du téléversement de l’image.'); return; }
-    if (form.invalid) { form.control.markAllAsTouched(); return; }
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      const invalid = Object.entries(form.controls).filter(([, control]) => control.invalid)
+        .map(([name]) => FIELDS[this.kind()].find((field) => field.key === name)?.label ?? name);
+      this.error.set(`Vérifiez les champs suivants : ${invalid.join(', ')}.`);
+      return;
+    }
     const kind = this.kind();
     const allowed = new Set(FIELDS[kind].map((field) => field.key));
     const payload: Record<string, unknown> = Object.fromEntries(Object.entries(this.model).filter(
@@ -307,6 +330,16 @@ export class WorkspaceEditorComponent {
     ));
     if (kind === 'food' && !this.entityId()) payload['disponible'] = true;
     if (kind === 'food') {
+      for (const key of ['categorieId', 'calories', 'proteines', 'glucides', 'lipides', 'fibres', 'moisDebutSaison', 'moisFinSaison']) {
+        if (payload[key] === undefined) continue;
+        const value = Number(payload[key]);
+        if (!Number.isFinite(value) || (key === 'categorieId' && (!Number.isInteger(value) || value <= 0)) ||
+            (key.startsWith('mois') && (!Number.isInteger(value) || value < 1 || value > 12))) {
+          this.error.set(`La valeur du champ ${FIELDS.food.find((field) => field.key === key)?.label ?? key} est invalide.`);
+          return;
+        }
+        payload[key] = value;
+      }
       const imageUrl = String(payload['imageUrl'] ?? '').trim();
       if (imageUrl.length > 500) { this.error.set('L’adresse de l’image ne peut pas dépasser 500 caractères.'); return; }
       if (imageUrl && !this.validImageUrl(imageUrl)) { this.error.set('Utilisez une URL d’image HTTP(S) ou un chemin local commençant par /.'); return; }
@@ -358,7 +391,11 @@ export class WorkspaceEditorComponent {
       error: (error: unknown) => {
         this.busy.set(false);
         this.error.set(error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
-          ? error.error.message : 'Enregistrement impossible. Vérifiez les informations puis réessayez.');
+          ? error.error.message : error instanceof HttpErrorResponse && error.status === 0
+            ? 'Le serveur ne répond pas. Patientez pendant son démarrage puis réessayez.'
+            : error instanceof HttpErrorResponse
+              ? `Enregistrement impossible (HTTP ${error.status}). Réessayez ou vérifiez les données.`
+              : 'Enregistrement impossible. Vérifiez les informations puis réessayez.');
       },
     });
   }

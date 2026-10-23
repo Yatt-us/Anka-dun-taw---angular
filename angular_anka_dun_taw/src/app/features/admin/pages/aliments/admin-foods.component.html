@@ -51,7 +51,7 @@
       <label class="category-select">
         <span class="sr-only">Région du prix affiché</span>
         <select [value]="priceZone()" (change)="setPriceZone($event)" aria-label="Région du prix affiché">
-          @for (zone of priceZones; track zone.value) { <option [value]="zone.value">Région: {{ zone.label }}</option> }
+          @for (zone of priceZones(); track zone.code) { <option [value]="zone.code">Région: {{ zone.libelle }}</option> }
         </select>
       </label>
     }

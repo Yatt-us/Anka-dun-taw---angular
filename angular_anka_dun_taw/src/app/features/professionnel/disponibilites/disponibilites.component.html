@@ -1,22 +1,28 @@
 <header class="heading"><div><h1>Mes disponibilités</h1><p>Proposez des créneaux pour les rendez-vous avec les patients.</p></div></header>
     <form #slotForm="ngForm" (ngSubmit)="create(slotForm)" class="panel form">
-      <h2>Ajouter un créneau</h2>
+      <h2>{{ editingId ? 'Modifier le créneau' : 'Ajouter un créneau' }}</h2>
       <div class="fields">
-        <label>Début <input type="datetime-local" name="debut" [(ngModel)]="start" required /></label>
-        <label>Fin <input type="datetime-local" name="fin" [(ngModel)]="end" required /></label>
-        <button type="submit" [disabled]="saving()">{{ saving() ? 'Enregistrement…' : 'Ajouter' }}</button>
+        <label>Début <input type="datetime-local" name="debut" [(ngModel)]="start" [min]="minimumDateTime" required /></label>
+        <label>Fin <input type="datetime-local" name="fin" [(ngModel)]="end" [min]="start || minimumDateTime" required /></label>
+        <button type="submit" [disabled]="saving()">{{ saving() ? 'Enregistrement…' : editingId ? 'Enregistrer les modifications' : 'Ajouter' }}</button>
+        @if (editingId) { <button type="button" class="secondary" [disabled]="saving()" (click)="cancelEdit(slotForm)">Annuler</button> }
       </div>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       @if (success()) { <p class="success" role="status">{{ success() }}</p> }
     </form>
     <section class="panel list" aria-label="Créneaux enregistrés">
       <h2>Créneaux enregistrés</h2>
-      @if (loading()) { <p>Chargement…</p> }
+      @if (loading()) { <p role="status">Chargement…</p> }
+      @else if (loadError()) { <p class="error" role="alert">{{ loadError() }} <button type="button" class="secondary" (click)="load()">Réessayer</button></p> }
       @else if (!slots().length) { <p>Aucun créneau pour le moment.</p> }
       @else {
         @for (slot of slots(); track slot.id) {
-          <div class="slot"><div><strong>{{ format(slot.dateHeureDebut) }}</strong><span> → {{ format(slot.dateHeureFin) }}</span><small>{{ slot.statut }}</small></div>
-            <button type="button" class="secondary" [disabled]="saving()" (click)="remove(slot.id)">Retirer</button></div>
+          <div class="slot"><div><strong>{{ format(slot.dateHeureDebut) }}</strong><span> à {{ format(slot.dateHeureFin) }}</span><small>{{ statusLabel(slot.statut) }}</small></div>
+            @if (slot.statut === 'LIBRE') {
+              <button type="button" class="secondary" [disabled]="saving()" (click)="edit(slot, slotForm)">Modifier</button>
+              <button type="button" class="secondary" [disabled]="saving()" (click)="remove(slot.id)">Bloquer</button>
+            }
+          </div>
         }
         <div class="pagination"><button type="button" class="secondary" [disabled]="page() === 0 || loading()" (click)="changePage(-1)">Précédent</button>
           <span>Page {{ page() + 1 }} · {{ total() }} créneau(x)</span>

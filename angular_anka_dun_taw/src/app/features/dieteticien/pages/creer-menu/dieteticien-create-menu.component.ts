@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { EMPTY, catchError, expand, forkJoin, map, Observable, of, reduce, switchMap, tap } from 'rxjs';
 import { API_BASE_URL } from '../../../../core/config/api.config';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
+import { ZoneOption, ZonesDataAccess } from '../../../../shared/data-access/zones.data-access';
 
 interface ApiPage<T> { content: T[]; number: number; totalPages: number }
 interface Patient { id: number; prenom: string; nom: string; photoProfilUrl?: string | null }
@@ -17,8 +18,6 @@ interface RecipeCost { coutEstime: number; devise: string }
 interface CreatedMenu { id: number }
 interface MealDraft { key: number; recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
 
-const ZONES = ['BAMAKO', 'KAYES', 'KOULIKORO', 'SIKASSO', 'SEGOU', 'MOPTI', 'TOMBOUCTOU', 'GAO', 'KIDAL'];
-
 @Component({
   selector: 'app-dieteticien-create-menu',
   imports: [FormsModule, RouterLink, UiIconComponent],
@@ -28,11 +27,12 @@ const ZONES = ['BAMAKO', 'KAYES', 'KOULIKORO', 'SIKASSO', 'SEGOU', 'MOPTI', 'TOM
 export class DieteticienCreateMenuComponent implements OnInit {
   @ViewChild('menuSettings') menuSettings?: ElementRef<HTMLDetailsElement>;
   private readonly http = inject(HttpClient);
+  private readonly zonesApi = inject(ZonesDataAccess);
   private readonly destroyRef = inject(DestroyRef);
   private costRequest = 0;
   private nextMealKey = 2;
 
-  readonly zones = ZONES;
+  readonly zones = signal<ZoneOption[]>([]);
   readonly patients = signal<Patient[]>([]);
   readonly recipes = signal<Recipe[]>([]);
   readonly recipeDetails = signal<Record<number, Recipe>>({});
@@ -73,6 +73,10 @@ export class DieteticienCreateMenuComponent implements OnInit {
   meals: MealDraft[] = [{ key: 1, recetteId: null, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1 }];
 
   ngOnInit(): void {
+    this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (zones) => this.zones.set(zones),
+      error: () => this.error.set('Impossible de charger les régions.'),
+    });
     this.allPages<Patient>('/professionnel/beneficiaires', 'prenom,asc')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

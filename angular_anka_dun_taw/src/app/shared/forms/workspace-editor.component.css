@@ -58,3 +58,4 @@ footer { margin-top: 26px; justify-content: flex-end; }
 :host-context(.admin) .form-error { font-size: 16px; }
 :host-context(.admin) .submit,
 :host-context(.admin) .close-form { min-height: 46px; font-size: 16px; }
+.choice-status,.choice-error{grid-column:1/-1;margin:0 0 8px;font-size:15px}.choice-status{color:#53776b}.choice-error{padding:10px 12px;border-radius:8px;background:#fceaea;color:#a6423d}.choice-error button{margin-left:8px;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}

@@ -14,7 +14,7 @@
             <article class="schedule-row"><div class="schedule-time"><strong>{{ time(item.dateHeure) }}</strong>@if (view() === 'week') { <small>{{ date(item.dateHeure) }}</small> }</div><span class="color-line"></span><div><h3>{{ name(item) }}</h3><p>{{ item.motif || 'Consultation nutritionnelle' }}</p></div></article>
           } @empty { <p class="empty">Aucun rendez-vous confirmé pour cette période.</p> }
         </div>
-        <a class="manage-availability" routerLink="../disponibilites">Gérer mes disponibilités →</a>
+        <a class="manage-availability" routerLink="../disponibilites">Gérer mes disponibilités</a>
       </section>
       <section class="pending-panel"><div class="panel-title"><h2>Demandes de rendez-vous ({{ pending().length }})</h2><p>Sélectionnez pour caler dans votre agenda.</p></div>
         <div class="pending-list">

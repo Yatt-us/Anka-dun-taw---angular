@@ -21,7 +21,8 @@ export class AccountActionsComponent {
   private readonly auth = inject(AuthService);
   readonly mode = signal<Mode>(this.route.snapshot.queryParamMap.get('action') === 'oubli' ? 'oubli' : 'inscription');
   readonly signupMethod = signal<'password' | 'google'>('password');
-  readonly signupStep = signal<1 | 2>(1);
+  readonly signupStep = signal<1 | 2 | 3>(1);
+  readonly signupEmailVerified = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
   readonly success = signal('');
@@ -29,6 +30,7 @@ export class AccountActionsComponent {
   readonly description = computed(() => ({ inscription: 'Diététicien ou nutritionniste : renseignez vos informations professionnelles.', oubli: 'Recevez un code pour retrouver l’accès à votre compte.', reinitialisation: 'Utilisez le code reçu pour choisir un nouveau mot de passe.' })[this.mode()]);
   nom = ''; prenom = ''; email = ''; telephone = ''; motDePasse = ''; confirmationMotDePasse = ''; role = 'DIETETICIEN'; specialite = ''; numeroOrdre = ''; qualification = ''; anneesExperience: number | null = null; biographie = '';
   recoveryEmail = ''; resetToken = ''; newPassword = '';
+  verificationCode = '';
 
   setMode(mode: Mode): void { this.mode.set(mode); this.error.set(''); this.success.set(''); }
   setSignupMethod(method: 'password' | 'google'): void {
@@ -58,11 +60,44 @@ export class AccountActionsComponent {
     const personalError = this.personalDetailsError();
     if (personalError) { this.error.set(personalError); this.signupStep.set(1); return; }
     if (!this.email.trim() && !this.telephone.trim()) { this.error.set('Renseignez une adresse e-mail ou un numéro de téléphone.'); return; }
+    if (this.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) { this.error.set('Saisissez une adresse e-mail valide.'); return; }
     if (!valid) { this.error.set('Complétez les informations professionnelles obligatoires.'); return; }
-    this.send('/auth/inscription-professionnel', { nom: this.nom.trim(), prenom: this.prenom.trim(), email: this.email.trim() || null,
+    this.busy.set(true); this.error.set(''); this.success.set('');
+    this.http.post(`${API_BASE_URL}/auth/inscription-professionnel`, { nom: this.nom.trim(), prenom: this.prenom.trim(), email: this.email.trim() || null,
       telephone: this.telephone.trim() || null, motDePasse: this.motDePasse, role: this.role, specialite: this.specialite.trim(),
       numeroOrdre: this.numeroOrdre.trim() || null, qualification: this.qualification.trim(), anneesExperience: this.anneesExperience,
-      biographie: this.biographie.trim() }, 'Compte créé. La vérification par l’administrateur est en attente.');
+      biographie: this.biographie.trim() }).subscribe({
+        next: () => {
+          this.busy.set(false);
+          if (this.email.trim()) {
+            this.signupStep.set(3);
+            this.success.set(`Un code de vérification a été envoyé à ${this.email.trim()}.`);
+          } else {
+            this.success.set('Compte créé. La vérification par l’administrateur est en attente.');
+          }
+        },
+        error: (error: unknown) => {
+          this.busy.set(false);
+          this.error.set(error instanceof HttpErrorResponse && typeof error.error?.message === 'string' ? error.error.message : 'Inscription impossible. Vérifiez vos informations et la configuration e-mail.');
+        },
+      });
+  }
+  confirmSignupEmail(valid: boolean): void {
+    if (!valid || !/^\d{6}$/.test(this.verificationCode.trim())) { this.error.set('Saisissez le code à six chiffres reçu par e-mail.'); return; }
+    this.busy.set(true); this.error.set(''); this.success.set('');
+    this.http.post(`${API_BASE_URL}/auth/email-verification/confirmer`, { email: this.email.trim(), code: this.verificationCode.trim() })
+      .subscribe({
+        next: () => { this.busy.set(false); this.signupEmailVerified.set(true); this.success.set('Adresse vérifiée. Votre profil professionnel attend maintenant la validation de l’administrateur.'); },
+        error: (error: unknown) => { this.busy.set(false); this.error.set(error instanceof HttpErrorResponse && error.status === 400 ? 'Code invalide ou expiré. Demandez un nouveau code.' : 'La vérification a échoué. Réessayez.'); },
+      });
+  }
+  resendSignupEmailCode(): void {
+    this.busy.set(true); this.error.set(''); this.success.set('');
+    this.http.post(`${API_BASE_URL}/auth/email-verification/demander`, { email: this.email.trim() })
+      .subscribe({
+        next: () => { this.busy.set(false); this.success.set('Si cette adresse correspond à un compte à vérifier, un code vient d’être envoyé.'); },
+        error: () => { this.busy.set(false); this.error.set('Impossible d’envoyer le code pour le moment. Réessayez dans une minute.'); },
+      });
   }
   signupWithGoogle(jetonId: string, valid: boolean): void {
     if (this.signupMethod() !== 'google' || this.busy()) return;

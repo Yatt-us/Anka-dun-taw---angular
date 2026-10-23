@@ -9,6 +9,7 @@ import { AdminFood, AdminFoodCategory, AdminFoodPage, AdminFoodsDataAccess } fro
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-editor.component';
 import { FoodPrice } from '../../../../shared/models/workspace-list.models';
+import { ZoneOption, ZonesDataAccess } from '../../../../shared/data-access/zones.data-access';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -24,6 +25,7 @@ export class AdminFoodsComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly zonesApi = inject(ZonesDataAccess);
   private detailRequest?: Subscription;
 
   readonly search = signal('');
@@ -46,13 +48,7 @@ export class AdminFoodsComponent {
   readonly foodPrices = signal<FoodPrice[]>([]);
   readonly viewMode = signal<'nutrition' | 'prices'>('nutrition');
   readonly priceZone = signal('BAMAKO');
-  readonly priceZones = [
-    { value: 'BAMAKO', label: 'Bamako' }, { value: 'KAYES', label: 'Kayes' },
-    { value: 'KOULIKORO', label: 'Koulikoro' }, { value: 'SIKASSO', label: 'Sikasso' },
-    { value: 'SEGOU', label: 'Ségou' }, { value: 'MOPTI', label: 'Mopti' },
-    { value: 'TOMBOUCTOU', label: 'Tombouctou' }, { value: 'GAO', label: 'Gao' },
-    { value: 'KIDAL', label: 'Kidal' },
-  ];
+  readonly priceZones = signal<ZoneOption[]>([]);
   readonly pagePrices = signal<Record<number, FoodPrice | null>>({});
   readonly pagePricesError = signal(false);
   readonly priceEditorFood = signal<AdminFood | null>(null);
@@ -75,6 +71,10 @@ export class AdminFoodsComponent {
   readonly pricesReady = computed(() => this.viewMode() !== 'prices' || (!this.pagePricesError() && this.result().content.every((food) => Object.hasOwn(this.pagePrices(), food.id))));
 
   constructor() {
+    this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (zones) => this.priceZones.set(zones),
+      error: () => this.actionError.set('Impossible de charger les régions.'),
+    });
     const initialCategory = Number(this.route.snapshot.queryParamMap.get('categorieId'));
     if (Number.isInteger(initialCategory) && initialCategory > 0) this.categoryId.set(initialCategory);
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
