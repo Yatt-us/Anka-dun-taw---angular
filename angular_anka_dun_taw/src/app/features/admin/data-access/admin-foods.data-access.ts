@@ -79,4 +79,8 @@ export class AdminFoodsDataAccess {
   deactivate(foodId: number): Observable<void> {
     return this.http.delete<void>(`${API_BASE_URL}/aliments/${foodId}`);
   }
+
+  reactivate(foodId: number): Observable<AdminFood> {
+    return this.http.post<AdminFood>(`${API_BASE_URL}/aliments/${foodId}/reactiver`, {});
+  }
 }
