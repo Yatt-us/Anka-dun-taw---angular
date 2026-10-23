@@ -24,6 +24,7 @@ export class DisponibilitesComponent {
   readonly success = signal('');
   start = '';
   end = '';
+  editingId: number | null = null;
 
   constructor() { this.load(); }
 
@@ -53,12 +54,31 @@ export class DisponibilitesComponent {
     if (new Date(this.start).getTime() <= Date.now()) { this.error.set('Choisissez un début dans le futur.'); return; }
     if (new Date(this.end).getTime() <= new Date(this.start).getTime()) { this.error.set('La fin doit être après le début.'); return; }
     this.saving.set(true);
-    this.http.post(`${API_BASE_URL}/professionnel/disponibilites`, {
+    const payload = {
       dateHeureDebut: this.start, dateHeureFin: this.end,
-    }).subscribe({
-      next: () => { this.saving.set(false); this.start = ''; this.end = ''; this.success.set('Créneau ajouté.'); this.page.set(0); this.load(); },
+    };
+    const request = this.editingId
+      ? this.http.put(`${API_BASE_URL}/professionnel/disponibilites/${this.editingId}`, payload)
+      : this.http.post(`${API_BASE_URL}/professionnel/disponibilites`, payload);
+    request.subscribe({
+      next: () => { const updated = this.editingId !== null; this.saving.set(false); this.resetForm(form); this.success.set(updated ? 'Créneau modifié.' : 'Créneau ajouté.'); this.page.set(0); this.load(); },
       error: (error: unknown) => { this.saving.set(false); this.error.set(this.describe(error)); },
     });
+  }
+  edit(slot: Availability, form: NgForm): void {
+    if (this.saving() || slot.statut !== 'LIBRE') return;
+    this.editingId = slot.id;
+    this.start = this.toLocalInput(slot.dateHeureDebut);
+    this.end = this.toLocalInput(slot.dateHeureFin);
+    this.error.set(''); this.success.set('');
+    form.control.markAsPristine();
+  }
+  cancelEdit(form: NgForm): void { this.resetForm(form); this.error.set(''); this.success.set(''); }
+  private resetForm(form: NgForm): void { this.editingId = null; this.start = ''; this.end = ''; form.resetForm(); }
+  private toLocalInput(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
   }
   remove(id: number): void {
     this.error.set(''); this.success.set(''); this.saving.set(true);

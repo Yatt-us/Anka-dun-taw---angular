@@ -63,6 +63,10 @@ export class AdminFoodsDataAccess {
     return this.http.delete<void>(`${API_BASE_URL}/categories-aliments/${categoryId}`);
   }
 
+  reactivateCategory(categoryId: number): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/categories-aliments/${categoryId}/reactiver`, {});
+  }
+
   prices(foodId: number): Observable<FoodPrice[]> {
     return this.http.get<FoodPrice[]>(`${API_BASE_URL}/aliments/${foodId}/prix`);
   }

@@ -71,7 +71,7 @@
       <p>{{ category.description || 'Aucune description renseignée.' }}</p>
       <p class="category-summary"><strong>{{ countFor(category) }}</strong> aliments référencés</p>
       @if (category.active === false) { <p class="disabled-note">Cette catégorie est désactivée et n’est plus proposée dans le catalogue.</p> }
-      <div class="modal-actions">@if (category.active !== false) { <button type="button" class="outline-button" (click)="openFoods(category)">Voir les aliments</button><button type="button" class="outline-button" (click)="confirmDeactivate(category)">Désactiver</button><button type="button" class="primary-button" (click)="openEditor(category)">Modifier</button> }</div>
+      <div class="modal-actions">@if (category.active !== false) { <button type="button" class="outline-button" (click)="openFoods(category)">Voir les aliments</button><button type="button" class="outline-button" (click)="confirmDeactivate(category)">Désactiver</button><button type="button" class="primary-button" (click)="openEditor(category)">Modifier</button> } @else { <button type="button" class="primary-button" [disabled]="busy()" (click)="reactivate(category)">{{ busy() ? 'Réactivation…' : 'Réactiver la catégorie' }}</button> }</div>
     </section>
   </div>
 }

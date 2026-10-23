@@ -17,7 +17,7 @@ interface Article { id: number; titre: string; contenu?: string; imageUrl?: stri
 interface Quiz { id: number; titre: string; description?: string; imageUrl?: string | null; scoreMaximum?: number }
 interface AdminQuiz { id: number; statut: string; scoreMaximum: number; contenu: { titre: string; description?: string; imageUrl?: string | null } }
 interface Challenge { id: number; titre: string; imageUrl?: string | null; objectif?: string; nombrePoints?: number; dateFin?: string; statut?: string }
-interface Badge { id: number; nom: string; imageUrl?: string | null; description?: string; points?: number; conditionObtention?: string }
+interface Badge { id: number; nom: string; imageUrl?: string | null; description?: string; points?: number; conditionObtention?: string; actif?: boolean }
 
 @Injectable({ providedIn: 'root' })
 export class AdminWorkspaceDataAccess {
@@ -55,12 +55,12 @@ export class AdminWorkspaceDataAccess {
         value: `${item.nombrePoints ?? 0} point(s) · ${formatApiDate(item.dateFin)}`, ...statusBadge(item.statut),
         detail: { kind: 'challenge', editKind: item.statut === 'BROUILLON' ? 'challenge' : undefined, showChallengeProgress: true },
       }), status ? { statut: status } : {});
-      case 'badges': return this.http.get<Badge[]>(`${API_BASE_URL}/badges`).pipe(map((items) => ({
+      case 'badges': return this.http.get<Badge[]>(`${API_BASE_URL}/admin/badges`).pipe(map((items) => ({
         rows: items.slice(page * size, (page + 1) * size).map((item): WorkspaceRow => ({
           key: `badge-${item.id}`, title: item.nom, subtitle: shortSummary(item.description), imageUrl: item.imageUrl,
           value: `${item.points ?? 0} point(s) · ${item.conditionObtention || 'Condition non renseignée'}`,
-          badge: 'Actif', badgeTone: 'green',
-          detail: { kind: 'badge', showBadgeAssignment: true },
+          badge: item.actif === false ? 'Archivé' : 'Actif', badgeTone: item.actif === false ? 'neutral' : 'green',
+          detail: { kind: 'badge', editKind: 'badge', showBadgeAssignment: item.actif !== false },
         })), total: items.length,
       })));
       case 'contenus': return this.publishedContent(page, size);
@@ -82,6 +82,9 @@ export class AdminWorkspaceDataAccess {
   }
 
   actionsFor(key: string, badge: string, id: number): WorkspaceAction[] {
+    if (key.startsWith('badge-')) return badge === 'Actif'
+      ? [{ label: 'Archiver', path: `/admin/badges/${id}`, method: 'DELETE' }]
+      : [{ label: 'Réactiver', path: `/admin/badges/${id}/reactiver` }];
     if (key.startsWith('recipe-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/recettes/${id}/publier` }];
       if (badge === 'Publié' || badge === 'Publiée') return [{ label: 'Archiver', path: `/recettes/${id}/archiver` }];

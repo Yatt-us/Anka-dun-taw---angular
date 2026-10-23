@@ -4,6 +4,7 @@ export interface NavigationItem {
   label: string;
   path: string;
   icon: string;
+  children?: NavigationItem[];
 }
 
 export interface ActorConfig {
@@ -34,6 +35,14 @@ export const ACTORS: Record<ActorId, ActorConfig> = {
       { label: 'Contenus éducatifs', path: 'contenus', icon: 'book' },
       { label: 'Paramètres', path: 'parametres', icon: 'settings' },
       { label: 'Historique', path: 'historique', icon: 'clock' },
+      {
+        label: 'Autres rubriques', path: 'autres-rubriques', icon: 'grid', children: [
+          { label: 'Menus personnalisés', path: 'menus', icon: 'book' },
+          { label: 'Quiz', path: 'quiz', icon: 'check' },
+          { label: 'Défis', path: 'defis', icon: 'chart' },
+          { label: 'Badges', path: 'badges', icon: 'grid' },
+        ],
+      },
     ],
   },
   dieteticien: {
