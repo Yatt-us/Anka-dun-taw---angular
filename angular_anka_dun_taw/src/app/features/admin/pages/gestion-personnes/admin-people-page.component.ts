@@ -272,6 +272,21 @@ export class AdminPeoplePageComponent {
     if (person) this.runAction(this.api.deactivateUser(person.id), 'Compte désactivé.');
   }
 
+  toggleAccountStatus(person: AdminPerson): void {
+    if (this.isDisabledAccount(person)) {
+      this.reactivate(person);
+      return;
+    }
+    if (this.isActiveAccount(person)) {
+      this.runAction(this.api.deactivateUser(person.id), 'Compte désactivé.');
+    }
+  }
+
+  isActiveAccount(person: AdminPerson): boolean {
+    const status = (person.statutCompte || person.statut || '').trim().toLocaleUpperCase('fr');
+    return status === 'ACTIF';
+  }
+
   reactivate(person: AdminPerson | null = this.selected()): void {
     if (person && this.isDisabledAccount(person)) {
       this.runAction(this.api.reactivateUser(person.id), 'Compte réactivé.');
