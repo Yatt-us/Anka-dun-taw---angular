@@ -77,6 +77,10 @@ export class AdminPeopleDataAccess {
     return this.http.post(`${API_BASE_URL}/admin/utilisateurs/${id}/desactiver`, {});
   }
 
+  reactivateUser(id: number): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/admin/utilisateurs/${id}/reactiver`, {});
+  }
+
   private params(page: number, size: number, filters: AdminPeopleFilters = {}): HttpParams {
     let params = new HttpParams().set('page', page).set('size', size);
     for (const [key, value] of Object.entries(filters)) {

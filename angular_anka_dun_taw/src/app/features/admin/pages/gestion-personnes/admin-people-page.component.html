@@ -271,6 +271,9 @@
           @if ((person.statutCompte || person.statut) === 'ACTIF') {
             <button class="action-button danger" type="button" [disabled]="busy()" (click)="deactivate()">Désactiver le compte</button>
           }
+          @if ((person.statutCompte || person.statut) === 'DESACTIVE') {
+            <button class="action-button" type="button" [disabled]="busy()" (click)="reactivate()">Réactiver le compte</button>
+          }
         }
       </footer>
     </section>
