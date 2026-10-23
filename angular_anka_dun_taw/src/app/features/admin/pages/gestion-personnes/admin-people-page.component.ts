@@ -272,8 +272,7 @@ export class AdminPeoplePageComponent {
     if (person) this.runAction(this.api.deactivateUser(person.id), 'Compte désactivé.');
   }
 
-  reactivate(): void {
-    const person = this.selected();
+  reactivate(person: AdminPerson | null = this.selected()): void {
     if (person && (person.statutCompte ?? person.statut) === 'DESACTIVE') {
       this.runAction(this.api.reactivateUser(person.id), 'Compte réactivé.');
     }
