@@ -330,6 +330,16 @@ export class WorkspaceEditorComponent {
     ));
     if (kind === 'food' && !this.entityId()) payload['disponible'] = true;
     if (kind === 'food') {
+      for (const key of ['categorieId', 'calories', 'proteines', 'glucides', 'lipides', 'fibres', 'moisDebutSaison', 'moisFinSaison']) {
+        if (payload[key] === undefined) continue;
+        const value = Number(payload[key]);
+        if (!Number.isFinite(value) || (key === 'categorieId' && (!Number.isInteger(value) || value <= 0)) ||
+            (key.startsWith('mois') && (!Number.isInteger(value) || value < 1 || value > 12))) {
+          this.error.set(`La valeur du champ ${FIELDS.food.find((field) => field.key === key)?.label ?? key} est invalide.`);
+          return;
+        }
+        payload[key] = value;
+      }
       const imageUrl = String(payload['imageUrl'] ?? '').trim();
       if (imageUrl.length > 500) { this.error.set('L’adresse de l’image ne peut pas dépasser 500 caractères.'); return; }
       if (imageUrl && !this.validImageUrl(imageUrl)) { this.error.set('Utilisez une URL d’image HTTP(S) ou un chemin local commençant par /.'); return; }

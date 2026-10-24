@@ -11,7 +11,7 @@
 - Les autres listes et actions admin sont dans `data-access/admin-workspace.data-access.ts`.
 - La liste des rubriques admin est définie dans `shared/components/workspace-config.ts`.
 - Les autres rubriques utilisent encore la table générique `shared/components/workspace-page.component.*`.
-- La navigation latérale complète, ses rayons et son défilement sont définis dans `shared/components/workspace-layout.component.*` et `workspace-admin-layout.component.css`; toutes les rubriques sont affichées sans groupe « Autres rubriques ».
+- La navigation latérale complète, ses rayons et son défilement sont définis dans `shared/components/workspace-layout.component.*` et `workspace-admin-layout.component.css`; le groupe « Autres rubriques » contient les menus personnalisés, quiz, défis et badges.
 
 ## À faire lors de l’évolution
 

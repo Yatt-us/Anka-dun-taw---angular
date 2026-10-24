@@ -10,16 +10,20 @@
     </a>
     <nav [attr.aria-label]="actor().shortTitle">
       @for (item of primaryNavigation(); track item.path) {
-        <a
-          [routerLink]="['/espaces', actor().id, item.path]"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [attr.aria-label]="item.label"
-          [attr.title]="item.label"
-          ariaCurrentWhenActive="page"
-          (click)="menuOpen.set(false)"
-          ><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a
-        >
+        @if (item.children?.length) {
+          <div class="nav-group">
+            <div class="nav-group-heading"><app-icon [name]="item.icon" /><span>{{ item.label }}</span></div>
+            @for (child of item.children; track child.path) {
+              <a [routerLink]="['/espaces', actor().id, child.path]" routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="child.label" [attr.title]="child.label"
+                ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="child.icon" /><span>{{ child.label }}</span></a>
+            }
+          </div>
+        } @else {
+          <a [routerLink]="['/espaces', actor().id, item.path]" routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="item.label" [attr.title]="item.label"
+            ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a>
+        }
       }
     </nav>
     <div class="sidebar-bottom">

@@ -77,6 +77,17 @@
             </button>
             <a routerLink="/connexion">Se connecter</a>
           </div> }
+        } @else if (mode() === 'verification') {
+          <form #verificationForm="ngForm" (ngSubmit)="requestExistingEmailCode(verificationForm.valid === true)">
+            <label>Adresse e-mail du compte *<input type="email" name="emailVerification" [(ngModel)]="email" required autocomplete="email" /></label>
+            <button class="primary-button" type="submit" [disabled]="busy()">{{ busy() ? 'Envoi…' : 'Recevoir un code' }}</button>
+          </form>
+          @if (!emailVerified()) {
+            <form #codeForm="ngForm" (ngSubmit)="confirmExistingEmail(codeForm.valid === true)">
+              <label>Code reçu par e-mail *<input name="codeVerification" [(ngModel)]="verificationCode" required minlength="6" maxlength="6" inputmode="numeric" autocomplete="one-time-code" /></label>
+              <button class="primary-button" type="submit" [disabled]="busy()">Confirmer mon e-mail</button>
+            </form>
+          } @else { <a class="return-link" routerLink="/connexion">Se connecter</a> }
         } @else if (mode() === 'oubli') {
           <form #forgotForm="ngForm" (ngSubmit)="forgot(forgotForm.valid === true)">
             <label>Adresse e-mail du compte *<input type="email" name="emailOubli" [(ngModel)]="recoveryEmail" required autocomplete="email" /></label>

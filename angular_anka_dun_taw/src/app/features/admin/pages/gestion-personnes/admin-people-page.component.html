@@ -97,6 +97,13 @@
                 <td data-label="Inscription" class="date-cell">{{ formatShortDate(person.dateInscription) }}</td>
                 <td data-label="Statut"><span class="badge" [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span></td>
                 <td data-label="Actions" class="actions-cell">
+                  @if (isDisabledAccount(person)) {
+                    <button class="row-action reactivate-action" type="button" (click)="reactivate(person)"
+                      [attr.aria-label]="'Réactiver le compte de ' + fullName(person)"
+                      [title]="'Réactiver le compte de ' + fullName(person)">
+                      Réactiver
+                    </button>
+                  }
                   <button class="row-action" type="button" (click)="open(person)"
                     [attr.aria-label]="'Gérer le compte de ' + fullName(person)"
                     [title]="'Gérer le compte de ' + fullName(person)">
@@ -270,6 +277,9 @@
           }
           @if ((person.statutCompte || person.statut) === 'ACTIF') {
             <button class="action-button danger" type="button" [disabled]="busy()" (click)="deactivate()">Désactiver le compte</button>
+          }
+          @if ((person.statutCompte || person.statut) === 'DESACTIVE') {
+            <button class="action-button" type="button" [disabled]="busy()" (click)="reactivate()">Réactiver le compte</button>
           }
         }
       </footer>
