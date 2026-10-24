@@ -42,4 +42,7 @@ export class NutritionistAppointmentsDataAccess {
   refuse(id: number, commentaire: string): Observable<ProfessionalAppointment> {
     return this.http.post<ProfessionalAppointment>(`${API_BASE_URL}/professionnel/rendez-vous/${id}/refuser`, { commentaire });
   }
+  finish(id: number): Observable<ProfessionalAppointment> {
+    return this.http.post<ProfessionalAppointment>(`${API_BASE_URL}/professionnel/rendez-vous/${id}/terminer`, {});
+  }
 }

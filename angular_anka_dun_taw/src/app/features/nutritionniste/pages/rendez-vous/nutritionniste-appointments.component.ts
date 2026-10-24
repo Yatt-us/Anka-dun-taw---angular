@@ -62,6 +62,10 @@ export class NutritionnisteAppointmentsComponent {
   initials(item: ProfessionalAppointment): string { return this.name(item).split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toLocaleUpperCase('fr'); }
   time(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : this.timeLabel.format(date); }
   date(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Date indisponible' : this.dateLabel.format(date); }
+  canFinish(item: ProfessionalAppointment): boolean {
+    const start = new Date(item.dateHeure).getTime();
+    return item.statut === 'ACCEPTE' && Number.isFinite(start) && start <= Date.now();
+  }
   private localDate(date: Date): string {
     const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
@@ -72,6 +76,18 @@ export class NutritionnisteAppointmentsComponent {
     this.api.accept(item.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (updated) => { this.busyId.set(null); this.appointments.update((items) => items.map((row) => row.id === item.id ? updated : row)); this.notice.set('Rendez-vous accepté.'); },
       error: () => { this.busyId.set(null); this.actionError.set('Impossible d’accepter ce rendez-vous.'); },
+    });
+  }
+  finish(item: ProfessionalAppointment): void {
+    if (this.busyId() !== null || !this.canFinish(item)) return;
+    this.busyId.set(item.id); this.actionError.set(''); this.notice.set('');
+    this.api.finish(item.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (updated) => {
+        this.busyId.set(null);
+        this.appointments.update((items) => items.map((row) => row.id === item.id ? updated : row));
+        this.notice.set('Rendez-vous terminé.');
+      },
+      error: () => { this.busyId.set(null); this.actionError.set('Impossible de terminer ce rendez-vous. Actualisez l’agenda puis réessayez.'); },
     });
   }
   startRefusal(item: ProfessionalAppointment): void { this.refusalId.set(item.id); this.refusalComment = ''; this.actionError.set(''); }
