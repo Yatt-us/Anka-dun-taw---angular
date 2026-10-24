@@ -192,7 +192,7 @@
             @if (foodPricesLoading()) { <p>Chargement des prix…</p> }
             @else if (!foodPrices().length) { <p>Aucun prix enregistré.</p> }
             @else { @for (price of foodPrices(); track price.id) {
-              <p>{{ price.zone }} : {{ price.prix }} {{ price.devise || 'F CFA' }} pour {{ price.quantiteReference }} {{ price.unite }} · depuis {{ price.dateDebut }}</p>
+              <p>{{ price.zone }} : {{ price.prix }} {{ currencyLabel(price.devise) }} pour {{ price.quantiteReference }} {{ price.unite }} · depuis {{ price.dateDebut }}</p>
             } }
           </div>
         }

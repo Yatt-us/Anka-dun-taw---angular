@@ -30,6 +30,12 @@ export function shortSummary(value?: string | null): string {
   return text ? (text.length > 110 ? `${text.slice(0, 107)}…` : text) : 'Aucune description';
 }
 
+/** XOF reste le code échangé avec l'API ; FCFA est son libellé pour l'interface. */
+export function currencyLabel(value?: string | null): string {
+  const code = value?.trim();
+  return !code || code.toUpperCase() === 'XOF' ? 'FCFA' : code;
+}
+
 export function formatApiDate(value?: string | null): string {
   if (!value) return 'Date non renseignée';
   const parsed = new Date(value.length === 10 ? `${value}T00:00:00` : value);

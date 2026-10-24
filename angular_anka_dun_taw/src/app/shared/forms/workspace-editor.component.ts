@@ -47,7 +47,7 @@ const FIELDS: Record<EditorKind, Field[]> = {
   ],
   price: [
     { key: 'zone', label: 'Région du relevé de prix', type: 'select', required: true, help: 'Le prix dépend du marché local. Ajoutez un relevé distinct pour chaque région où le prix diffère.' },
-    { key: 'prix', label: 'Prix en F CFA', type: 'number', required: true, min: 0 },
+    { key: 'prix', label: 'Prix en FCFA', type: 'number', required: true, min: 0 },
     { key: 'quantiteReference', label: 'Quantité de référence', type: 'number', required: true, min: 0.001 },
     { key: 'unite', label: 'Unité', type: 'text', required: true },
     { key: 'dateDebut', label: 'Date de début', type: 'date', required: true },

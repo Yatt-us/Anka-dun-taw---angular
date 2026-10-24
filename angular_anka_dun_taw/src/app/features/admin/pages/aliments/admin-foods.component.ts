@@ -11,6 +11,7 @@ import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-edi
 import { FoodPrice } from '../../../../shared/models/workspace-list.models';
 import { MALI_ZONES, ZoneOption, ZonesDataAccess, zoneLabel } from '../../../../shared/data-access/zones.data-access';
 import { currentPricesForZone } from './current-prices';
+import { currencyLabel } from '../../../../shared/utils/workspace-formatters';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -188,7 +189,7 @@ export class AdminFoodsComponent {
     if (!price) return '—';
     const amount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(price.prix);
     const unit = price.quantiteReference && price.unite ? ` / ${price.quantiteReference} ${price.unite}` : '';
-    return `${amount} ${price.devise || 'FCFA'}${unit}`;
+    return `${amount} ${currencyLabel(price.devise)}${unit}`;
   }
 
   zoneName(code: string): string { return zoneLabel(code); }
@@ -276,7 +277,7 @@ export class AdminFoodsComponent {
         const header = ['Nom', 'Catégorie', 'Prix', 'Devise', 'Quantité de référence', 'Unité', 'Zone', 'Saison', 'Début du prix', 'Fin du prix'];
         const lines = this.result().content.map((food) => {
           const price = this.pagePrices()[food.id];
-          return [food.nom, food.categorieNom ?? '', price?.prix ?? '', price?.devise ?? '', price?.quantiteReference ?? '', price?.unite ?? '', price?.zone ?? '', this.season(food), price?.dateDebut ?? '', price?.dateFin ?? '']
+          return [food.nom, food.categorieNom ?? '', price?.prix ?? '', price ? currencyLabel(price.devise) : '', price?.quantiteReference ?? '', price?.unite ?? '', price?.zone ?? '', this.season(food), price?.dateDebut ?? '', price?.dateFin ?? '']
             .map(this.csvCell).join(';');
         });
         this.downloadCsv(header, lines, 'prix-saisonnalite-anka-dun-taw-page.csv');

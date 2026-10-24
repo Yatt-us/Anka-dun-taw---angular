@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { forkJoin, map, Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { ApiPage, FoodPrice, WorkspacePageResult, WorkspaceRow } from '../../../shared/models/workspace-list.models';
-import { formatApiDate, formatStatusLabel, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
+import { currencyLabel, formatApiDate, formatStatusLabel, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
 import { WorkspaceAction } from '../../../shared/models/workspace-list.models';
 import { EditorKind } from '../../../shared/forms/workspace-editor.service';
 
@@ -42,7 +42,7 @@ export class AdminWorkspaceDataAccess {
       case 'menus': return this.paged<Menu>('/admin/menus', page, size, (item) => ({
         key: `menu-${item.id}`, title: item.titre, data: { ...item }, imageUrl: item.imageUrl,
         subtitle: [item.type ? formatStatusLabel(item.type) : null, item.beneficiaireIds?.length != null ? `${item.beneficiaireIds.length} bénéficiaire(s)` : null].filter(Boolean).join(' · ') || shortSummary(item.description),
-        value: [item.dateDebut ? `Du ${formatApiDate(item.dateDebut)}` : null, item.coutTotalEstime == null ? null : `${item.coutTotalEstime} ${item.devise || 'FCFA'}`].filter(Boolean).join(' · ') || shortSummary(item.description),
+        value: [item.dateDebut ? `Du ${formatApiDate(item.dateDebut)}` : null, item.coutTotalEstime == null ? null : `${item.coutTotalEstime} ${currencyLabel(item.devise)}`].filter(Boolean).join(' · ') || shortSummary(item.description),
         ...statusBadge(item.statut),
       }), status ? { statut: status } : {});
       case 'quiz': return this.paged<AdminQuiz>('/admin/quiz', page, size, (item) => ({
