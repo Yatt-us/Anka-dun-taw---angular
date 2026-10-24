@@ -4,6 +4,7 @@ export interface NavigationItem {
   label: string;
   path: string;
   icon: string;
+  children?: NavigationItem[];
 }
 
 export interface ActorConfig {
@@ -25,20 +26,23 @@ export const ACTORS: Record<ActorId, ActorConfig> = {
     initials: 'AD',
     accent: 'green',
     navigation: [
-      { label: 'Vue d’ensemble', path: 'tableau-de-bord', icon: 'home' },
+      { label: 'Vue d’ensemble', path: 'tableau-de-bord', icon: 'grid' },
       { label: 'Utilisateurs', path: 'utilisateurs', icon: 'users' },
       { label: 'Professionnels', path: 'professionnels', icon: 'pro' },
       { label: 'Aliments locaux', path: 'aliments', icon: 'leaf' },
       { label: 'Catégories', path: 'categories', icon: 'grid' },
       { label: 'Recettes', path: 'recettes', icon: 'book' },
-      { label: 'Menus à modérer', path: 'menus', icon: 'book' },
       { label: 'Contenus éducatifs', path: 'contenus', icon: 'book' },
-      { label: 'Quiz', path: 'quiz', icon: 'book' },
-      { label: 'Défis', path: 'defis', icon: 'chart' },
-      { label: 'Badges', path: 'badges', icon: 'grid' },
-      { label: 'Historique', path: 'historique', icon: 'clock' },
-      { label: 'Notifications', path: 'notifications', icon: 'message' },
       { label: 'Paramètres', path: 'parametres', icon: 'settings' },
+      { label: 'Historique', path: 'historique', icon: 'clock' },
+      {
+        label: 'Autres rubriques', path: 'autres-rubriques', icon: 'grid', children: [
+          { label: 'Menus personnalisés', path: 'menus', icon: 'book' },
+          { label: 'Quiz', path: 'quiz', icon: 'check' },
+          { label: 'Défis', path: 'defis', icon: 'chart' },
+          { label: 'Badges', path: 'badges', icon: 'grid' },
+        ],
+      },
     ],
   },
   dieteticien: {

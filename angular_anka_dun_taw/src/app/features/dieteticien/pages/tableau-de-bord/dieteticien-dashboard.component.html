@@ -25,7 +25,7 @@
   <mat-card appearance="outlined" class="panel adaptations-panel">
     <div class="panel-heading">
       <h2>Demandes d’adaptation</h2>
-      <a class="text-link" routerLink="../demandes-adaptation">Voir tout →</a>
+      <a class="text-link" routerLink="../demandes-adaptation">Voir tout</a>
     </div>
     @if (pendingAdaptations(); as requests) {
       @for (request of requests.slice(0, 2); track request.id) {
@@ -52,7 +52,7 @@
   </mat-card>
 
   <mat-card appearance="outlined" class="panel appointments-panel">
-    <div class="panel-heading"><h2>Rendez-vous du jour</h2><a class="text-link" routerLink="../rendez-vous">Voir tout →</a></div>
+    <div class="panel-heading"><h2>Rendez-vous du jour</h2><a class="text-link" routerLink="../rendez-vous">Voir tout</a></div>
     @if (todayAppointments(); as meetings) {
       @if (meetings.length) {
         <div class="appointments">
@@ -62,7 +62,6 @@
               <div><strong>{{ patientName(meeting.utilisateurId) }}</strong>
                 <span class="tag" [class.yellow]="meeting.statut === 'DEMANDE'">{{ meeting.motif || 'Rendez-vous' }}</span>
               </div>
-              <app-icon name="arrow" />
             </a>
           }
         </div>

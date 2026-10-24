@@ -11,6 +11,9 @@ export interface DietitianMenu {
 }
 
 export interface AdaptationRequest {
+  nombrePersonnes?: number | null;
+  budgetFamilialHebdomadaire?: number | null;
+  contraintesFamiliales?: string | null;
   id: number;
   menuId: number;
   demandeurId: number;

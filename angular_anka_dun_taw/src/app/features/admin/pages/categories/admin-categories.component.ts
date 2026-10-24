@@ -24,6 +24,7 @@ export class AdminCategoriesComponent {
   private readonly destroyRef = inject(DestroyRef);
   readonly query = signal('');
   readonly appliedQuery = signal('');
+  readonly categoryStatus = signal<'active' | 'disabled'>('active');
   readonly result = signal<AdminFoodPage<AdminFoodCategory>>({ content: [], totalElements: 0 });
   readonly counts = signal<Record<number, number | null>>({});
   readonly state = signal<LoadState>('loading');
@@ -57,11 +58,15 @@ export class AdminCategoriesComponent {
     effect((onCleanup) => {
       const page = this.pageIndex();
       const query = this.appliedQuery();
+      const status = this.categoryStatus();
       this.reloadKey();
       this.state.set('loading');
       this.error.set('');
       const subscriptions = new Subscription();
-      subscriptions.add(this.api.categories(page, this.pageSize, query).subscribe({
+      const request = status === 'disabled'
+        ? this.api.disabledCategories(page, this.pageSize, query)
+        : this.api.categories(page, this.pageSize, query);
+      subscriptions.add(request.subscribe({
         next: (result) => {
           if (page > 0 && page * this.pageSize >= result.totalElements) {
             this.pageIndex.set(Math.max(0, Math.ceil(result.totalElements / this.pageSize) - 1));
@@ -98,6 +103,10 @@ export class AdminCategoriesComponent {
   }
 
   setQuery(event: Event): void { this.query.set((event.target as HTMLInputElement).value); }
+  setCategoryStatus(event: Event): void {
+    this.categoryStatus.set((event.target as HTMLSelectElement).value as 'active' | 'disabled');
+    this.pageIndex.set(0);
+  }
   setGlobalSearch(event: Event): void { this.globalSearch.set((event.target as HTMLInputElement).value); }
   openGlobalResult(result: AdminSearchResult): void {
     this.globalSearch.set('');
@@ -149,6 +158,18 @@ export class AdminCategoriesComponent {
         this.selected.set(null);
         this.message.set(`${category.nom} a été désactivée.`);
         this.retry();
+      },
+      error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
+    });
+  }
+
+  reactivate(category: AdminFoodCategory): void {
+    if (this.busy()) return;
+    this.busy.set(true); this.actionError.set('');
+    this.api.reactivateCategory(category.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.busy.set(false); this.selected.set(null);
+        this.message.set(`${category.nom} a été réactivée.`); this.retry();
       },
       error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
     });

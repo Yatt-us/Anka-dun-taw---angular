@@ -23,7 +23,7 @@
         <td data-label="Statut"><span class="status" [class.archived]="menu.statut === 'ARCHIVE'" [class.pending]="menu.statut !== 'PUBLIE' && menu.statut !== 'ARCHIVE'">{{ menu.statut === 'PUBLIE' ? 'Actif' : label(menu.statut) }}</span></td>
         <td data-label="Actions"><div class="row-actions"><button type="button" (click)="openDetail(menu)">Consulter</button>@if (canEdit(menu)) { <button type="button" (click)="editMenu(menu)">Modifier</button> }</div></td></tr> }
     </tbody></table></div>
-      <nav class="pager" aria-label="Pagination des menus"><span>{{ filtered().length }} menu(s) · page {{ page() + 1 }} sur {{ totalPages() }}</span><button type="button" [disabled]="page() === 0" (click)="changePage(-1)">←</button><button type="button" [disabled]="page() + 1 >= totalPages()" (click)="changePage(1)">→</button></nav>
+      <nav class="pager" aria-label="Pagination des menus"><span>{{ filtered().length }} menu(s) · page {{ page() + 1 }} sur {{ totalPages() }}</span><button type="button" [disabled]="page() === 0" (click)="changePage(-1)">Précédent</button><button type="button" [disabled]="page() + 1 >= totalPages()" (click)="changePage(1)">Suivant</button></nav>
     }
     @if (costsError()) { <p class="cost-note">Les coûts estimés ne sont pas disponibles pour le moment.</p> }
   </section>
@@ -33,7 +33,7 @@
     @if (detailLoading()) { <p class="detail-state">Chargement du détail…</p> }
     @else if (detailError() && !menu.repas?.length) { <p class="feedback error" role="alert">{{ detailError() }}</p> }
     @else {
-      <div class="detail-facts"><span>Période <strong>{{ menu.dateDebut || '—' }} → {{ menu.dateFin || '—' }}</strong></span><span>Zone <strong>{{ menu.zone || '—' }}</strong></span><span>Coût estimé <strong>{{ money(costFor(menu.id)?.coutTotalEstime, costFor(menu.id)?.devise || 'XOF') }}</strong></span></div>
+      <div class="detail-facts"><span>Période <strong>{{ menu.dateDebut || '—' }} au {{ menu.dateFin || '—' }}</strong></span><span>Zone <strong>{{ menu.zone || '—' }}</strong></span><span>Coût estimé <strong>{{ money(costFor(menu.id)?.coutTotalEstime, costFor(menu.id)?.devise || 'XOF') }}</strong></span></div>
       <h3>Repas du menu</h3>@if (!menu.repas?.length) { <p class="detail-state">Aucun repas renseigné.</p> }
       @for (meal of menu.repas ?? []; track $index) { <p class="meal-detail">Jour {{ meal.jour }} · {{ label(meal.typeRepas) }} · Recette n° {{ meal.recetteId }} · {{ meal.nombrePortions }} portion(s)</p> }
       @if (menu.recommandations) { <h3>Recommandations</h3><p class="recommendations">{{ menu.recommandations }}</p> }
@@ -55,7 +55,7 @@
           @if (selectedVersion(); as version) {
             <div class="version-snapshot">
               <strong>{{ version.instantane.titre }}</strong>
-              <p>{{ version.instantane.dateDebut || '—' }} → {{ version.instantane.dateFin || '—' }} · {{ money(version.instantane.coutTotalEstime) }}</p>
+              <p>{{ version.instantane.dateDebut || '—' }} au {{ version.instantane.dateFin || '—' }} · {{ money(version.instantane.coutTotalEstime) }}</p>
               <p>Bénéficiaires : {{ version.instantane.beneficiaireIds?.length || 0 }} · Identifiants {{ version.instantane.beneficiaireIds?.join(', ') || '—' }}</p>
               @for (meal of version.instantane.repas ?? []; track $index) {
                 <p>Jour {{ meal.jour }} · {{ label(meal.typeRepas) }} · {{ meal.recetteNom || ('Recette n° ' + meal.recetteId) }} · {{ meal.nombrePortions }} portion(s) · {{ money(meal.coutEstime) }}</p>

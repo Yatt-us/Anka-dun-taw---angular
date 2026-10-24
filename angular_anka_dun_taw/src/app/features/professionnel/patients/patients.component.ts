@@ -40,6 +40,7 @@ export class PatientsComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly detailsPending = new Set<number>();
   private loadGeneration = 0;
+  private dailyBudgetRequest = 0;
   private detailsTimer?: ReturnType<typeof setTimeout>;
   readonly actor = input.required<ActorId>();
   readonly patients = signal<Patient[]>([]);
@@ -189,6 +190,7 @@ export class PatientsComponent {
   }
 
   select(patient: Patient): void {
+    this.dailyBudgetRequest++;
     this.selected.set(patient);
     this.profile.set(null);
     this.goals.set([]);
@@ -260,14 +262,24 @@ export class PatientsComponent {
   initials(name: string): string { return name.split(' ').slice(0, 2).map((part) => part[0] || '').join('').toUpperCase(); }
   hideBrokenImage(event: Event): void { (event.target as HTMLImageElement).remove(); }
   loadDay(id: number): void {
+    const request = ++this.dailyBudgetRequest;
+    const requestedDate = this.selectedDate;
     this.dailyBudget.set(null);
-    this.http.get<DailyBudget>(`${API_BASE_URL}/professionnel/beneficiaires/${id}/petit-budget/jours/${this.selectedDate}`)
+    this.http.get<DailyBudget>(`${API_BASE_URL}/professionnel/beneficiaires/${id}/petit-budget/jours/${requestedDate}`)
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: (budget) => this.dailyBudget.set(budget),
-        error: () => this.detailError.set('Aucun budget petit montant disponible pour cette date.'),
+        next: (budget) => {
+          if (request === this.dailyBudgetRequest && this.selected()?.id === id && this.selectedDate === requestedDate) {
+            this.dailyBudget.set(budget);
+          }
+        },
+        error: () => {
+          if (request === this.dailyBudgetRequest && this.selected()?.id === id && this.selectedDate === requestedDate) {
+            this.detailError.set('Aucun budget petit montant disponible pour cette date.');
+          }
+        },
       });
   }
-  closeDetail(): void { this.selected.set(null); }
+  closeDetail(): void { this.dailyBudgetRequest++; this.selected.set(null); }
   retryHistory(): void { this.loadHistory(); }
 
   private loadHistory(): void {

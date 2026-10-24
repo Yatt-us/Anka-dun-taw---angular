@@ -31,7 +31,7 @@
             <span>{{ field.label }} @if (field.required) { <b aria-hidden="true">*</b> }</span>
             @if (field.help) { <small class="field-help">{{ field.help }}</small> }
             @if (field.type === 'textarea') {
-              <textarea [name]="field.key" [(ngModel)]="model[field.key]" [required]="!!field.required" rows="4"></textarea>
+              <textarea [name]="field.key" [(ngModel)]="model[field.key]" [required]="!!field.required" [attr.maxlength]="field.maxLength ?? null" rows="4"></textarea>
             } @else if (field.type === 'checkbox') {
               <input type="checkbox" [name]="field.key" [(ngModel)]="model[field.key]" />
             } @else if (field.type === 'select') {
@@ -41,10 +41,14 @@
               </select>
             } @else {
               <input [name]="field.key" [type]="kind() === 'food' && field.key === 'imageUrl' ? 'text' : field.type" [(ngModel)]="model[field.key]"
-                [required]="!!field.required" [attr.min]="field.min ?? null" [attr.max]="field.max ?? null" [attr.maxlength]="kind() === 'food' && field.key === 'imageUrl' ? 500 : null" [attr.step]="field.type === 'number' ? 'any' : null"
+                [required]="!!field.required" [attr.min]="field.min ?? null" [attr.max]="field.max ?? null" [attr.maxlength]="field.maxLength ?? (kind() === 'food' && field.key === 'imageUrl' ? 500 : null)" [attr.step]="field.type === 'number' ? 'any' : null"
                 (ngModelChange)="kind() === 'food' && field.key === 'imageUrl' ? imageUrlChanged() : null" />
             }
           </label>
+          @if (kind() === 'food' && field.key === 'categorieId') {
+            @if (categoryChoicesLoading()) { <p class="choice-status" role="status">Chargement des catégories…</p> }
+            @if (categoryChoicesError()) { <div class="choice-error" role="alert">Catégories indisponibles. <button type="button" (click)="loadCategoryChoices()">Réessayer</button></div> }
+          }
           @if (kind() === 'food' && field.key === 'imageUrl') {
             <div class="food-upload">
               <label class="upload-picker">
