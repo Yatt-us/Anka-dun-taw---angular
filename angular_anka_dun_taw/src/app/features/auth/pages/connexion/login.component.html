@@ -2,10 +2,11 @@
   <div class="auth-card">
     <section class="form-panel" aria-labelledby="login-title">
       <div class="form-content">
-        <h1 id="login-title">Login</h1>
-        <p class="panel-copy">Connectez-vous à votre espace professionnel.</p>
+        <h1 id="login-title">Connexion</h1>
+        <p class="panel-copy">Connectez-vous à votre espace administrateur ou professionnel.</p>
 
         @if (error()) { <div class="feedback" role="alert">{{ error() }}</div> }
+        @if (verificationRequired()) { <a routerLink="/compte" [queryParams]="{action: 'verification', email: form.controls.identifiant.value.trim()}">Recevoir un nouveau code de vérification</a> }
         @if (notice) { <div class="success-notice" role="status">{{ notice }}</div> }
         @if (submitting() && slowConnection()) {
           <div class="success-notice" role="status">Le serveur redémarre après une période d’inactivité. La connexion peut prendre quelques minutes ; veuillez patienter.</div>
@@ -34,6 +35,7 @@
         <app-google-button (credential)="loginWithGoogle($event)" />
         <div class="account-links">
           <a routerLink="/compte" [queryParams]="{action: 'oubli'}">Mot de passe oublié ?</a>
+          <a routerLink="/compte" [queryParams]="{action: 'verification'}">Vérifier mon e-mail</a>
           <a routerLink="/compte">Créer un compte professionnel</a>
         </div>
       </div>
