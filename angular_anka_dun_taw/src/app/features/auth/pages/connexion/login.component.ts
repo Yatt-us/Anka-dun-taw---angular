@@ -9,6 +9,34 @@ import { actorForRole } from '../../../../core/guards/actor-workspace.guard';
 import { GoogleButtonComponent } from '../../components/google-button.component';
 import { timer } from 'rxjs';
 
+export function loginFailure(error: unknown): { message: string; verificationRequired: boolean } {
+  if (!(error instanceof HttpErrorResponse)) {
+    return { message: 'La connexion a échoué. Réessayez.', verificationRequired: false };
+  }
+  if (error.status === 0) {
+    return { message: 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.', verificationRequired: false };
+  }
+  if (error.status === 200 && typeof error.error?.text === 'string'
+    && error.error.text.toLowerCase().includes('<!doctype html')) {
+    return { message: 'Le service de connexion est mal configuré. Contactez l’administrateur du site.', verificationRequired: false };
+  }
+  if (error.status === 429) {
+    return { message: 'Trop de tentatives de connexion. Réessayez plus tard.', verificationRequired: false };
+  }
+  if (error.status === 401) {
+    const verificationRequired = typeof error.error?.message === 'string'
+      && error.error.message.includes('Confirmez votre adresse e-mail');
+    return { message: verificationRequired
+      ? 'Confirmez votre adresse e-mail avec le code reçu avant de vous connecter.'
+      : 'E-mail, téléphone ou mot de passe incorrect.', verificationRequired };
+  }
+  if (error.status >= 500) {
+    return { message: 'Le serveur a rencontré une erreur. Réessayez dans quelques instants.', verificationRequired: false };
+  }
+  const apiMessage = typeof error.error?.message === 'string' ? error.error.message : null;
+  return { message: apiMessage ?? 'La connexion a échoué. Réessayez.', verificationRequired: false };
+}
+
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink, GoogleButtonComponent],
@@ -28,6 +56,7 @@ export class LoginComponent {
   });
   readonly submitting = signal(false);
   readonly slowConnection = signal(false);
+  readonly verificationRequired = signal(false);
   readonly error = signal<string | null>(
     this.route.snapshot.queryParamMap.get('deconnexion') === 'echec'
       ? 'Votre compte ne dispose pas d’un espace professionnel et la déconnexion a échoué. Réessayez.'
@@ -45,12 +74,15 @@ export class LoginComponent {
       return;
     }
     this.error.set(null);
+    this.verificationRequired.set(false);
     this.beginSubmission();
     const { identifiant, motDePasse } = this.form.getRawValue();
     this.auth.login(identifiant, motDePasse).subscribe({
       next: (user) => this.finishLogin(user.role),
       error: (error: unknown) => {
-        this.error.set(this.errorMessage(error));
+        const failure = loginFailure(error);
+        this.verificationRequired.set(failure.verificationRequired);
+        this.error.set(failure.message);
         this.submitting.set(false);
       },
     });
@@ -136,27 +168,4 @@ export class LoginComponent {
     void this.router.navigateByUrl(destination).finally(() => this.submitting.set(false));
   }
 
-  private errorMessage(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
-      return 'La connexion a échoué. Réessayez.';
-    }
-    if (error.status === 0) {
-      return 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.';
-    }
-    if (error.status === 200 && typeof error.error?.text === 'string'
-      && error.error.text.toLowerCase().includes('<!doctype html')) {
-      return 'Le service de connexion est mal configuré. Contactez l’administrateur du site.';
-    }
-    if (error.status === 429) {
-      return 'Trop de tentatives de connexion. Réessayez plus tard.';
-    }
-    if (error.status === 401) {
-      return 'E-mail, téléphone ou mot de passe incorrect.';
-    }
-    if (error.status >= 500) {
-      return 'Le serveur a rencontré une erreur. Réessayez dans quelques instants.';
-    }
-    const apiMessage = typeof error.error?.message === 'string' ? error.error.message : null;
-    return apiMessage ?? 'La connexion a échoué. Réessayez.';
-  }
 }
