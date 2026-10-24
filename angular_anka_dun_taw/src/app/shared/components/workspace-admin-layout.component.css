@@ -41,19 +41,6 @@
   background: #fff;
   pointer-events: none;
 }
-.admin .brand {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  box-sizing: border-box;
-  flex: 0 0 92px;
-  width: calc(100% + 12px);
-  height: 92px;
-  margin: 0 0 12px -12px;
-  padding: 7px 78px 7px 20px;
-  background: #fff9f0;
-}
-.admin .brand-logo { max-width: 150px; margin: 0 auto; }
 .admin nav {
   position: relative;
   z-index: 1;
@@ -62,7 +49,7 @@
   gap: clamp(16px, 2.6vh, 30px);
   min-height: 0;
   margin-top: 0;
-  padding: 0 0 12px 14px;
+  padding: 76px 0 12px 14px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
@@ -145,16 +132,7 @@
   }
   .admin.menu-open .sidebar { transform: translateX(0); }
   .admin .sidebar::before, .admin .sidebar::after { display: none; }
-  .admin .brand {
-    display: flex;
-    width: 120px;
-    height: 94px;
-    margin: 0 auto 16px;
-    padding: 5px;
-    border-radius: 16px;
-    background: #fff9f0;
-  }
-  .admin nav { flex: 0 0 auto; width: 100%; min-height: auto; margin-top: 0; padding-bottom: 0; gap: 9px; overflow: visible; }
+  .admin nav { flex: 0 0 auto; width: 100%; min-height: auto; margin-top: 0; padding: 20px 0 0; gap: 9px; overflow: visible; }
   .admin nav a, .admin nav a.active { width: 100%; min-height: 44px; font-size: 16px; }
   .admin nav a.active::after { display: none; }
   .admin .sidebar-bottom { width: 100%; margin-top: auto; }
