@@ -9,7 +9,8 @@ import { AdminFood, AdminFoodCategory, AdminFoodPage, AdminFoodsDataAccess } fro
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-editor.component';
 import { FoodPrice } from '../../../../shared/models/workspace-list.models';
-import { ZoneOption, ZonesDataAccess } from '../../../../shared/data-access/zones.data-access';
+import { MALI_ZONES, ZoneOption, ZonesDataAccess, zoneLabel } from '../../../../shared/data-access/zones.data-access';
+import { currentPricesForZone } from './current-prices';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -48,7 +49,7 @@ export class AdminFoodsComponent {
   readonly foodPrices = signal<FoodPrice[]>([]);
   readonly viewMode = signal<'nutrition' | 'prices'>('nutrition');
   readonly priceZone = signal('BAMAKO');
-  readonly priceZones = signal<ZoneOption[]>([]);
+  readonly priceZones = signal<ZoneOption[]>([...MALI_ZONES]);
   readonly pagePrices = signal<Record<number, FoodPrice | null>>({});
   readonly pagePricesError = signal(false);
   readonly priceEditorFood = signal<AdminFood | null>(null);
@@ -69,6 +70,12 @@ export class AdminFoodsComponent {
   readonly firstVisible = computed(() => this.result().totalElements ? this.pageIndex() * this.pageSize + 1 : 0);
   readonly lastVisible = computed(() => Math.min((this.pageIndex() + 1) * this.pageSize, this.result().totalElements));
   readonly pricesReady = computed(() => this.viewMode() !== 'prices' || (!this.pagePricesError() && this.result().content.every((food) => Object.hasOwn(this.pagePrices(), food.id))));
+  readonly displayedFoodPrices = computed(() => {
+    const prices = this.foodPrices();
+    if (this.viewMode() !== 'prices') return prices;
+    const today = new Date().toISOString().slice(0, 10);
+    return currentPricesForZone(prices, this.priceZone(), today);
+  });
 
   constructor() {
     this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -183,6 +190,8 @@ export class AdminFoodsComponent {
     const unit = price.quantiteReference && price.unite ? ` / ${price.quantiteReference} ${price.unite}` : '';
     return `${amount} ${price.devise || 'FCFA'}${unit}`;
   }
+
+  zoneName(code: string): string { return zoneLabel(code); }
 
   setPriceZone(event: Event): void {
     this.priceZone.set((event.target as HTMLSelectElement).value);
