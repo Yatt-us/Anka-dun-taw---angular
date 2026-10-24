@@ -91,6 +91,7 @@ export class AdminWorkspaceDataAccess {
     }
     if (key.startsWith('menu-') && badge === 'Publié') return [{ label: 'Archiver', path: `/admin/menus/${id}/archiver` }];
     if (key.startsWith('food-') && badge === 'Disponible') return [{ label: 'Désactiver', path: `/aliments/${id}`, method: 'DELETE' }];
+    if (key.startsWith('food-') && badge === 'Indisponible') return [{ label: 'Réactiver', path: `/aliments/${id}/reactiver` }];
     if (key.startsWith('category-') && badge === 'Active') return [{ label: 'Désactiver', path: `/categories-aliments/${id}`, method: 'DELETE' }];
     if (key.startsWith('quiz-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/admin/quiz/${id}/publier` }];

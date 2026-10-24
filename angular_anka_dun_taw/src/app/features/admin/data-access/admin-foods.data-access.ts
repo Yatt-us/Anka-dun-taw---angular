@@ -38,10 +38,11 @@ export interface AdminFoodPage<T> {
 export class AdminFoodsDataAccess {
   private readonly http = inject(HttpClient);
 
-  foods(page: number, size: number, query = '', categoryId: number | null = null): Observable<AdminFoodPage<AdminFood>> {
+  foods(page: number, size: number, query = '', categoryId: number | null = null, available: boolean | null = null): Observable<AdminFoodPage<AdminFood>> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (query) params = params.set('q', query);
     if (categoryId !== null) params = params.set('categorieId', categoryId);
+    if (available !== null) params = params.set('disponible', available);
     return this.http.get<AdminFoodPage<AdminFood>>(`${API_BASE_URL}/aliments`, { params });
   }
 
@@ -78,5 +79,9 @@ export class AdminFoodsDataAccess {
 
   deactivate(foodId: number): Observable<void> {
     return this.http.delete<void>(`${API_BASE_URL}/aliments/${foodId}`);
+  }
+
+  reactivate(foodId: number): Observable<AdminFood> {
+    return this.http.post<AdminFood>(`${API_BASE_URL}/aliments/${foodId}/reactiver`, {});
   }
 }

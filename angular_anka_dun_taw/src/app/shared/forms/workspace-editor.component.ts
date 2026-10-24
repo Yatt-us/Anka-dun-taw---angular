@@ -5,6 +5,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { WorkspaceEditorService, EditorKind, Choice } from './workspace-editor.service';
 import { ZoneOption, ZonesDataAccess } from '../data-access/zones.data-access';
+import { foodEditorPayload } from './food-editor-payload';
 
 type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'url' | 'checkbox';
 interface Field {
@@ -173,7 +174,7 @@ export class WorkspaceEditorComponent {
       this.imageUploadError.set('');
       this.clearLocalImagePreview();
       if (kind === 'food') this.loadCategoryChoices();
-      if (kind === 'recipe') this.api.choices('aliments').subscribe({ next: (page) => this.foods.set(page.content), error: () => this.error.set('Chargement des aliments impossible.') });
+      if (kind === 'recipe') this.api.choices('aliments', true).subscribe({ next: (page) => this.foods.set(page.content), error: () => this.error.set('Chargement des aliments impossible.') });
       if (kind === 'menu') this.api.choices('recettes').subscribe({ next: (page) => this.recipes.set(page.content), error: () => this.error.set('Chargement des recettes impossible.') });
       if (id && initialData) {
         this.hydrate(kind, initialData);
@@ -325,9 +326,11 @@ export class WorkspaceEditorComponent {
     }
     const kind = this.kind();
     const allowed = new Set(FIELDS[kind].map((field) => field.key));
-    const payload: Record<string, unknown> = Object.fromEntries(Object.entries(this.model).filter(
-      ([key, value]) => allowed.has(key) && value !== '' && value !== null && value !== undefined,
-    ));
+    const payload: Record<string, unknown> = kind === 'food'
+      ? foodEditorPayload(this.model)
+      : Object.fromEntries(Object.entries(this.model).filter(
+        ([key, value]) => allowed.has(key) && value !== '' && value !== null && value !== undefined,
+      ));
     if (kind === 'food' && !this.entityId()) payload['disponible'] = true;
     if (kind === 'food') {
       for (const key of ['categorieId', 'calories', 'proteines', 'glucides', 'lipides', 'fibres', 'moisDebutSaison', 'moisFinSaison']) {

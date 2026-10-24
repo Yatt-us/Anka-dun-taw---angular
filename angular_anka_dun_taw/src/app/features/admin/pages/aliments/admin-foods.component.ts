@@ -33,6 +33,7 @@ export class AdminFoodsComponent {
   readonly search = signal('');
   readonly appliedSearch = signal('');
   readonly categoryId = signal<number | null>(null);
+  readonly availabilityFilter = signal<'all' | 'available' | 'disabled'>('all');
   readonly categories = signal<AdminFoodCategory[]>([]);
   readonly categoriesError = signal(false);
   readonly pageIndex = signal(0);
@@ -107,10 +108,12 @@ export class AdminFoodsComponent {
       const page = this.pageIndex();
       const query = this.appliedSearch();
       const category = this.categoryId();
+      const availability = this.availabilityFilter();
       this.reloadKey();
       this.state.set('loading');
       this.error.set('');
-      const subscription = this.api.foods(page, this.pageSize, query, category).subscribe({
+      const subscription = this.api.foods(page, this.pageSize, query, category,
+        availability === 'all' ? null : availability === 'available').subscribe({
         next: (result) => {
           if (page > 0 && page * this.pageSize >= result.totalElements) {
             this.pageIndex.set(Math.max(0, Math.ceil(result.totalElements / this.pageSize) - 1));
@@ -205,6 +208,14 @@ export class AdminFoodsComponent {
     this.categoryId.set(Number.isInteger(value) && value > 0 ? value : null);
     this.pageIndex.set(0);
   }
+
+  setAvailability(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === 'all' || value === 'available' || value === 'disabled') {
+      this.availabilityFilter.set(value);
+      this.pageIndex.set(0);
+    }
+  }
   goToPage(index: number): void {
     if (index >= 0 && index < this.pageCount()) this.pageIndex.set(index);
   }
@@ -259,6 +270,23 @@ export class AdminFoodsComponent {
         this.pendingDeactivate.set(null);
         this.selectedFood.set(null);
         this.message.set(`${food.nom} a été désactivé.`);
+        this.retry();
+      },
+      error: (error: unknown) => {
+        this.busy.set(false);
+        this.actionError.set(this.describeError(error));
+      },
+    });
+  }
+
+  reactivate(food: AdminFood): void {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.actionError.set('');
+    this.api.reactivate(food.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.message.set(`${food.nom} est de nouveau disponible.`);
         this.retry();
       },
       error: (error: unknown) => {
