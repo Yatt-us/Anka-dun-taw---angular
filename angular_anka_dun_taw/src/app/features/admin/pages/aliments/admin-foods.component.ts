@@ -9,6 +9,7 @@ import { AdminFood, AdminFoodCategory, AdminFoodPage, AdminFoodsDataAccess } fro
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-editor.component';
 import { FoodPrice } from '../../../../shared/models/workspace-list.models';
+import { currencyLabel } from '../../../../shared/utils/workspace-formatters';
 import { ZoneOption, ZonesDataAccess } from '../../../../shared/data-access/zones.data-access';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -20,6 +21,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: './admin-foods.component.css',
 })
 export class AdminFoodsComponent {
+  readonly currencyLabel = currencyLabel;
   private readonly api = inject(AdminFoodsDataAccess);
   private readonly dashboard = inject(AdminDashboardApi);
   private readonly router = inject(Router);
@@ -181,7 +183,7 @@ export class AdminFoodsComponent {
     if (!price) return '—';
     const amount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(price.prix);
     const unit = price.quantiteReference && price.unite ? ` / ${price.quantiteReference} ${price.unite}` : '';
-    return `${amount} ${price.devise || 'FCFA'}${unit}`;
+    return `${amount} ${currencyLabel(price.devise)}${unit}`;
   }
 
   setPriceZone(event: Event): void {
@@ -284,7 +286,7 @@ export class AdminFoodsComponent {
         const header = ['Nom', 'Catégorie', 'Prix', 'Devise', 'Quantité de référence', 'Unité', 'Zone', 'Saison', 'Début du prix', 'Fin du prix'];
         const lines = this.result().content.map((food) => {
           const price = this.pagePrices()[food.id];
-          return [food.nom, food.categorieNom ?? '', price?.prix ?? '', price?.devise ?? '', price?.quantiteReference ?? '', price?.unite ?? '', price?.zone ?? '', this.season(food), price?.dateDebut ?? '', price?.dateFin ?? '']
+          return [food.nom, food.categorieNom ?? '', price?.prix ?? '', price ? currencyLabel(price.devise) : '', price?.quantiteReference ?? '', price?.unite ?? '', price?.zone ?? '', this.season(food), price?.dateDebut ?? '', price?.dateFin ?? '']
             .map(this.csvCell).join(';');
         });
         this.downloadCsv(header, lines, 'prix-saisonnalite-anka-dun-taw-page.csv');

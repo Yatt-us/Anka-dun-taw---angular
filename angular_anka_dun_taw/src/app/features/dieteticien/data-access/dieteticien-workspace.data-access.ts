@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { ApiPage, WorkspacePageResult, WorkspaceRow } from '../../../shared/models/workspace-list.models';
-import { formatApiDate, formatStatusLabel, fullPersonName, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
+import { currencyLabel, formatApiDate, formatStatusLabel, fullPersonName, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
 import { WorkspaceAction } from '../../../shared/models/workspace-list.models';
 import { EditorKind } from '../../../shared/forms/workspace-editor.service';
 
@@ -22,7 +22,7 @@ export class DieteticienWorkspaceDataAccess {
       case 'menus': return this.paged<Menu>('/professionnel/menus', page, size, (item) => ({
         key: `menu-${item.id}`, title: item.titre, data: { ...item }, imageUrl: item.imageUrl,
         subtitle: [item.type ? formatStatusLabel(item.type) : null, item.beneficiaireIds?.length != null ? `${item.beneficiaireIds.length} bénéficiaire(s)` : null].filter(Boolean).join(' · ') || shortSummary(item.description),
-        value: [item.dateDebut ? `Du ${formatApiDate(item.dateDebut)}` : null, item.dateFin ? `au ${formatApiDate(item.dateFin)}` : null, item.coutTotalEstime == null ? null : `${item.coutTotalEstime} ${item.devise || 'FCFA'}`].filter(Boolean).join(' · ') || shortSummary(item.description),
+        value: [item.dateDebut ? `Du ${formatApiDate(item.dateDebut)}` : null, item.dateFin ? `au ${formatApiDate(item.dateFin)}` : null, item.coutTotalEstime == null ? null : `${item.coutTotalEstime} ${currencyLabel(item.devise)}`].filter(Boolean).join(' · ') || shortSummary(item.description),
         ...statusBadge(item.statut),
         detail: item.statut === 'BROUILLON' || item.statut === 'EN_VALIDATION' ? { editKind: 'menu' } : undefined,
       }));

@@ -162,7 +162,7 @@
       <h3>Prix par zone</h3>
       @if (pricesLoading()) { <p role="status">Chargement des prix…</p> }
       @else if (pricesError()) { <p>Prix indisponibles pour le moment.</p> }
-      @else { <ul class="prices-list">@for (price of foodPrices(); track price.id) { <li><span>{{ price.zone }}</span><strong>{{ formatMetric(price.prix, price.devise || 'FCFA') }}</strong></li> } @empty { <li>Aucun prix référencé.</li> }</ul> }
+      @else { <ul class="prices-list">@for (price of foodPrices(); track price.id) { <li><span>{{ price.zone }}</span><strong>{{ formatMetric(price.prix, currencyLabel(price.devise)) }}</strong></li> } @empty { <li>Aucun prix référencé.</li> }</ul> }
       <div class="modal-actions"><button type="button" class="outline-button" (click)="closeDetail()">Fermer</button><button type="button" class="primary-button" (click)="openEditor(food)">Modifier l’aliment</button></div>
     </section>
   </div>

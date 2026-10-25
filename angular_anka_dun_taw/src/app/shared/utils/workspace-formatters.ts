@@ -38,3 +38,8 @@ export function formatApiDate(value?: string | null): string {
     dateStyle: 'medium', ...(value.length > 10 ? { timeStyle: 'short' as const } : {}),
   }).format(parsed);
 }
+
+/** XOF reste le code échangé avec l'API ; les écrans présentent son libellé courant. */
+export function currencyLabel(code?: string | null): string {
+  return !code || code.toUpperCase() === 'XOF' ? 'FCFA' : code;
+}
