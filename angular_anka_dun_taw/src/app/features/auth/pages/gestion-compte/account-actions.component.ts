@@ -24,6 +24,7 @@ export class AccountActionsComponent {
   readonly signupMethod = signal<'password' | 'google'>('password');
   readonly signupStep = signal<1 | 2 | 3>(1);
   readonly signupEmailVerified = signal(false);
+  readonly emailVerified = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
   readonly success = signal('');
@@ -124,7 +125,7 @@ export class AccountActionsComponent {
     this.busy.set(true); this.error.set(''); this.success.set('');
     this.http.post(`${API_BASE_URL}/auth/email-verification/confirmer`,
       { email: this.email.trim(), code: this.verificationCode.trim() }).subscribe({
-      next: () => { this.busy.set(false); this.signupEmailVerified.set(true); this.success.set('Adresse vérifiée. Vous pouvez maintenant vous connecter.'); },
+      next: () => { this.busy.set(false); this.emailVerified.set(true); this.success.set('Adresse vérifiée. Vous pouvez maintenant vous connecter.'); },
       error: () => { this.busy.set(false); this.error.set('Code invalide ou expiré. Demandez un nouveau code.'); },
     });
   }

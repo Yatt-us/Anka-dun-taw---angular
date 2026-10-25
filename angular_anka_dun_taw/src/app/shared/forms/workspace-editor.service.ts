@@ -11,9 +11,11 @@ interface ApiPage<T> { content: T[] }
 export class WorkspaceEditorService {
   private readonly http = inject(HttpClient);
 
-  choices(path: 'aliments' | 'categories-aliments' | 'recettes'): Observable<ApiPage<Choice>> {
+  choices(path: 'aliments' | 'categories-aliments' | 'recettes', availableFoodsOnly = false): Observable<ApiPage<Choice>> {
+    let params = new HttpParams().set('page', 0).set('size', 200);
+    if (path === 'aliments' && availableFoodsOnly) params = params.set('disponible', true);
     return this.http.get<ApiPage<Choice>>(`${API_BASE_URL}/${path}`, {
-      params: new HttpParams().set('page', 0).set('size', 200),
+      params,
     });
   }
 

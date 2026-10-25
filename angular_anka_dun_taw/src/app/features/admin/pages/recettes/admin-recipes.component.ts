@@ -217,6 +217,20 @@ export class AdminRecipesComponent {
       error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
     });
   }
+  restore(recipe: AdminRecipe): void {
+    if (this.busy() || recipe.statut !== 'ARCHIVEE') return;
+    this.busy.set(true);
+    this.api.restore(recipe.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.closeDetail();
+        this.message.set(`${recipe.nom} a été désarchivée et publiée.`);
+        if (this.status() === 'PUBLIEE') this.retry();
+        else this.status.set('PUBLIEE');
+      },
+      error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
+    });
+  }
   private describeError(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) return 'Le serveur est injoignable. Vérifiez la connexion au backend.';

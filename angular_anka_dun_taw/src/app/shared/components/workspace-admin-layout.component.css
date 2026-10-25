@@ -45,17 +45,6 @@
   background: #fff;
   pointer-events: none;
 }
-.admin .brand {
-  position: relative;
-  z-index: 1;
-  flex: 0 0 125px;
-  width: 140px;
-  height: 125px;
-  margin: 16px auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
 .admin nav {
   position: relative;
   z-index: 1;
@@ -63,9 +52,8 @@
   align-content: start;
   gap: clamp(16px, 2.6vh, 30px);
   min-height: 0;
-  /* L'espace vide au-dessus du premier lien reste fixe pendant le défilement. */
-  margin-top: 111px;
-  padding: 0 0 12px 26px;
+  margin-top: 0;
+  padding: 76px 0 12px 14px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -162,21 +150,8 @@
   }
   .admin.menu-open .sidebar { transform: translateX(0); }
   .admin .sidebar::before, .admin .sidebar::after { display: none; }
-  .admin .brand { flex: 0 0 125px; margin: 0 auto 10px; }
-  .admin nav {
-    flex: 1 1 auto;
-    width: 100%;
-    min-height: 0;
-    margin-top: 20px;
-    padding: 0 0 12px;
-    gap: 9px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-  .admin nav a, .admin nav a.active, .admin .nav-group-heading { width: 100%; min-height: 44px; font-size: 16px; }
-  .admin .nav-group-children > a { width: calc(100% - 10px); }
+  .admin nav { flex: 0 0 auto; width: 100%; min-height: auto; margin-top: 0; padding: 20px 0 0; gap: 9px; overflow: visible; }
+  .admin nav a, .admin nav a.active { width: 100%; min-height: 44px; font-size: 16px; }
   .admin nav a.active::after { display: none; }
   .admin .sidebar-bottom { width: 100%; margin: auto 0 0; }
   .admin .sidebar-bottom button.change-space { right: 0; }

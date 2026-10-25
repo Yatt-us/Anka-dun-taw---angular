@@ -47,6 +47,14 @@
         @for (category of categories(); track category.id) { <option [value]="category.id">{{ category.nom }}</option> }
       </select>
     </label>
+    <label class="category-select">
+      <span class="sr-only">Filtrer par disponibilité</span>
+      <select [value]="availabilityFilter()" (change)="setAvailability($event)" aria-label="Disponibilité des aliments">
+        <option value="all">Disponibilité : toutes</option>
+        <option value="available">Disponibles</option>
+        <option value="disabled">Désactivés</option>
+      </select>
+    </label>
     @if (viewMode() === 'prices') {
       <label class="category-select">
         <span class="sr-only">Région du prix affiché</span>
@@ -94,7 +102,7 @@
                   <td data-label="Catégorie">{{ food.categorieNom || '—' }}</td>
                   @if (viewMode() === 'prices') {
                     <td data-label="Prix local" class="calories">{{ formatPrice(pagePrices()[food.id]) }}</td>
-                    <td data-label="Zone">{{ priceZone() }}</td>
+                    <td data-label="Zone">{{ pagePrices()[food.id] ? zoneName(priceZone()) : '—' }}</td>
                     <td data-label="Saison">{{ season(food) }}</td>
                     <td data-label="Période du prix">{{ pagePrices()[food.id]?.dateDebut || '—' }}</td>
                   } @else {
@@ -108,7 +116,7 @@
                     @if (food.disponible) {
                       <button class="row-action deactivate" type="button" (click)="confirmDeactivate(food)" [attr.aria-label]="'Désactiver ' + food.nom" [title]="'Désactiver ' + food.nom"><app-icon name="trash" /></button>
                     } @else {
-                      <button class="row-action edit" type="button" (click)="reactivate(food)" [disabled]="busy()" [attr.aria-label]="'Réactiver ' + food.nom" [title]="'Réactiver ' + food.nom"><app-icon name="refresh" /></button>
+                      <button class="row-action reactivate" type="button" (click)="reactivate(food)" [disabled]="busy()" [attr.aria-label]="'Réactiver ' + food.nom" [title]="'Réactiver ' + food.nom"><app-icon name="check" /></button>
                     }
                   </td>
                 </tr>
@@ -159,10 +167,10 @@
         <div><dt>Protéines</dt><dd>{{ formatMetric(food.proteines, 'g') }}</dd></div><div><dt>Lipides</dt><dd>{{ formatMetric(food.lipides, 'g') }}</dd></div>
         <div><dt>Glucides</dt><dd>{{ formatMetric(food.glucides, 'g') }}</dd></div><div><dt>Disponibilité</dt><dd>{{ food.disponible ? 'Disponible' : 'Indisponible' }}</dd></div>
       </dl>
-      <h3>Prix par zone</h3>
+      <h3>{{ viewMode() === 'prices' ? 'Prix actuels — ' + zoneName(priceZone()) : 'Historique des prix par région' }}</h3>
       @if (pricesLoading()) { <p role="status">Chargement des prix…</p> }
       @else if (pricesError()) { <p>Prix indisponibles pour le moment.</p> }
-      @else { <ul class="prices-list">@for (price of foodPrices(); track price.id) { <li><span>{{ price.zone }}</span><strong>{{ formatMetric(price.prix, currencyLabel(price.devise)) }}</strong></li> } @empty { <li>Aucun prix référencé.</li> }</ul> }
+      @else { <ul class="prices-list">@for (price of displayedFoodPrices(); track price.id) { <li><span>{{ zoneName(price.zone) }} · {{ price.dateDebut || 'Date inconnue' }}{{ price.dateFin ? ' au ' + price.dateFin : '' }}</span><strong>{{ formatPrice(price) }}</strong></li> } @empty { <li>Aucun prix pour cette sélection.</li> }</ul> }
       <div class="modal-actions"><button type="button" class="outline-button" (click)="closeDetail()">Fermer</button><button type="button" class="primary-button" (click)="openEditor(food)">Modifier l’aliment</button></div>
     </section>
   </div>
