@@ -95,15 +95,16 @@
                 <td data-label="Email">{{ person.email || '—' }}</td>
                 <td data-label="Rôle">{{ roleLabel(person.role) }}</td>
                 <td data-label="Inscription" class="date-cell">{{ formatShortDate(person.dateInscription) }}</td>
-                <td data-label="Statut"><span class="badge" [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span></td>
-                <td data-label="Actions" class="actions-cell">
-                  @if (isDisabledAccount(person)) {
-                    <button class="row-action reactivate-action" type="button" (click)="reactivate(person)"
-                      [attr.aria-label]="'Réactiver le compte de ' + fullName(person)"
-                      [title]="'Réactiver le compte de ' + fullName(person)">
-                      Réactiver
+                <td data-label="Statut" class="status-cell">
+                  <span class="badge" [class]="'badge ' + statusTone(person)">{{ statusLabel(person) }}</span>
+                  @if (isActiveAccount(person) || isDisabledAccount(person)) {
+                    <button class="status-toggle-button" [class.reactivate]="isDisabledAccount(person)"
+                      type="button" [disabled]="busy()" (click)="toggleAccountStatus(person)">
+                      {{ isDisabledAccount(person) ? 'Réactiver' : 'Désactiver' }}
                     </button>
                   }
+                </td>
+                <td data-label="Actions" class="actions-cell">
                   <button class="row-action" type="button" (click)="open(person)"
                     [attr.aria-label]="'Gérer le compte de ' + fullName(person)"
                     [title]="'Gérer le compte de ' + fullName(person)">
@@ -275,10 +276,10 @@
           @if (person.role !== 'DIETETICIEN' && person.role !== 'NUTRITIONNISTE' && selectedRole() !== person.role) {
             <button class="action-button secondary" type="button" [disabled]="busy()" (click)="saveRole()">Enregistrer le rôle</button>
           }
-          @if ((person.statutCompte || person.statut) === 'ACTIF') {
+          @if (isActiveAccount(person)) {
             <button class="action-button danger" type="button" [disabled]="busy()" (click)="deactivate()">Désactiver le compte</button>
           }
-          @if ((person.statutCompte || person.statut) === 'DESACTIVE') {
+          @if (isDisabledAccount(person)) {
             <button class="action-button" type="button" [disabled]="busy()" (click)="reactivate()">Réactiver le compte</button>
           }
         }

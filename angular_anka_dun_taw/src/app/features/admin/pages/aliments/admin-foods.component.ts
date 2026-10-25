@@ -22,6 +22,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: './admin-foods.component.css',
 })
 export class AdminFoodsComponent {
+  readonly currencyLabel = currencyLabel;
   private readonly api = inject(AdminFoodsDataAccess);
   private readonly dashboard = inject(AdminDashboardApi);
   private readonly router = inject(Router);

@@ -28,7 +28,11 @@ export class WorkspaceEditorService {
     if (kind === 'profile') return this.http.put(`${API_BASE_URL}/professionnels/me`, payload);
     if (kind === 'price') return this.http.post(`${API_BASE_URL}/aliments/${relatedId}/prix`, payload);
     const path = `${API_BASE_URL}${this.path(kind)}`;
-    return id ? this.http.put(`${path}/${id}`, payload) : this.http.post(path, payload);
+    // La disponibilité est pilotée uniquement par Désactiver/Réactiver ; ne jamais la réécrire avec le formulaire.
+    const body = kind === 'food'
+      ? Object.fromEntries(Object.entries(payload).filter(([key]) => !['disponible', 'id', 'categorieNom'].includes(key)))
+      : payload;
+    return id ? this.http.put(`${path}/${id}`, body) : this.http.post(path, body);
   }
 
   uploadFoodImage(file: File): Observable<{ url: string }> {

@@ -11,7 +11,7 @@
       <section class="schedule-panel"><h2>Mon emploi du temps {{ view() === 'day' ? 'du jour' : 'de la semaine' }}</h2>
         <div class="schedule-list">
           @for (item of schedule(); track item.id) {
-            <article class="schedule-row"><div class="schedule-time"><strong>{{ time(item.dateHeure) }}</strong>@if (view() === 'week') { <small>{{ date(item.dateHeure) }}</small> }</div><span class="color-line"></span><div><h3>{{ name(item) }}</h3><p>{{ item.motif || 'Consultation nutritionnelle' }}</p></div></article>
+            <article class="schedule-row"><div class="schedule-time"><strong>{{ time(item.dateHeure) }}</strong>@if (view() === 'week') { <small>{{ date(item.dateHeure) }}</small> }</div><span class="color-line"></span><div><h3>{{ name(item) }}</h3><p>{{ item.motif || 'Consultation nutritionnelle' }}</p>@if (canFinish(item)) { <button class="finish-appointment" type="button" [disabled]="busyId() !== null" (click)="finish(item)">{{ busyId() === item.id ? 'En cours…' : 'Terminer le rendez-vous' }}</button> }</div></article>
           } @empty { <p class="empty">Aucun rendez-vous confirmé pour cette période.</p> }
         </div>
         <a class="manage-availability" routerLink="../disponibilites">Gérer mes disponibilités</a>

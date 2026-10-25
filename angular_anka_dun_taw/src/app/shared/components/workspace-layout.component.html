@@ -14,11 +14,18 @@
       @for (item of primaryNavigation(); track item.path) {
         @if (item.children?.length) {
           <div class="nav-group">
-            <div class="nav-group-heading"><app-icon [name]="item.icon" /><span>{{ item.label }}</span></div>
-            @for (child of item.children; track child.path) {
-              <a [routerLink]="['/espaces', actor().id, child.path]" routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="child.label" [attr.title]="child.label"
-                ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="child.icon" /><span>{{ child.label }}</span></a>
+            <button type="button" class="nav-group-heading" [attr.aria-expanded]="expandedGroup() === item.path"
+              [attr.aria-controls]="expandedGroup() === item.path ? 'workspace-group-' + item.path : null" (click)="toggleGroup(item.path)">
+              <app-icon [name]="item.icon" /><span>{{ item.label }}</span>
+            </button>
+            @if (expandedGroup() === item.path) {
+              <div class="nav-group-children" [id]="'workspace-group-' + item.path">
+                @for (child of item.children; track child.path) {
+                  <a [routerLink]="['/espaces', actor().id, child.path]" routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="child.label" [attr.title]="child.label"
+                    ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="child.icon" /><span>{{ child.label }}</span></a>
+                }
+              </div>
             }
           </div>
         } @else {

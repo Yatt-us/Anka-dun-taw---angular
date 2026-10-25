@@ -183,6 +183,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
     const budget = this.activeBudget();
     if (cost == null) return 'Sélectionnez une recette et une zone pour afficher un coût estimé.';
     if (!budget) return 'Aucun budget actif lié à ce patient. Le coût reste indicatif.';
+    // Le libellé affiché est FCFA, mais le budget reçu de l'API porte le code ISO XOF.
     if (budget.devise !== 'XOF') return 'Le budget du patient utilise une autre devise.';
     if (!this.budgetComparable()) return 'Budget affiché pour référence : la période ne correspond pas aux repas saisis.';
     return cost <= budget.montant

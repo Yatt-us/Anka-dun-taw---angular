@@ -32,6 +32,8 @@ export class WorkspaceLayoutComponent {
   });
   readonly primaryNavigation = computed(() => this.actor().navigation);
   readonly menuOpen = signal(false);
+  // Les groupes secondaires commencent fermés ; un clic sur leur titre inverse leur état.
+  readonly expandedGroup = signal<string | null>(null);
   readonly logoutError = signal<string | null>(null);
   readonly profilePhotoError = signal(false);
   readonly profileName = computed(() => {
@@ -45,6 +47,10 @@ export class WorkspaceLayoutComponent {
     return user ? `${user.prenom?.[0] ?? ''}${user.nom?.[0] ?? ''}`.toLocaleUpperCase('fr') : '';
   });
   readonly profilePhoto = computed(() => this.profilePhotoError() ? null : this.auth.currentUser()?.photoProfilUrl || null);
+
+  toggleGroup(path: string): void {
+    this.expandedGroup.update((current) => current === path ? null : path);
+  }
 
   logout(): void {
     this.logoutError.set(null);
