@@ -88,18 +88,24 @@ export class AdminWorkspaceDataAccess {
     if (key.startsWith('recipe-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/recettes/${id}/publier` }];
       if (badge === 'Publié' || badge === 'Publiée') return [{ label: 'Archiver', path: `/recettes/${id}/archiver` }];
+      if (badge === 'Archivée' || badge === 'Archivé') return [{ label: 'Désarchiver', path: `/recettes/${id}/desarchiver` }];
     }
-    if (key.startsWith('menu-') && badge === 'Publié') return [{ label: 'Archiver', path: `/admin/menus/${id}/archiver` }];
+    if (key.startsWith('menu-')) {
+      if (badge === 'Publié') return [{ label: 'Archiver', path: `/admin/menus/${id}/archiver` }];
+      if (badge === 'Archivé' || badge === 'Archive') return [{ label: 'Désarchiver', path: `/admin/menus/${id}/desarchiver` }];
+    }
     if (key.startsWith('food-') && badge === 'Disponible') return [{ label: 'Désactiver', path: `/aliments/${id}`, method: 'DELETE' }];
     if (key.startsWith('food-') && badge === 'Indisponible') return [{ label: 'Réactiver', path: `/aliments/${id}/reactiver` }];
     if (key.startsWith('category-') && badge === 'Active') return [{ label: 'Désactiver', path: `/categories-aliments/${id}`, method: 'DELETE' }];
     if (key.startsWith('quiz-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/admin/quiz/${id}/publier` }];
       if (badge === 'Publié') return [{ label: 'Archiver', path: `/admin/quiz/${id}/archiver` }];
+      if (badge === 'Archivé') return [{ label: 'Désarchiver', path: `/admin/quiz/${id}/desarchiver` }];
     }
     if (key.startsWith('challenge-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/admin/defis/${id}/publier` }];
       if (badge === 'Publié') return [{ label: 'Archiver', path: `/admin/defis/${id}/archiver` }];
+      if (badge === 'Archivé') return [{ label: 'Désarchiver', path: `/admin/defis/${id}/desarchiver` }];
     }
     return [];
   }

@@ -46,7 +46,7 @@
       </div></section> }
     } @else if (tab() === 'defis') {
       <div class="challenge-grid">
-        @for (challenge of visibleChallenges(); track challenge.id) { <article class="challenge-card"><div class="preview-heading"><h2>{{ challenge.titre }}</h2><span class="status-pill" [class.draft]="challenge.statut === 'BROUILLON'">{{ challengeState(challenge) }}</span></div><p>{{ challenge.description || challenge.objectif || 'Aucune description renseignée.' }}</p><p class="preview-dates">{{ formatDate(challenge.dateDebut) }} – {{ formatDate(challenge.dateFin) }}</p><div class="challenge-footer"><strong>{{ challenge.nombrePoints }} points</strong><button type="button" class="outline-button" (click)="openChallenge(challenge)">Gérer le défi</button></div></article> }
+        @for (challenge of visibleChallenges(); track challenge.id) { <article class="challenge-card"><div class="preview-heading"><h2>{{ challenge.titre }}</h2><span class="status-pill" [class.draft]="challenge.statut === 'BROUILLON'" [class.archived]="challenge.statut === 'ARCHIVE'">{{ challengeState(challenge) }}</span></div><p>{{ challenge.description || challenge.objectif || 'Aucune description renseignée.' }}</p><p class="preview-dates">{{ formatDate(challenge.dateDebut) }} – {{ formatDate(challenge.dateFin) }}</p><div class="challenge-footer"><strong>{{ challenge.nombrePoints }} points</strong><button type="button" class="outline-button" (click)="openChallenge(challenge)">Gérer le défi</button></div></article> }
         @empty { <p class="empty-preview">Aucun défi ne correspond à la recherche.</p> }
       </div>
     } @else {
@@ -71,5 +71,6 @@
       @if (item.kind === 'quiz' && item.status === 'BROUILLON' && deleteConfirmation()) { <button type="button" class="outline-button" (click)="deleteConfirmation.set(false)" [disabled]="busy()">Annuler</button><button type="button" class="danger-button" (click)="deleteDraftQuiz(item)" [disabled]="busy()">{{ busy() ? 'Suppression…' : 'Confirmer la suppression' }}</button> }
       @else if (item.kind !== 'advice' && item.status === 'BROUILLON') { <button type="button" class="outline-button" (click)="edit(item)">Modifier</button>@if (item.kind === 'quiz') { <button type="button" class="danger-outline-button" (click)="confirmDraftDeletion(item)">Supprimer</button> }<button type="button" class="primary-button" (click)="perform('publish',item)" [disabled]="busy()">Publier</button> }
       @if (item.kind !== 'advice' && (item.status === 'PUBLIE' || item.status === 'PUBLIEE')) { <button type="button" class="outline-button" (click)="perform('archive',item)" [disabled]="busy()">Archiver</button> }
+      @if (item.kind !== 'advice' && item.status === 'ARCHIVE') { <button type="button" class="primary-button" (click)="perform('restore',item)" [disabled]="busy()">{{ busy() ? 'Restauration…' : 'Désarchiver et publier' }}</button> }
     </div>
   </section></div> }
