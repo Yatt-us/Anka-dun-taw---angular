@@ -31,8 +31,11 @@ export class NutritionnisteAdviceComponent {
   readonly editorOpen = signal(false);
   readonly busy = signal(false);
   readonly pendingArchive = signal<Advice | null>(null);
+  readonly showingArchived = signal(false);
   readonly categories = ['Alimentation', 'Recettes', 'Nutrition', 'Budget', 'Bébés'];
-  readonly visible = computed(() => this.items().filter((item) => item.statut !== 'ARCHIVE'));
+  readonly visible = computed(() => this.items().filter((item) => this.showingArchived()
+    ? item.statut === 'ARCHIVE' : item.statut !== 'ARCHIVE'));
+  readonly archivedCount = computed(() => this.items().filter((item) => item.statut === 'ARCHIVE').length);
   form = { titre: '', categorie: '', contenu: '' };
 
   constructor() { this.load(); }
@@ -68,6 +71,7 @@ export class NutritionnisteAdviceComponent {
   closeEditor(): void { if (!this.busy()) this.editorOpen.set(false); }
   canEdit(): boolean { return !this.selected() || this.selected()?.statut === 'BROUILLON'; }
   displayStatus(item: Advice): string { return item.statut === 'PUBLIE' ? 'Publié' : item.statut === 'ARCHIVE' ? 'Archivé' : 'Brouillon'; }
+  toggleArchived(): void { this.showingArchived.update((value) => !value); }
   preview(item: Advice): string { return item.contenu.length > 125 ? item.contenu.slice(0, 125).trimEnd() + '…' : item.contenu; }
 
   save(form: NgForm, publish = false): void {
@@ -106,6 +110,20 @@ export class NutritionnisteAdviceComponent {
     this.http.post<Advice>(`${API_BASE_URL}/conseils/${item.id}/archiver`, {})
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => { this.busy.set(false); this.pendingArchive.set(null); this.editorOpen.set(false); this.notice.set('Conseil archivé.'); this.load(); },
+        error: (cause: unknown) => { this.busy.set(false); this.error.set(this.describe(cause)); },
+      });
+  }
+  restore(item: Advice): void {
+    if (this.busy() || item.statut !== 'ARCHIVE') return;
+    this.busy.set(true); this.error.set('');
+    this.http.post<Advice>(`${API_BASE_URL}/conseils/${item.id}/desarchiver`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.busy.set(false);
+          this.notice.set('Conseil désarchivé et publié.');
+          this.showingArchived.set(false);
+          this.load();
+        },
         error: (cause: unknown) => { this.busy.set(false); this.error.set(this.describe(cause)); },
       });
   }

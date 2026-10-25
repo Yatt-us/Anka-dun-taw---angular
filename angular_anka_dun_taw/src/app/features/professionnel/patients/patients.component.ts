@@ -257,7 +257,7 @@ export class PatientsComponent {
   }
   money(amount: number, devise?: string): string {
     const number = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount);
-    return `${number} ${devise === 'XOF' || !devise ? 'F CFA' : devise}`;
+    return `${number} ${devise === 'XOF' || !devise ? 'FCFA' : devise}`;
   }
   initials(name: string): string { return name.split(' ').slice(0, 2).map((part) => part[0] || '').join('').toUpperCase(); }
   hideBrokenImage(event: Event): void { (event.target as HTMLImageElement).remove(); }

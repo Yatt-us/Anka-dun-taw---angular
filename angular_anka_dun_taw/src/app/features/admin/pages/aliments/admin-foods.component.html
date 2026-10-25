@@ -47,6 +47,14 @@
         @for (category of categories(); track category.id) { <option [value]="category.id">{{ category.nom }}</option> }
       </select>
     </label>
+    <label class="category-select">
+      <span class="sr-only">Filtrer par disponibilité</span>
+      <select [value]="availabilityFilter()" (change)="setAvailability($event)" aria-label="Disponibilité des aliments">
+        <option value="all">Disponibilité : toutes</option>
+        <option value="available">Disponibles</option>
+        <option value="disabled">Désactivés</option>
+      </select>
+    </label>
     @if (viewMode() === 'prices') {
       <label class="category-select">
         <span class="sr-only">Région du prix affiché</span>
@@ -107,6 +115,8 @@
                     <button class="row-action edit" type="button" (click)="viewMode() === 'prices' ? openPriceEditor(food) : openEditor(food)" [attr.aria-label]="(viewMode() === 'prices' ? 'Ajouter un prix pour ' : 'Modifier ') + food.nom" [title]="(viewMode() === 'prices' ? 'Ajouter un prix pour ' : 'Modifier ') + food.nom"><app-icon name="edit" /></button>
                     @if (food.disponible) {
                       <button class="row-action deactivate" type="button" (click)="confirmDeactivate(food)" [attr.aria-label]="'Désactiver ' + food.nom" [title]="'Désactiver ' + food.nom"><app-icon name="trash" /></button>
+                    } @else {
+                      <button class="row-action reactivate" type="button" (click)="reactivate(food)" [disabled]="busy()" [attr.aria-label]="'Réactiver ' + food.nom" [title]="'Réactiver ' + food.nom"><app-icon name="check" /></button>
                     }
                   </td>
                 </tr>

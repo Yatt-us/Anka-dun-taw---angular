@@ -176,7 +176,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
     return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(amount)} ${ingredient.unite}`;
   }
   money(amount: number | null | undefined): string {
-    return amount == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} F CFA`;
+    return amount == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} FCFA`;
   }
   readonly budgetMessage = computed(() => {
     const cost = this.totalCost();

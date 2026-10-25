@@ -161,13 +161,19 @@ export class AdminContentComponent {
       error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
     });
   }
-  perform(action: 'publish' | 'archive', item: Selection): void {
+  perform(action: 'publish' | 'archive' | 'restore', item: Selection): void {
     if (this.busy() || item.kind === 'advice') return;
     this.busy.set(true);
-    const request = item.kind === 'quiz' ? action === 'publish' ? this.api.publishQuiz(item.id) : this.api.archiveQuiz(item.id)
-      : action === 'publish' ? this.api.publishChallenge(item.id) : this.api.archiveChallenge(item.id);
+    const request = item.kind === 'quiz'
+      ? action === 'publish' ? this.api.publishQuiz(item.id) : action === 'archive' ? this.api.archiveQuiz(item.id) : this.api.restoreQuiz(item.id)
+      : action === 'publish' ? this.api.publishChallenge(item.id) : action === 'archive' ? this.api.archiveChallenge(item.id) : this.api.restoreChallenge(item.id);
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => { this.busy.set(false); this.selected.set(null); this.message.set(action === 'publish' ? 'Contenu publié.' : 'Contenu archivé.'); this.reload(); },
+      next: () => {
+        this.busy.set(false);
+        this.selected.set(null);
+        this.message.set(action === 'publish' ? 'Contenu publié.' : action === 'archive' ? 'Contenu archivé.' : 'Contenu restauré et publié.');
+        this.reload();
+      },
       error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
     });
   }

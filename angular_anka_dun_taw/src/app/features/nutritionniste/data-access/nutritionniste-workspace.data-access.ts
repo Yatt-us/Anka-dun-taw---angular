@@ -39,10 +39,12 @@ export class NutritionnisteWorkspaceDataAccess {
       if (badge === 'Brouillon') return [{ label: 'Valider', path: `/conseils/${id}/valider` }];
       if (badge === 'Validé') return [{ label: 'Publier', path: `/conseils/${id}/publier` }];
       if (badge === 'Publié') return [{ label: 'Archiver', path: `/conseils/${id}/archiver` }];
+      if (badge === 'Archivé') return [{ label: 'Désarchiver', path: `/conseils/${id}/desarchiver` }];
     }
     if (key.startsWith('article-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/articles/${id}/publier` }];
       if (badge === 'Publié') return [{ label: 'Archiver', path: `/articles/${id}/archiver` }];
+      if (badge === 'Archivé') return [{ label: 'Désarchiver', path: `/articles/${id}/desarchiver` }];
     }
     if (key.startsWith('appointment-')) {
       if (badge === 'Demandé') return [
