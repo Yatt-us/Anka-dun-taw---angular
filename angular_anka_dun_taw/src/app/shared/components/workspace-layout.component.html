@@ -3,23 +3,36 @@
     <button class="scrim" aria-label="Fermer le menu" (click)="menuOpen.set(false)"></button>
   }
   <aside class="sidebar">
-    <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, choisir un espace">
-      <svg class="brand-logo" viewBox="206 64 263 198" aria-hidden="true" focusable="false">
-        <image href="/images/logo-anka-dun-taw.png" width="677" height="369" />
-      </svg>
-    </a>
+    @if (actor().id !== 'admin') {
+      <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, choisir un espace">
+        <svg class="brand-logo" viewBox="206 64 263 198" aria-hidden="true" focusable="false">
+          <image href="/images/logo-anka-dun-taw.png" width="677" height="369" />
+        </svg>
+      </a>
+    }
     <nav [attr.aria-label]="actor().shortTitle">
       @for (item of primaryNavigation(); track item.path) {
-        <a
-          [routerLink]="['/espaces', actor().id, item.path]"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [attr.aria-label]="item.label"
-          [attr.title]="item.label"
-          ariaCurrentWhenActive="page"
-          (click)="menuOpen.set(false)"
-          ><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a
-        >
+        @if (item.children?.length) {
+          <div class="nav-group">
+            <button type="button" class="nav-group-heading" [attr.aria-expanded]="expandedGroup() === item.path"
+              [attr.aria-controls]="expandedGroup() === item.path ? 'workspace-group-' + item.path : null" (click)="toggleGroup(item.path)">
+              <app-icon [name]="item.icon" /><span>{{ item.label }}</span>
+            </button>
+            @if (expandedGroup() === item.path) {
+              <div class="nav-group-children" [id]="'workspace-group-' + item.path">
+                @for (child of item.children; track child.path) {
+                  <a [routerLink]="['/espaces', actor().id, child.path]" routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="child.label" [attr.title]="child.label"
+                    ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="child.icon" /><span>{{ child.label }}</span></a>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <a [routerLink]="['/espaces', actor().id, item.path]" routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="item.label" [attr.title]="item.label"
+            ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a>
+        }
       }
     </nav>
     <div class="sidebar-bottom">

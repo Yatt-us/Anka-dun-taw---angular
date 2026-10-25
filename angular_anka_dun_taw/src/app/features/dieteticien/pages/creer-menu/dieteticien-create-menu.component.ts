@@ -176,13 +176,14 @@ export class DieteticienCreateMenuComponent implements OnInit {
     return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(amount)} ${ingredient.unite}`;
   }
   money(amount: number | null | undefined): string {
-    return amount == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} F CFA`;
+    return amount == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} FCFA`;
   }
   readonly budgetMessage = computed(() => {
     const cost = this.totalCost();
     const budget = this.activeBudget();
     if (cost == null) return 'Sélectionnez une recette et une zone pour afficher un coût estimé.';
     if (!budget) return 'Aucun budget actif lié à ce patient. Le coût reste indicatif.';
+    // Le libellé affiché est FCFA, mais le budget reçu de l'API porte le code ISO XOF.
     if (budget.devise !== 'XOF') return 'Le budget du patient utilise une autre devise.';
     if (!this.budgetComparable()) return 'Budget affiché pour référence : la période ne correspond pas aux repas saisis.';
     return cost <= budget.montant

@@ -43,6 +43,10 @@ export class AdminRecipesDataAccess {
     return this.http.post<AdminRecipe>(`${API_BASE_URL}/recettes/${id}/archiver`, {});
   }
 
+  restore(id: number): Observable<AdminRecipe> {
+    return this.http.post<AdminRecipe>(`${API_BASE_URL}/recettes/${id}/desarchiver`, {});
+  }
+
   publish(id: number): Observable<AdminRecipe> {
     return this.http.post<AdminRecipe>(`${API_BASE_URL}/recettes/${id}/publier`, {});
   }

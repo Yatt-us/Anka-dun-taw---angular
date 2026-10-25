@@ -38,7 +38,9 @@ export class AdminContentDataAccess {
   }
   publishQuiz(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/quiz/${id}/publier`, {}); }
   archiveQuiz(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/quiz/${id}/archiver`, {}); }
+  restoreQuiz(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/quiz/${id}/desarchiver`, {}); }
   deleteDraftQuiz(id: number): Observable<void> { return this.http.delete<void>(`${API_BASE_URL}/admin/quiz/${id}`); }
   publishChallenge(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/defis/${id}/publier`, {}); }
   archiveChallenge(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/defis/${id}/archiver`, {}); }
+  restoreChallenge(id: number): Observable<unknown> { return this.http.post(`${API_BASE_URL}/admin/defis/${id}/desarchiver`, {}); }
 }

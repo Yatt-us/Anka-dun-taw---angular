@@ -11,7 +11,8 @@
 - Les autres listes et actions admin sont dans `data-access/admin-workspace.data-access.ts`.
 - La liste des rubriques admin est définie dans `shared/components/workspace-config.ts`.
 - Les autres rubriques utilisent encore la table générique `shared/components/workspace-page.component.*`.
-- La navigation latérale complète, ses rayons et son défilement sont définis dans `shared/components/workspace-layout.component.*` et `workspace-admin-layout.component.css`; toutes les rubriques sont affichées sans groupe « Autres rubriques ».
+- La navigation latérale admin est définie dans `shared/components/workspace-layout.component.*` et `shared/components/workspace-admin-layout.component.css`. Le logo occupe l’en-tête crème, puis le rail marine présente un liseré bleu et une découpe blanche arrondie en haut à droite, comme sur la maquette `admin-vue-ensemble.png`. L’onglet actif rejoint visuellement cette découpe. Sur les écrans courts, seule la liste des rubriques défile ; l’en-tête, son espacement et le profil restent fixes, sur ordinateur comme sur mobile.
+- « Autres rubriques » est un bouton accessible avec `aria-expanded`. Ses liens (menus personnalisés, quiz, défis et badges) sont masqués au chargement, apparaissent au clic et se replient au second clic. Les routes des sous-menus ne changent pas ; le même comportement fonctionne dans le menu mobile.
 
 ## À faire lors de l’évolution
 

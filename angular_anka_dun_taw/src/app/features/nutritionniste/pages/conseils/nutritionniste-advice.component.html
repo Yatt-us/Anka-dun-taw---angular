@@ -1,6 +1,6 @@
 <section class="advice-page">
   <header class="advice-header"><div><h1>Conseils nutritionnels</h1><p>Rédigez et publiez des fiches conseils sur l’alimentation locale.</p></div>
-    <button type="button" class="primary" (click)="newAdvice()"><app-icon name="plus" /> Nouveau conseil</button>
+    <div class="advice-header-actions"><button type="button" class="secondary" (click)="toggleArchived()">{{ showingArchived() ? 'Voir les conseils actifs' : 'Voir les archives (' + archivedCount() + ')' }}</button><button type="button" class="primary" (click)="newAdvice()"><app-icon name="plus" /> Nouveau conseil</button></div>
   </header>
   @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
   @if (loading()) { <p class="state" role="status">Chargement des conseils…</p> }
@@ -14,10 +14,11 @@
             <h2>{{ item.titre }}</h2><p>{{ preview(item) }}</p>
             <div class="card-footer"><small>@if (item.datePublication) { Publié le {{ item.datePublication | date:'dd MMM yyyy' }} } @else { Brouillon }</small>
               <div><button type="button" (click)="edit(item)" [attr.aria-label]="item.statut === 'BROUILLON' ? 'Modifier ' + item.titre : 'Consulter ' + item.titre" [title]="item.statut === 'BROUILLON' ? 'Modifier' : 'Consulter'"><app-icon name="edit" /></button>
-                <button type="button" class="archive" (click)="pendingArchive.set(item)" [attr.aria-label]="'Archiver ' + item.titre" title="Archiver"><app-icon name="trash" /></button></div>
+                @if (item.statut === 'PUBLIE') { <button type="button" class="archive" (click)="pendingArchive.set(item)" [attr.aria-label]="'Archiver ' + item.titre" title="Archiver"><app-icon name="trash" /></button> }
+                @if (item.statut === 'ARCHIVE') { <button type="button" (click)="restore(item)" [disabled]="busy()" [attr.aria-label]="'Désarchiver ' + item.titre" title="Désarchiver et publier"><app-icon name="refresh" /></button> }</div>
             </div>
           </article>
-        } @empty { <p class="state">Aucun conseil créé pour le moment.</p> }
+        } @empty { <p class="state">{{ showingArchived() ? 'Aucun conseil archivé.' : 'Aucun conseil actif pour le moment.' }}</p> }
       </div>
       @if (editorOpen()) {
         <form class="advice-editor" #adviceForm="ngForm" (ngSubmit)="save(adviceForm)">

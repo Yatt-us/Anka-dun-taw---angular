@@ -1,76 +1,95 @@
-/* Espace administrateur : rail marine à bordure claire, conforme à la maquette. */
-.app-frame.admin { grid-template-columns: 248px minmax(0, 1fr); height: 100dvh; min-height: 0; overflow: hidden; background: #fff9f0; }
+/* Le logo reste dans l'en-tête crème ; le rail marine commence sous cet en-tête. */
+.app-frame.admin { grid-template-columns: 280px minmax(0, 1fr); height: 100dvh; min-height: 0; overflow: hidden; background: #fff9f0; }
 .admin main { height: 100dvh; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .admin .sidebar {
-  position: sticky;
+  --admin-cutout-width: 68px;
+  --admin-active-width: 176px;
+  position: relative;
   box-sizing: border-box;
-  top: 28px;
+  top: 0;
   align-self: start;
-  width: 213px;
-  height: calc(100dvh - 56px);
+  width: 280px;
+  height: 100dvh;
   min-height: 0;
-  margin: 28px 0 28px 30px;
-  padding: 0 0 12px 12px;
+  margin: 0;
+  padding: 0 0 12px;
   overflow: hidden;
   border: 0;
-  border-radius: 0;
-  background:
-    linear-gradient(to right, #9fc8db 0 8px, #0d3264 8px calc(100% - 58px), #fff calc(100% - 58px) calc(100% - 8px), #9fc8db calc(100% - 8px));
+  background: #fff9f0;
   color: white;
 }
+/* La première couche trace le liseré bleu et l'arrondi supérieur droit du rail. */
 .admin .sidebar::before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 8px;
-  width: 50px;
-  height: 35px;
-  border-top-right-radius: 34px;
-  background: #0d3264;
+  top: 157px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border: 10px solid #a7cbd8;
+  border-top-width: 7px;
+  border-bottom: 0;
+  border-top-right-radius: 60px;
+  background: #022c64;
   pointer-events: none;
 }
+/* La découpe blanche forme le retour arrondi au-dessus des onglets actifs. */
 .admin .sidebar::after {
   content: '';
   position: absolute;
-  top: 35px;
-  right: 8px;
-  width: 50px;
-  height: 54px;
-  border-top-left-radius: 34px;
+  top: 212px;
+  right: 10px;
+  bottom: 0;
+  width: var(--admin-cutout-width);
+  border-top-left-radius: 58px;
   background: #fff;
   pointer-events: none;
 }
-.admin .brand { display: none; }
 .admin nav {
   position: relative;
   z-index: 1;
   flex: 1 1 auto;
   align-content: start;
-  gap: clamp(14px, 2.6vh, 22px);
+  gap: clamp(16px, 2.6vh, 30px);
   min-height: 0;
-  margin-top: clamp(72px, 12vh, 92px);
-  padding: 0 4px 12px 9px;
+  margin-top: 0;
+  padding: 76px 0 12px 14px;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
 }
 .admin nav a {
-  width: 120px;
-  min-height: 32px;
-  padding: 7px 10px;
-  gap: 9px;
-  border-radius: 18px;
-  background: #58779e;
+  position: relative;
+  width: 160px;
+  min-height: 42px;
+  padding: 9px 13px;
+  gap: 12px;
+  border-radius: 22px;
+  background: #53769e;
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0;
 }
 .admin nav a:hover { transform: none; background: #6b88aa; color: white; }
-.admin nav a.active, .admin nav a.active:hover { width: 132px; min-height: 32px; border-radius: 18px; background: white; color: #0d3264; }
+.admin nav a.active, .admin nav a.active:hover { width: var(--admin-active-width); min-height: 46px; border-radius: 24px 0 0 24px; background: white; color: #022c64; }
+.admin nav a.active::after { content: ''; position: absolute; left: 100%; top: 0; width: var(--admin-cutout-width); height: 100%; background: white; pointer-events: none; }
 .admin nav app-icon { flex: 0 0 15px; width: 15px; height: 15px; }
-.admin .sidebar-bottom { position: relative; z-index: 1; flex: 0 0 auto; width: 132px; margin: 0 0 13px 0; padding-top: 12px; border-top: 1px solid #ffffffb8; }
+.admin .nav-group-heading {
+  width: 176px;
+  min-height: 42px;
+  padding: 8px 13px;
+  border-radius: 21px;
+  color: #dceafa;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.admin .nav-group-heading:hover, .admin .nav-group-heading[aria-expanded='true'] { background: #335d91; }
+.admin .nav-group-children { gap: 8px; }
+.admin .nav-group-children > a { width: 150px; margin-left: 10px; }
+.admin .sidebar-bottom { position: relative; z-index: 1; flex: 0 0 auto; width: 176px; margin: 0 0 13px 26px; padding-top: 12px; border-top: 1px solid #ffffffb8; }
 .admin .sidebar-bottom .change-space:first-child { display: none; }
 .admin .sidebar-bottom button.change-space {
   position: absolute;
@@ -95,21 +114,22 @@
 .admin .profile .avatar app-icon { width: 22px; height: 22px; }
 .admin .profile strong { color: white; font-size: 10px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin .profile small { color: #b8cce5; font-size: 9px; }
-.admin .page-area { max-width: 1900px; margin: 0 auto; padding: 37px 28px 45px; font-size: 18px; line-height: 1.5; }
+.admin .page-area { max-width: 1900px; margin: 0 auto; padding: 37px 32px 45px; font-size: 18px; line-height: 1.5; }
 .admin footer { display: none; }
 @media (max-height: 760px) and (min-width: 761px) {
-  .admin nav { overflow-y: auto; margin-top: 18px; }
+  .admin nav { overflow-y: auto; }
 }
 @media (max-width: 1100px) and (min-width: 761px) {
-  .app-frame.admin { grid-template-columns: 214px minmax(0, 1fr); }
-  .admin .sidebar { width: 190px; margin-left: 20px; padding-left: 10px; }
-  .admin nav a { width: 116px; padding-inline: 9px; font-size: 10px; }
-  .admin nav a.active, .admin nav a.active:hover { width: 126px; }
-  .admin .sidebar-bottom { width: 126px; }
+  .app-frame.admin { grid-template-columns: 250px minmax(0, 1fr); }
+  .admin .sidebar { --admin-cutout-width: 58px; --admin-active-width: 156px; width: 250px; }
+  .admin nav a { width: 140px; padding-inline: 9px; font-size: 11px; }
+  .admin .nav-group-heading { width: 156px; padding-inline: 9px; }
+  .admin .nav-group-children > a { width: 130px; }
+  .admin .sidebar-bottom { width: 156px; }
   .admin .page-area { padding: 28px 20px 38px; }
 }
 @media (min-width: 950px) and (max-width: 1100px) {
-  .app-frame.admin { grid-template-columns: 214px minmax(0, 1fr); }
+  .app-frame.admin { grid-template-columns: 250px minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
   .app-frame.admin { display: block; }
@@ -123,25 +143,17 @@
     padding: 15px 14px;
     border: 0;
     border-radius: 0 24px 24px 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    background: var(--brand-navy);
+    /* Le panneau et le profil restent fixes ; seule la navigation défile. */
+    overflow: hidden;
+    background: linear-gradient(to bottom, #fff9f0 0 157px, #022c64 157px);
     transform: translateX(-100%);
   }
   .admin.menu-open .sidebar { transform: translateX(0); }
   .admin .sidebar::before, .admin .sidebar::after { display: none; }
-  .admin .brand {
-    display: flex;
-    width: 120px;
-    height: 94px;
-    margin: 0 auto 16px;
-    padding: 5px;
-    border-radius: 16px;
-    background: #fff9f0;
-  }
-  .admin nav { flex: 0 0 auto; width: 100%; min-height: auto; margin-top: 0; padding-bottom: 0; gap: 9px; overflow: visible; }
+  .admin nav { flex: 0 0 auto; width: 100%; min-height: auto; margin-top: 0; padding: 20px 0 0; gap: 9px; overflow: visible; }
   .admin nav a, .admin nav a.active { width: 100%; min-height: 44px; font-size: 16px; }
-  .admin .sidebar-bottom { width: 100%; margin-top: auto; }
+  .admin nav a.active::after { display: none; }
+  .admin .sidebar-bottom { width: 100%; margin: auto 0 0; }
   .admin .sidebar-bottom button.change-space { right: 0; }
   .admin .page-area { padding: 22px 16px 36px; }
 }

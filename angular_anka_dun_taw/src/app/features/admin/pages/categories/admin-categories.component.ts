@@ -163,6 +163,18 @@ export class AdminCategoriesComponent {
     });
   }
 
+  reactivate(category: AdminFoodCategory): void {
+    if (this.busy()) return;
+    this.busy.set(true); this.actionError.set('');
+    this.api.reactivateCategory(category.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.busy.set(false); this.selected.set(null);
+        this.message.set(`${category.nom} a été réactivée.`); this.retry();
+      },
+      error: (error: unknown) => { this.busy.set(false); this.actionError.set(this.describeError(error)); },
+    });
+  }
+
   private describeError(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) return 'Le serveur est injoignable. Vérifiez la connexion au backend.';

@@ -12,7 +12,7 @@ export interface WorkspaceRow {
 
 export interface WorkspaceDetailConfig {
   kind?: 'food' | 'badge' | 'challenge' | 'appointment' | 'conversation';
-  editKind?: 'category' | 'food' | 'recipe' | 'quiz' | 'challenge' | 'advice' | 'article' | 'menu' | 'profile';
+  editKind?: 'category' | 'food' | 'recipe' | 'quiz' | 'challenge' | 'advice' | 'article' | 'menu' | 'profile' | 'badge';
   showPriceList?: boolean;
   showPriceCreate?: boolean;
   showBadgeAssignment?: boolean;

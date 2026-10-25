@@ -101,6 +101,8 @@ export const workspaceSectionGuard: CanActivateFn = (route) => {
     return router.parseUrl('/espaces');
   }
 
-  const isAllowed = ACTORS[actorId].navigation.some((item) => item.path === section);
+  const isAllowed = ACTORS[actorId].navigation.some((item) =>
+    item.path === section || item.children?.some((child) => child.path === section),
+  );
   return isAllowed ? true : router.parseUrl(`/espaces/${actorId}/tableau-de-bord`);
 };

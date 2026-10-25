@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { forkJoin, map, Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { ApiPage, FoodPrice, WorkspacePageResult, WorkspaceRow } from '../../../shared/models/workspace-list.models';
-import { formatApiDate, formatStatusLabel, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
+import { currencyLabel, formatApiDate, formatStatusLabel, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
 import { WorkspaceAction } from '../../../shared/models/workspace-list.models';
 import { EditorKind } from '../../../shared/forms/workspace-editor.service';
 
@@ -17,7 +17,7 @@ interface Article { id: number; titre: string; contenu?: string; imageUrl?: stri
 interface Quiz { id: number; titre: string; description?: string; imageUrl?: string | null; scoreMaximum?: number }
 interface AdminQuiz { id: number; statut: string; scoreMaximum: number; contenu: { titre: string; description?: string; imageUrl?: string | null } }
 interface Challenge { id: number; titre: string; imageUrl?: string | null; objectif?: string; nombrePoints?: number; dateFin?: string; statut?: string }
-interface Badge { id: number; nom: string; imageUrl?: string | null; description?: string; points?: number; conditionObtention?: string }
+interface Badge { id: number; nom: string; imageUrl?: string | null; description?: string; points?: number; conditionObtention?: string; actif?: boolean }
 
 @Injectable({ providedIn: 'root' })
 export class AdminWorkspaceDataAccess {
@@ -42,7 +42,7 @@ export class AdminWorkspaceDataAccess {
       case 'menus': return this.paged<Menu>('/admin/menus', page, size, (item) => ({
         key: `menu-${item.id}`, title: item.titre, data: { ...item }, imageUrl: item.imageUrl,
         subtitle: [item.type ? formatStatusLabel(item.type) : null, item.beneficiaireIds?.length != null ? `${item.beneficiaireIds.length} bénéficiaire(s)` : null].filter(Boolean).join(' · ') || shortSummary(item.description),
-        value: [item.dateDebut ? `Du ${formatApiDate(item.dateDebut)}` : null, item.coutTotalEstime == null ? null : `${item.coutTotalEstime} ${item.devise || 'FCFA'}`].filter(Boolean).join(' · ') || shortSummary(item.description),
+        value: [item.dateDebut ? `Du ${formatApiDate(item.dateDebut)}` : null, item.coutTotalEstime == null ? null : `${item.coutTotalEstime} ${currencyLabel(item.devise)}`].filter(Boolean).join(' · ') || shortSummary(item.description),
         ...statusBadge(item.statut),
       }), status ? { statut: status } : {});
       case 'quiz': return this.paged<AdminQuiz>('/admin/quiz', page, size, (item) => ({
@@ -55,12 +55,12 @@ export class AdminWorkspaceDataAccess {
         value: `${item.nombrePoints ?? 0} point(s) · ${formatApiDate(item.dateFin)}`, ...statusBadge(item.statut),
         detail: { kind: 'challenge', editKind: item.statut === 'BROUILLON' ? 'challenge' : undefined, showChallengeProgress: true },
       }), status ? { statut: status } : {});
-      case 'badges': return this.http.get<Badge[]>(`${API_BASE_URL}/badges`).pipe(map((items) => ({
+      case 'badges': return this.http.get<Badge[]>(`${API_BASE_URL}/admin/badges`).pipe(map((items) => ({
         rows: items.slice(page * size, (page + 1) * size).map((item): WorkspaceRow => ({
           key: `badge-${item.id}`, title: item.nom, subtitle: shortSummary(item.description), imageUrl: item.imageUrl,
           value: `${item.points ?? 0} point(s) · ${item.conditionObtention || 'Condition non renseignée'}`,
-          badge: 'Actif', badgeTone: 'green',
-          detail: { kind: 'badge', showBadgeAssignment: true },
+          badge: item.actif === false ? 'Archivé' : 'Actif', badgeTone: item.actif === false ? 'neutral' : 'green',
+          detail: { kind: 'badge', editKind: 'badge', showBadgeAssignment: item.actif !== false },
         })), total: items.length,
       })));
       case 'contenus': return this.publishedContent(page, size);
@@ -82,20 +82,30 @@ export class AdminWorkspaceDataAccess {
   }
 
   actionsFor(key: string, badge: string, id: number): WorkspaceAction[] {
+    if (key.startsWith('badge-')) return badge === 'Actif'
+      ? [{ label: 'Archiver', path: `/admin/badges/${id}`, method: 'DELETE' }]
+      : [{ label: 'Réactiver', path: `/admin/badges/${id}/reactiver` }];
     if (key.startsWith('recipe-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/recettes/${id}/publier` }];
       if (badge === 'Publié' || badge === 'Publiée') return [{ label: 'Archiver', path: `/recettes/${id}/archiver` }];
+      if (badge === 'Archivée' || badge === 'Archivé') return [{ label: 'Désarchiver', path: `/recettes/${id}/desarchiver` }];
     }
-    if (key.startsWith('menu-') && badge === 'Publié') return [{ label: 'Archiver', path: `/admin/menus/${id}/archiver` }];
+    if (key.startsWith('menu-')) {
+      if (badge === 'Publié') return [{ label: 'Archiver', path: `/admin/menus/${id}/archiver` }];
+      if (badge === 'Archivé' || badge === 'Archive') return [{ label: 'Désarchiver', path: `/admin/menus/${id}/desarchiver` }];
+    }
     if (key.startsWith('food-') && badge === 'Disponible') return [{ label: 'Désactiver', path: `/aliments/${id}`, method: 'DELETE' }];
+    if (key.startsWith('food-') && badge === 'Indisponible') return [{ label: 'Réactiver', path: `/aliments/${id}/reactiver` }];
     if (key.startsWith('category-') && badge === 'Active') return [{ label: 'Désactiver', path: `/categories-aliments/${id}`, method: 'DELETE' }];
     if (key.startsWith('quiz-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/admin/quiz/${id}/publier` }];
       if (badge === 'Publié') return [{ label: 'Archiver', path: `/admin/quiz/${id}/archiver` }];
+      if (badge === 'Archivé') return [{ label: 'Désarchiver', path: `/admin/quiz/${id}/desarchiver` }];
     }
     if (key.startsWith('challenge-')) {
       if (badge === 'Brouillon') return [{ label: 'Publier', path: `/admin/defis/${id}/publier` }];
       if (badge === 'Publié') return [{ label: 'Archiver', path: `/admin/defis/${id}/archiver` }];
+      if (badge === 'Archivé') return [{ label: 'Désarchiver', path: `/admin/defis/${id}/desarchiver` }];
     }
     return [];
   }

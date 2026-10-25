@@ -9,7 +9,9 @@ import { AdminFood, AdminFoodCategory, AdminFoodPage, AdminFoodsDataAccess } fro
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-editor.component';
 import { FoodPrice } from '../../../../shared/models/workspace-list.models';
-import { ZoneOption, ZonesDataAccess } from '../../../../shared/data-access/zones.data-access';
+import { MALI_ZONES, ZoneOption, ZonesDataAccess, zoneLabel } from '../../../../shared/data-access/zones.data-access';
+import { currentPricesForZone } from './current-prices';
+import { currencyLabel } from '../../../../shared/utils/workspace-formatters';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -20,6 +22,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: './admin-foods.component.css',
 })
 export class AdminFoodsComponent {
+  readonly currencyLabel = currencyLabel;
   private readonly api = inject(AdminFoodsDataAccess);
   private readonly dashboard = inject(AdminDashboardApi);
   private readonly router = inject(Router);
@@ -31,6 +34,7 @@ export class AdminFoodsComponent {
   readonly search = signal('');
   readonly appliedSearch = signal('');
   readonly categoryId = signal<number | null>(null);
+  readonly availabilityFilter = signal<'all' | 'available' | 'disabled'>('all');
   readonly categories = signal<AdminFoodCategory[]>([]);
   readonly categoriesError = signal(false);
   readonly pageIndex = signal(0);
@@ -48,7 +52,7 @@ export class AdminFoodsComponent {
   readonly foodPrices = signal<FoodPrice[]>([]);
   readonly viewMode = signal<'nutrition' | 'prices'>('nutrition');
   readonly priceZone = signal('BAMAKO');
-  readonly priceZones = signal<ZoneOption[]>([]);
+  readonly priceZones = signal<ZoneOption[]>([...MALI_ZONES]);
   readonly pagePrices = signal<Record<number, FoodPrice | null>>({});
   readonly pagePricesError = signal(false);
   readonly priceEditorFood = signal<AdminFood | null>(null);
@@ -69,6 +73,12 @@ export class AdminFoodsComponent {
   readonly firstVisible = computed(() => this.result().totalElements ? this.pageIndex() * this.pageSize + 1 : 0);
   readonly lastVisible = computed(() => Math.min((this.pageIndex() + 1) * this.pageSize, this.result().totalElements));
   readonly pricesReady = computed(() => this.viewMode() !== 'prices' || (!this.pagePricesError() && this.result().content.every((food) => Object.hasOwn(this.pagePrices(), food.id))));
+  readonly displayedFoodPrices = computed(() => {
+    const prices = this.foodPrices();
+    if (this.viewMode() !== 'prices') return prices;
+    const today = new Date().toISOString().slice(0, 10);
+    return currentPricesForZone(prices, this.priceZone(), today);
+  });
 
   constructor() {
     this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -99,10 +109,12 @@ export class AdminFoodsComponent {
       const page = this.pageIndex();
       const query = this.appliedSearch();
       const category = this.categoryId();
+      const availability = this.availabilityFilter();
       this.reloadKey();
       this.state.set('loading');
       this.error.set('');
-      const subscription = this.api.foods(page, this.pageSize, query, category).subscribe({
+      const subscription = this.api.foods(page, this.pageSize, query, category,
+        availability === 'all' ? null : availability === 'available').subscribe({
         next: (result) => {
           if (page > 0 && page * this.pageSize >= result.totalElements) {
             this.pageIndex.set(Math.max(0, Math.ceil(result.totalElements / this.pageSize) - 1));
@@ -181,8 +193,10 @@ export class AdminFoodsComponent {
     if (!price) return '—';
     const amount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(price.prix);
     const unit = price.quantiteReference && price.unite ? ` / ${price.quantiteReference} ${price.unite}` : '';
-    return `${amount} ${price.devise || 'FCFA'}${unit}`;
+    return `${amount} ${currencyLabel(price.devise)}${unit}`;
   }
+
+  zoneName(code: string): string { return zoneLabel(code); }
 
   setPriceZone(event: Event): void {
     this.priceZone.set((event.target as HTMLSelectElement).value);
@@ -194,6 +208,14 @@ export class AdminFoodsComponent {
     const value = Number((event.target as HTMLSelectElement).value);
     this.categoryId.set(Number.isInteger(value) && value > 0 ? value : null);
     this.pageIndex.set(0);
+  }
+
+  setAvailability(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === 'all' || value === 'available' || value === 'disabled') {
+      this.availabilityFilter.set(value);
+      this.pageIndex.set(0);
+    }
   }
   goToPage(index: number): void {
     if (index >= 0 && index < this.pageCount()) this.pageIndex.set(index);
@@ -258,6 +280,23 @@ export class AdminFoodsComponent {
     });
   }
 
+  reactivate(food: AdminFood): void {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.actionError.set('');
+    this.api.reactivate(food.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.message.set(`${food.nom} est de nouveau disponible.`);
+        this.retry();
+      },
+      error: (error: unknown) => {
+        this.busy.set(false);
+        this.actionError.set(this.describeError(error));
+      },
+    });
+  }
+
   async exportCsv(): Promise<void> {
     if (this.exporting()) return;
     this.exporting.set(true);
@@ -267,7 +306,7 @@ export class AdminFoodsComponent {
         const header = ['Nom', 'Catégorie', 'Prix', 'Devise', 'Quantité de référence', 'Unité', 'Zone', 'Saison', 'Début du prix', 'Fin du prix'];
         const lines = this.result().content.map((food) => {
           const price = this.pagePrices()[food.id];
-          return [food.nom, food.categorieNom ?? '', price?.prix ?? '', price?.devise ?? '', price?.quantiteReference ?? '', price?.unite ?? '', price?.zone ?? '', this.season(food), price?.dateDebut ?? '', price?.dateFin ?? '']
+          return [food.nom, food.categorieNom ?? '', price?.prix ?? '', price ? currencyLabel(price.devise) : '', price?.quantiteReference ?? '', price?.unite ?? '', price?.zone ?? '', this.season(food), price?.dateDebut ?? '', price?.dateFin ?? '']
             .map(this.csvCell).join(';');
         });
         this.downloadCsv(header, lines, 'prix-saisonnalite-anka-dun-taw-page.csv');
