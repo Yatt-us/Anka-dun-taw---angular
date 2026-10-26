@@ -17,17 +17,23 @@ export class SecurityComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly busy = signal(false);
+  readonly showCurrentPassword = signal(false);
+  readonly showNewPassword = signal(false);
+  readonly showConfirmationPassword = signal(false);
   readonly error = signal('');
   readonly googleSuccess = signal(false);
   currentPassword = '';
   newPassword = '';
+  confirmationPassword = '';
   change(valid: boolean): void {
-    if (!valid) { this.error.set('Renseignez les deux mots de passe (huit caractères minimum pour le nouveau).'); return; }
+    if (!valid) { this.error.set('Renseignez les champs requis. Le nouveau mot de passe doit contenir au moins huit caractères.'); return; }
+    if (this.newPassword !== this.confirmationPassword) { this.error.set('Les deux nouveaux mots de passe ne correspondent pas.'); return; }
+    if (this.currentPassword === this.newPassword) { this.error.set('Le nouveau mot de passe doit être différent de l’actuel.'); return; }
     this.busy.set(true); this.error.set('');
     this.http.post(`${API_BASE_URL}/auth/mot-de-passe/changer`, {
       motDePasseActuel: this.currentPassword, nouveauMotDePasse: this.newPassword,
     }, { withCredentials: true }).subscribe({
-      next: () => { this.auth.clearSession(); void this.router.navigate(['/connexion'], { queryParams: { motDePasse: 'modifie' } }); },
+      next: () => { this.currentPassword = ''; this.newPassword = ''; this.confirmationPassword = ''; this.auth.clearSession(); void this.router.navigate(['/connexion'], { queryParams: { motDePasse: 'modifie' } }); },
       error: (error: unknown) => { this.busy.set(false); this.error.set(error instanceof HttpErrorResponse && typeof error.error?.message === 'string' ? error.error.message : 'Modification impossible. Vérifiez le mot de passe actuel.'); },
     });
   }

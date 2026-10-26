@@ -4,3 +4,4 @@
 :host-context(.admin) h3{font-size:20px}
 :host-context(.admin) p,:host-context(.admin) label,:host-context(.admin) input{font-size:18px}
 :host-context(.admin) button{min-height:46px;font-size:16px}
+.password-input{position:relative;display:flex;align-items:center;min-width:0}.password-input input{width:100%;min-width:0;padding-right:74px}.visibility-toggle{position:absolute;right:6px;border:0;background:transparent;color:var(--brand-blue);padding:7px;font-size:10px;font-weight:700;cursor:pointer}

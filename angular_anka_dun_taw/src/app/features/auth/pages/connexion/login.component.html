@@ -14,16 +14,24 @@
 
         <form [formGroup]="form" (ngSubmit)="submit()">
           <label for="identifiant">E-mail ou téléphone</label>
-          <input id="identifiant" type="text" formControlName="identifiant" autocomplete="username"
-            placeholder="vous@exemple.com ou +223…" [attr.aria-invalid]="form.controls.identifiant.touched && form.controls.identifiant.invalid" />
+          <div class="identifier-field" [class.phone-entry]="!form.controls.identifiant.value.includes('@')">
+            @if (!form.controls.identifiant.value.includes('@')) { <span class="phone-prefix" aria-hidden="true">+223</span> }
+            <input id="identifiant" type="text" formControlName="identifiant" autocomplete="username"
+              placeholder="Numéro ou adresse e-mail" [attr.aria-invalid]="form.controls.identifiant.touched && form.controls.identifiant.invalid" />
+          </div>
           @if (form.controls.identifiant.touched && form.controls.identifiant.invalid) {
             <small class="field-error">Saisissez votre e-mail ou votre téléphone.</small>
           }
 
           <label for="mot-de-passe">Mot de passe</label>
-          <input id="mot-de-passe" type="password" formControlName="motDePasse"
-            autocomplete="current-password" placeholder="Votre mot de passe"
-            [attr.aria-invalid]="form.controls.motDePasse.touched && form.controls.motDePasse.invalid" />
+          <div class="password-field">
+            <input id="mot-de-passe" [type]="showPassword() ? 'text' : 'password'" formControlName="motDePasse"
+              autocomplete="current-password" placeholder="Votre mot de passe"
+              [attr.aria-invalid]="form.controls.motDePasse.touched && form.controls.motDePasse.invalid" />
+            <button type="button" class="visibility-toggle" (click)="showPassword.update(value => !value)"
+              [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+              [attr.aria-pressed]="showPassword()">{{ showPassword() ? 'Masquer' : 'Afficher' }}</button>
+          </div>
           @if (form.controls.motDePasse.touched && form.controls.motDePasse.invalid) {
             <small class="field-error">Saisissez votre mot de passe.</small>
           }

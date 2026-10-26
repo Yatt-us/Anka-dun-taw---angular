@@ -12,6 +12,7 @@ import {
   throwError,
 } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
+import { normaliserTelephoneMali } from './telephone-mali';
 import {
   AuthenticatedUser,
   AuthenticationResponse,
@@ -43,7 +44,7 @@ export class AuthService {
     const value = identifiant.trim();
     const credentials = value.includes('@')
       ? { email: value, motDePasse }
-      : { telephone: value, motDePasse };
+      : { telephone: normaliserTelephoneMali(value), motDePasse };
 
     return this.http
       .post<AuthenticationResponse>(`${API_BASE_URL}/auth/connexion`, credentials, {

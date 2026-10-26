@@ -31,6 +31,7 @@
               <label>Adresse e-mail<input type="email" name="emailConfirmation" [ngModel]="email" disabled /></label>
               @if (!signupEmailVerified()) {
                 <label>Code reçu par e-mail<input name="verificationCode" [(ngModel)]="verificationCode" required minlength="6" maxlength="6" inputmode="numeric" autocomplete="one-time-code" /></label>
+                <p class="hint">Ce code expire 10 minutes après son envoi.</p>
                 <button class="primary-button" type="submit" [disabled]="busy()">{{ busy() ? 'Vérification…' : 'Confirmer mon e-mail' }}</button>
                 <button class="step-back" type="button" (click)="resendSignupEmailCode()" [disabled]="busy()">Renvoyer le code</button>
               } @else {
@@ -43,13 +44,13 @@
                 <label>Nom *<input name="nom" [(ngModel)]="nom" required autocomplete="family-name" /></label>
                 <label>Adresse e-mail<input type="email" name="email" [(ngModel)]="email" autocomplete="email" /></label>
                 <label>Type de compte *<select name="role" [(ngModel)]="role" required><option value="DIETETICIEN">Diététicien</option><option value="NUTRITIONNISTE">Nutritionniste</option></select></label>
-                <label>Mot de passe *<input type="password" minlength="8" name="motDePasse" [(ngModel)]="motDePasse" required autocomplete="new-password" /></label>
-                <label>Confirmer le mot de passe *<input type="password" minlength="8" name="confirmationMotDePasse" [(ngModel)]="confirmationMotDePasse" required autocomplete="new-password" /></label>
+                <label>Mot de passe *<span class="password-input"><input [type]="showSignupPassword() ? 'text' : 'password'" minlength="8" name="motDePasse" [(ngModel)]="motDePasse" required autocomplete="new-password" /><button type="button" class="visibility-toggle" (click)="showSignupPassword.update(value => !value)" [attr.aria-label]="showSignupPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" [attr.aria-pressed]="showSignupPassword()">{{ showSignupPassword() ? 'Masquer' : 'Afficher' }}</button></span></label>
+                <label>Confirmer le mot de passe *<span class="password-input"><input [type]="showSignupPasswordConfirmation() ? 'text' : 'password'" minlength="8" name="confirmationMotDePasse" [(ngModel)]="confirmationMotDePasse" required autocomplete="new-password" /><button type="button" class="visibility-toggle" (click)="showSignupPasswordConfirmation.update(value => !value)" [attr.aria-label]="showSignupPasswordConfirmation() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" [attr.aria-pressed]="showSignupPasswordConfirmation()">{{ showSignupPasswordConfirmation() ? 'Masquer' : 'Afficher' }}</button></span></label>
               </div>
               <button class="primary-button" type="submit">Continuer</button>
             } @else {
               <div class="field-grid">
-                <label>Téléphone{{ signupMethod() === 'google' ? ' (facultatif)' : '' }}<input name="telephone" [(ngModel)]="telephone" autocomplete="tel" placeholder="+223…" /></label>
+                <label>Téléphone{{ signupMethod() === 'google' ? ' (facultatif)' : '' }}<span class="phone-input"><span aria-hidden="true">+223</span><input type="tel" name="telephone" [(ngModel)]="telephone" autocomplete="tel-national" inputmode="numeric" placeholder="Numéro de téléphone" /></span></label>
                 @if (signupMethod() === 'google') {
                   <label>Type de compte *<select name="role" [(ngModel)]="role" required><option value="DIETETICIEN">Diététicien</option><option value="NUTRITIONNISTE">Nutritionniste</option></select></label>
                 }
@@ -85,6 +86,7 @@
           @if (!emailVerified()) {
             <form #codeForm="ngForm" (ngSubmit)="confirmExistingEmail(codeForm.valid === true)">
               <label>Code reçu par e-mail *<input name="codeVerification" [(ngModel)]="verificationCode" required minlength="6" maxlength="6" inputmode="numeric" autocomplete="one-time-code" /></label>
+              <p class="hint">Ce code expire 10 minutes après son envoi.</p>
               <button class="primary-button" type="submit" [disabled]="busy()">Confirmer mon e-mail</button>
             </form>
           } @else { <a class="return-link" routerLink="/connexion">Se connecter</a> }
@@ -96,8 +98,10 @@
           <div class="form-footer"><button type="button" (click)="setMode('reinitialisation')">J’ai déjà un code</button></div>
         } @else {
           <form #resetForm="ngForm" (ngSubmit)="reset(resetForm.valid === true)">
-            <label>Code de réinitialisation *<input name="jeton" [(ngModel)]="resetToken" required /></label>
-            <label>Nouveau mot de passe *<input type="password" name="nouveauMotDePasse" minlength="8" [(ngModel)]="newPassword" required autocomplete="new-password" /></label>
+            @if (!resetToken) { <label>Jeton du lien de réinitialisation *<input name="jeton" [(ngModel)]="resetToken" required autocomplete="one-time-code" /></label> }
+            @else { <p class="hint">Lien de réinitialisation détecté. Il expire 10 minutes après son envoi.</p> }
+            <label>Nouveau mot de passe *<span class="password-input"><input [type]="showResetPassword() ? 'text' : 'password'" name="nouveauMotDePasse" minlength="8" [(ngModel)]="newPassword" required autocomplete="new-password" /><button type="button" class="visibility-toggle" (click)="showResetPassword.update(value => !value)" [attr.aria-label]="showResetPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" [attr.aria-pressed]="showResetPassword()">{{ showResetPassword() ? 'Masquer' : 'Afficher' }}</button></span></label>
+            <label>Confirmer le nouveau mot de passe *<span class="password-input"><input [type]="showResetPasswordConfirmation() ? 'text' : 'password'" name="confirmationNouveauMotDePasse" minlength="8" [(ngModel)]="resetPasswordConfirmation" required autocomplete="new-password" /><button type="button" class="visibility-toggle" (click)="showResetPasswordConfirmation.update(value => !value)" [attr.aria-label]="showResetPasswordConfirmation() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">{{ showResetPasswordConfirmation() ? 'Masquer' : 'Afficher' }}</button></span></label>
             <button class="primary-button" type="submit" [disabled]="busy()">Changer le mot de passe</button>
           </form>
           <div class="form-footer"><button type="button" (click)="setMode('oubli')">Recevoir un code</button></div>
