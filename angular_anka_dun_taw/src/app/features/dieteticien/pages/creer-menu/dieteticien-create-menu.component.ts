@@ -1,38 +1,35 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { EMPTY, catchError, expand, forkJoin, map, Observable, of, reduce, switchMap, tap } from 'rxjs';
 import { API_BASE_URL } from '../../../../core/config/api.config';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
-import { ZoneOption, ZonesDataAccess } from '../../../../shared/data-access/zones.data-access';
+import { zoneLabel } from '../../../../shared/data-access/zones.data-access';
 
 interface ApiPage<T> { content: T[]; number: number; totalPages: number }
 interface Patient { id: number; prenom: string; nom: string; photoProfilUrl?: string | null }
 interface Ingredient { id: number; alimentNom: string; quantite: number; unite: string }
 interface Recipe { id: number; nom: string; nombrePersonnes: number | null; ingredients?: Ingredient[] | null }
-interface PatientProfile { zone: string | null; objectifId: number | null; budgetActifId: number | null }
+interface PatientProfile { zone: string | null; objectifId: number | null; budgetActifId: number | null; modeBudget: string | null }
 interface Budget { id: number; montant: number; devise: string; periode: string; actif: boolean }
 interface RecipeCost { coutEstime: number; devise: string }
 interface CreatedMenu { id: number }
 interface MealDraft { key: number; recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
 
-@Component({
+  @Component({
   selector: 'app-dieteticien-create-menu',
   imports: [FormsModule, RouterLink, UiIconComponent],
   templateUrl: './dieteticien-create-menu.component.html',
   styleUrl: './dieteticien-create-menu.component.css',
 })
 export class DieteticienCreateMenuComponent implements OnInit {
-  @ViewChild('menuSettings') menuSettings?: ElementRef<HTMLDetailsElement>;
   private readonly http = inject(HttpClient);
-  private readonly zonesApi = inject(ZonesDataAccess);
   private readonly destroyRef = inject(DestroyRef);
   private costRequest = 0;
   private nextMealKey = 2;
 
-  readonly zones = signal<ZoneOption[]>([]);
   readonly patients = signal<Patient[]>([]);
   readonly recipes = signal<Recipe[]>([]);
   readonly recipeDetails = signal<Record<number, Recipe>>({});
@@ -73,10 +70,6 @@ export class DieteticienCreateMenuComponent implements OnInit {
   meals: MealDraft[] = [{ key: 1, recetteId: null, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1 }];
 
   ngOnInit(): void {
-    this.zonesApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (zones) => this.zones.set(zones),
-      error: () => this.error.set('Impossible de charger les régions.'),
-    });
     this.allPages<Patient>('/professionnel/beneficiaires', 'prenom,asc')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -108,6 +101,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
     this.budgets.set([]);
     this.selectedBudgetId = null;
     this.zone = '';
+    this.type = 'PERSONNALISE';
     this.costs.set({});
     this.costsLoading.set(false);
     const id = this.selectedPatientId;
@@ -117,15 +111,19 @@ export class DieteticienCreateMenuComponent implements OnInit {
       profile: this.http.get<PatientProfile>(`${base}/profil-nutritionnel`),
       budgets: this.http.get<ApiPage<Budget>>(`${base}/budgets`, {
         params: new HttpParams().set('page', '0').set('size', '100'),
-      }),
+      }).pipe(catchError(() => of({ content: [] as Budget[] }))),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ profile, budgets }) => {
         if (this.selectedPatientId !== id) return;
         this.profile.set(profile);
         this.budgets.set(budgets.content);
         this.zone = profile.zone ?? '';
-        this.selectedBudgetId = budgets.content.find((item) => item.id === profile.budgetActifId)?.id
-          ?? budgets.content.find((item) => item.actif)?.id ?? null;
+        // Le type du menu suit le mode du profil pour éviter le conflit de validation côté API.
+        this.type = profile.modeBudget === 'PETIT_BUDGET' ? 'PETIT_BUDGET' : 'PERSONNALISE';
+        this.selectedBudgetId = profile.modeBudget === 'AVEC_BUDGET'
+          ? budgets.content.find((item) => item.id === profile.budgetActifId)?.id
+            ?? budgets.content.find((item) => item.actif)?.id ?? null
+          : null;
         this.refreshCosts();
       },
       error: () => {
@@ -138,6 +136,10 @@ export class DieteticienCreateMenuComponent implements OnInit {
 
   selectedPatient(): Patient | null {
     return this.patients().find((patient) => patient.id === this.selectedPatientId) ?? null;
+  }
+
+  zoneName(): string {
+    return this.zone ? zoneLabel(this.zone) : 'Région à renseigner';
   }
 
   hideBrokenImage(event: Event): void {
@@ -242,21 +244,29 @@ export class DieteticienCreateMenuComponent implements OnInit {
 
   save(publish: boolean): void {
     if (this.saving() || this.published() || (this.validatedMenuId() !== null && !publish)) return;
-    if (!this.title.trim() || !this.dateDebut || !this.zone) this.menuSettings?.nativeElement.setAttribute('open', '');
-    if (!this.selectedPatientId || !this.title.trim() || !this.dateDebut || !this.zone ||
+    if (!this.selectedPatientId || !this.profile() || !this.title.trim() || !this.dateDebut || !this.zone ||
       !this.meals.length || this.meals.some((meal) => !meal.recetteId || !Number.isInteger(meal.jour) ||
         meal.jour < 1 || meal.jour > 31 || !Number.isFinite(meal.nombrePortions) || meal.nombrePortions <= 0)) {
-      this.error.set('Choisissez un patient et une recette. Vérifiez la zone et la date dans « Paramètres du menu ».');
+      this.error.set('Complétez les champs obligatoires : nom du menu, patient, région, date de début, recette et jour de chaque repas. Attendez le chargement du profil du patient.');
       return;
     }
     if (this.dateFin && this.dateFin < this.dateDebut) {
-      this.menuSettings?.nativeElement.setAttribute('open', '');
       this.error.set('La date de fin doit suivre la date de début.');
       return;
     }
     if (this.dateFin && this.meals.some((meal) => (this.mealDate(meal.jour) ?? '') > this.dateFin)) {
-      this.menuSettings?.nativeElement.setAttribute('open', '');
-      this.error.set('Un repas se situe après la date de fin du menu.');
+      this.error.set('Un repas tombe après la date de fin. Augmentez la période ou corrigez le jour du repas.');
+      return;
+    }
+    const modeBudget = this.profile()?.modeBudget;
+    const prixObligatoires = this.type === 'PETIT_BUDGET' || modeBudget === 'AVEC_BUDGET';
+    if (publish && modeBudget === 'AVEC_BUDGET' && !this.selectedBudgetId) {
+      this.error.set('Publication impossible : ce patient est en mode « Avec budget », mais aucun budget actif n’est sélectionné. Vérifiez son budget dans son profil.');
+      return;
+    }
+    if (publish && prixObligatoires && (this.costsLoading() || this.meals.some((meal) =>
+      meal.recetteId != null && this.costs()[meal.key] == null))) {
+      this.error.set('Publication impossible : le coût d’au moins un repas n’est pas vérifiable pour la région et la date choisies. Vérifiez les prix des ingrédients, la région et la saison, puis réessayez.');
       return;
     }
     this.error.set('');
@@ -285,19 +295,22 @@ export class DieteticienCreateMenuComponent implements OnInit {
         : this.http.put<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${existing}`, payload)
           .pipe(map((menu) => menu ?? { id: existing }))
       : this.http.post<CreatedMenu>(`${API_BASE_URL}/professionnel/menus`, payload);
+    let phase: 'enregistrement' | 'validation' | 'publication' = 'enregistrement';
     initial.pipe(
       switchMap((menu) => {
         this.createdMenuId.set(menu.id);
         if (!publish) return of(menu);
+        phase = 'validation';
         const validation = this.validatedMenuId() === menu.id
           ? of(menu)
           : this.http.post<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${menu.id}/valider`, {}).pipe(
             tap(() => this.validatedMenuId.set(menu.id)),
           );
-        return validation.pipe(
-          switchMap(() => this.http.post<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${menu.id}/publier`, {})
-            .pipe(map((published) => published ?? menu))),
-        );
+        return validation.pipe(switchMap(() => {
+          phase = 'publication';
+          return this.http.post<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${menu.id}/publier`, {})
+            .pipe(map((published) => published ?? menu));
+        }));
       }),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
@@ -310,13 +323,46 @@ export class DieteticienCreateMenuComponent implements OnInit {
       },
       error: (cause: unknown) => {
         this.saving.set(false);
-        const detail = cause instanceof HttpErrorResponse && typeof cause.error?.message === 'string'
-          ? cause.error.message : 'Vérifiez les champs et réessayez.';
-        this.error.set(this.createdMenuId()
-          ? `Brouillon n° ${this.createdMenuId()} conservé, mais la validation ou la publication a échoué : ${detail}`
-          : `Création impossible : ${detail}`);
+        const detail = this.errorDetail(cause);
+        if (!this.createdMenuId()) {
+          this.error.set(`Création impossible : ${detail}`);
+          return;
+        }
+        const etape = phase === 'validation' ? 'validation' : phase === 'publication' ? 'publication' : 'enregistrement';
+        this.error.set(`Brouillon n° ${this.createdMenuId()} conservé, mais l’étape de ${etape} a échoué : ${detail}`);
       },
     });
+  }
+
+  /** Lit les formats d’erreur Spring et proxy sans remplacer le vrai motif par un message générique. */
+  private errorDetail(cause: unknown): string {
+    if (!(cause instanceof HttpErrorResponse)) {
+      return cause instanceof Error && cause.message ? cause.message : 'Erreur inattendue. Réessayez.';
+    }
+    if (cause.status === 0) return 'Le serveur est injoignable. Vérifiez la connexion puis réessayez.';
+    const body: unknown = cause.error;
+    if (typeof body === 'string' && body.trim()) return body.trim();
+    if (body && typeof body === 'object') {
+      const response = body as Record<string, unknown>;
+      for (const key of ['message', 'detail', 'erreur', 'error', 'title']) {
+        const value = response[key];
+        if (typeof value === 'string' && value.trim()) return value.trim();
+      }
+      const violations = response['errors'] ?? response['violations'];
+      if (Array.isArray(violations)) {
+        const messages = violations.map((item) => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') {
+            const detail = (item as Record<string, unknown>)['message'] ??
+              (item as Record<string, unknown>)['defaultMessage'];
+            return typeof detail === 'string' ? detail : '';
+          }
+          return '';
+        }).filter(Boolean);
+        if (messages.length) return messages.join(' · ');
+      }
+    }
+    return `Le serveur a refusé l’opération (HTTP ${cause.status}). Vérifiez les données du patient, les recettes et leurs prix, puis réessayez.`;
   }
 
   private mealDate(day: number): string | null {

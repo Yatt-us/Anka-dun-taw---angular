@@ -4,12 +4,26 @@
 .menu-header p, .muted, .advice-card p { margin: 0; color: #708079; font-size: 12px; line-height: 1.55; }
 .date-chip { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; padding: 8px 12px; border: 1px solid #e6e5dd; border-radius: 8px; background: white; color: #273b40; font-size: 11px; }
 .date-chip app-icon { width: 15px; height: 15px; color: var(--brand-blue); }
+.workflow-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: -25px 0 22px; }
+.workflow-step { display: flex; align-items: flex-start; gap: 11px; min-width: 0; padding: 13px 15px; border: 1px solid #e7e4da; border-radius: 11px; background: #fffdf8; }
+.workflow-step > span, .step-number { display: grid; place-items: center; flex: 0 0 27px; width: 27px; height: 27px; border-radius: 50%; background: #e8f2f6; color: var(--brand-blue); font-size: 12px; font-weight: 700; }
+.workflow-step div { display: grid; gap: 3px; }
+.workflow-step strong { color: #263630; font-size: 11px; }
+.workflow-step small, .section-heading p, .field-help { color: #748078; font-size: 10px; line-height: 1.45; }
 .menu-grid { display: grid; grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr); align-items: start; gap: 24px; }
 .menu-card { min-width: 0; padding: 23px 24px; border: 1px solid #ebe7dd; border-radius: 14px; background: white; box-shadow: 0 3px 12px #243c3710; }
 h2, h3 { margin: 0; color: #263630; font-weight: 700; }
 h2 { font-size: 16px; line-height: 1.4; }
 h3 { font-size: 13px; line-height: 1.4; }
-.menu-elements > h2 { margin-bottom: 24px; }
+.section-heading { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 18px; }
+.section-heading h2 { margin: 0; }
+.section-heading p { margin: 4px 0 0; }
+.required { color: #c4563e; }
+.menu-settings-fields { margin-bottom: 10px; }
+.region-value { box-sizing: border-box; display: flex; align-items: center; min-height: 40px; padding: 10px 12px; border: 1px solid #d7e7dc; border-radius: 8px; background: #f3f8f3; color: #2d6a4f; font-size: 12px; font-weight: 600; }
+.region-value.region-missing { border-color: #f0d4c8; background: #fff7f2; color: #9a573b; font-weight: 500; }
+.patient-context { margin: 8px 0 18px; }
+.meal-section-heading { padding-top: 20px; border-top: 1px solid #eeeae1; }
 .field { display: grid; min-width: 0; gap: 8px; color: #2d3935; font-size: 11px; font-weight: 700; }
 .field.full { grid-column: 1 / -1; }
 input, select, textarea { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid #e3ded3; border-radius: 8px; padding: 11px 12px; outline: none; background: #fffaf1; color: #263833; font: inherit; font-size: 12px; }
@@ -38,12 +52,12 @@ textarea { min-height: 82px; resize: vertical; line-height: 1.55; }
 .meal-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 11px; padding-top: 11px; border-top: 1px solid #eeeae1; color: #687a71; font-size: 11px; }
 .meal-cost { color: #2b785b; font-size: 13px; }
 .meal-schedule { margin-top: 12px; }
-.meal-schedule summary, .menu-settings summary { color: #547d70; font-size: 11px; font-weight: 600; cursor: pointer; }
-.meal-schedule .form-grid, .menu-settings .form-grid { margin-top: 14px; }
+.meal-schedule summary { color: #547d70; font-size: 11px; font-weight: 600; cursor: pointer; }
+.meal-schedule .form-grid { margin-top: 14px; }
+.meal-fields { margin-top: 15px; }
+.field-help { font-weight: 400; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .menu-tools { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #eeeae1; }
-.menu-settings { margin-left: auto; }
-.menu-settings[open] { flex-basis: 100%; margin-left: 0; }
 .add-meal { display: inline-flex; align-items: center; gap: 7px; padding: 2px 0; }
 .add-meal app-icon { width: 15px; height: 15px; }
 .menu-side { display: grid; gap: 24px; }
@@ -68,11 +82,13 @@ textarea { min-height: 82px; resize: vertical; line-height: 1.55; }
 .actions button { min-height: 39px; padding: 8px 13px; border-radius: 7px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 .primary-action { border: 1px solid var(--brand-blue); background: var(--brand-blue); color: white; }
 .secondary-action { border: 1px solid #e6e1d6; background: white; color: #2e3d36; }
+.workflow-note { margin: 13px 0 0; padding: 11px 12px; border-radius: 8px; background: #f4f7f3; color: #64746b; font-size: 10px; line-height: 1.55; }
+.workflow-note strong { color: #2d6a4f; }
 button:disabled { cursor: default; opacity: .58; }
 .notice { margin-bottom: 16px; padding: 12px 15px; border-radius: 8px; font-size: 12px; }
 .notice.error { background: #fff0ed; color: #9b3d35; }
 .notice.success { background: #eaf5ed; color: #256d4d; }
 @media (max-width: 1280px) { :host { width: 100%; margin-left: 0; } }
 @media (max-width: 1060px) { .menu-grid { grid-template-columns: 1fr; } .menu-side { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 740px) { .menu-header { align-items: flex-start; flex-direction: column; gap: 13px; margin-bottom: 25px; } .menu-side { grid-template-columns: 1fr; } .menu-card { padding: 19px; } }
+@media (max-width: 740px) { .menu-header { align-items: flex-start; flex-direction: column; gap: 13px; margin-bottom: 25px; } .workflow-guide { grid-template-columns: 1fr; margin-top: -8px; } .menu-side { grid-template-columns: 1fr; } .menu-card { padding: 19px; } }
 @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } .field.full { grid-column: auto; } .ingredients-heading { align-items: flex-start; flex-direction: column; } .patient-picker select { font-size: 11px; } }
