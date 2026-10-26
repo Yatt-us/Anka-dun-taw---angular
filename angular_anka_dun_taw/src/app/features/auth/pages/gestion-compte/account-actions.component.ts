@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { API_BASE_URL } from '../../../../core/config/api.config';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { normaliserTelephoneMali } from '../../../../core/auth/telephone-mali';
 import { GoogleButtonComponent } from '../../components/google-button.component';
 
 type Mode = 'inscription' | 'verification' | 'oubli' | 'reinitialisation';
@@ -19,19 +20,25 @@ export class AccountActionsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
-  readonly mode = signal<Mode>(this.route.snapshot.queryParamMap.get('action') === 'oubli' ? 'oubli'
-    : this.route.snapshot.queryParamMap.get('action') === 'verification' ? 'verification' : 'inscription');
+  readonly mode = signal<Mode>(this.route.snapshot.queryParamMap.has('jeton')
+    || this.route.snapshot.queryParamMap.get('action') === 'reinitialisation' ? 'reinitialisation'
+    : this.route.snapshot.queryParamMap.get('action') === 'oubli' ? 'oubli'
+      : this.route.snapshot.queryParamMap.get('action') === 'verification' ? 'verification' : 'inscription');
   readonly signupMethod = signal<'password' | 'google'>('password');
   readonly signupStep = signal<1 | 2 | 3>(1);
   readonly signupEmailVerified = signal(false);
   readonly emailVerified = signal(false);
+  readonly showSignupPassword = signal(false);
+  readonly showSignupPasswordConfirmation = signal(false);
+  readonly showResetPassword = signal(false);
+  readonly showResetPasswordConfirmation = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
   readonly success = signal('');
   readonly title = computed(() => ({ inscription: 'Créer un compte professionnel', verification: 'Vérifier mon e-mail', oubli: 'Mot de passe oublié', reinitialisation: 'Définir un nouveau mot de passe' })[this.mode()]);
-  readonly description = computed(() => ({ inscription: 'Diététicien ou nutritionniste : renseignez vos informations professionnelles.', verification: 'Recevez un code pour confirmer l’adresse e-mail de votre compte.', oubli: 'Recevez un code pour retrouver l’accès à votre compte.', reinitialisation: 'Utilisez le code reçu pour choisir un nouveau mot de passe.' })[this.mode()]);
+  readonly description = computed(() => ({ inscription: 'Diététicien ou nutritionniste : renseignez vos informations professionnelles.', verification: 'Recevez un code pour confirmer l’adresse e-mail de votre compte.', oubli: 'Recevez un lien pour retrouver l’accès à votre compte. Il reste valable 10 minutes.', reinitialisation: 'Le lien de réinitialisation est valable 10 minutes. Choisissez un nouveau mot de passe.' })[this.mode()]);
   nom = ''; prenom = ''; email = this.route.snapshot.queryParamMap.get('email') ?? ''; telephone = ''; motDePasse = ''; confirmationMotDePasse = ''; role = 'DIETETICIEN'; specialite = ''; numeroOrdre = ''; qualification = ''; anneesExperience: number | null = null; biographie = '';
-  recoveryEmail = ''; resetToken = ''; newPassword = '';
+  recoveryEmail = ''; resetToken = this.route.snapshot.queryParamMap.get('jeton') ?? ''; newPassword = ''; resetPasswordConfirmation = '';
   verificationCode = '';
 
   setMode(mode: Mode): void { this.mode.set(mode); this.error.set(''); this.success.set(''); }
@@ -66,7 +73,7 @@ export class AccountActionsComponent {
     if (!valid) { this.error.set('Complétez les informations professionnelles obligatoires.'); return; }
     this.busy.set(true); this.error.set(''); this.success.set('');
     this.http.post(`${API_BASE_URL}/auth/inscription-professionnel`, { nom: this.nom.trim(), prenom: this.prenom.trim(), email: this.email.trim() || null,
-      telephone: this.telephone.trim() || null, motDePasse: this.motDePasse, role: this.role, specialite: this.specialite.trim(),
+      telephone: normaliserTelephoneMali(this.telephone), motDePasse: this.motDePasse, role: this.role, specialite: this.specialite.trim(),
       numeroOrdre: this.numeroOrdre.trim() || null, qualification: this.qualification.trim(), anneesExperience: this.anneesExperience,
       biographie: this.biographie.trim() }).subscribe({
         next: () => {
@@ -139,7 +146,7 @@ export class AccountActionsComponent {
     this.error.set('');
     this.success.set('');
     this.auth.signupProfessionalWithGoogle(jetonId, {
-      telephone: this.telephone.trim() || null,
+      telephone: normaliserTelephoneMali(this.telephone),
       role: this.role as 'DIETETICIEN' | 'NUTRITIONNISTE',
       specialite: this.specialite.trim(),
       numeroOrdre: this.numeroOrdre.trim() || null,
@@ -161,10 +168,11 @@ export class AccountActionsComponent {
   }
   forgot(valid: boolean): void {
     if (!valid) { this.error.set('Saisissez une adresse e-mail valide.'); return; }
-    this.send('/auth/mot-de-passe/oublie', { email: this.recoveryEmail.trim() }, 'Si ce compte existe, des instructions ont été envoyées.');
+    this.send('/auth/mot-de-passe/oublie', { email: this.recoveryEmail.trim() }, 'Si ce compte existe, un lien de réinitialisation valable 10 minutes a été envoyé.');
   }
   reset(valid: boolean): void {
     if (!valid) { this.error.set('Saisissez le code et un mot de passe d’au moins huit caractères.'); return; }
+    if (this.newPassword !== this.resetPasswordConfirmation) { this.error.set('Les deux nouveaux mots de passe ne correspondent pas.'); return; }
     this.send('/auth/mot-de-passe/reinitialiser', { jeton: this.resetToken.trim(), nouveauMotDePasse: this.newPassword }, 'Mot de passe changé. Vous pouvez vous connecter.');
   }
   private send(path: string, body: object, message: string): void {

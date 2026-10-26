@@ -35,13 +35,14 @@ Au-delà de 8 secondes d'attente sur la connexion, l'écran explique que le serv
 
 ## Connexion et droits
 
-- `POST /api/v1/auth/connexion` reçoit l’identifiant et le mot de passe. Le JWT d’accès reste en mémoire dans Angular.
+- `POST /api/v1/auth/connexion` reçoit l’identifiant et le mot de passe. Pour un téléphone, Angular affiche l’indicatif fixe `+223` et convertit les huit chiffres saisis au format international avant l’envoi. Le JWT d’accès reste en mémoire dans Angular.
 - Le backend place le jeton de renouvellement dans le cookie `anka_refresh`, inaccessible au JavaScript. Au rechargement, Angular appelle `POST /api/v1/auth/rafraichir` pour restaurer la session.
 - L’intercepteur ajoute `Authorization: Bearer …` aux appels API et tente une fois le renouvellement après un `401`.
 - `POST /api/v1/auth/deconnexion` révoque la session côté serveur. L’interface ne signale une déconnexion réussie qu’après confirmation du serveur.
 - Si un identifiant client OAuth **Web** valide est configuré dans le backend, `GET /api/v1/auth/google/configuration` active le bouton Google. Le navigateur remet le jeton Google à `POST /api/v1/auth/google/connexion`, puis utilise la même session JWT et le même cookie de renouvellement. Un compte existant doit d’abord être lié depuis « Sécurité du compte » avec `POST /api/v1/auth/google/lier` après connexion locale ; une simple correspondance d’e-mail ne suffit pas. Un nouveau compte Google reçoit le rôle `UTILISATEUR` et n’ouvre donc aucun espace de gestion web.
-- Depuis `/compte`, un professionnel peut s’inscrire (`POST /auth/inscription-professionnel`), demander un code de récupération (`POST /auth/mot-de-passe/oublie`) et réinitialiser son mot de passe (`POST /auth/mot-de-passe/reinitialiser`).
-- Dans « Paramètres » ou « Mon profil », `POST /auth/mot-de-passe/changer` modifie le mot de passe puis renvoie vers la connexion.
+- Depuis `/compte`, un professionnel peut s’inscrire (`POST /auth/inscription-professionnel`), demander un lien de récupération (`POST /auth/mot-de-passe/oublie`) et réinitialiser son mot de passe (`POST /auth/mot-de-passe/reinitialiser`). Le lien est valable 10 minutes ; son jeton placé dans `?jeton=` est repris automatiquement par l’écran.
+- Dans « Paramètres » ou « Mon profil », `POST /auth/mot-de-passe/changer` modifie le mot de passe après vérification de l’actuel, confirmation de la nouvelle saisie et contrôle de différence. La session est ensuite révoquée et l’utilisateur revient à la connexion.
+- Les champs de mot de passe des écrans d’authentification et de sécurité ont un bouton afficher/masquer. Les codes de vérification d’e-mail expirent eux aussi après 10 minutes.
 - Les routes Angular n’ouvrent que l’espace correspondant au rôle `ADMIN`, `DIETETICIEN` ou `NUTRITIONNISTE`. Les espaces professionnels exigent aussi un profil vérifié. Le backend reste responsable de l’autorisation de chaque requête.
 - Un compte `UTILISATEUR` n’a pas d’espace dans cette application web : il relève du projet mobile.
 

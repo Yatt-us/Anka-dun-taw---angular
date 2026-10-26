@@ -62,6 +62,12 @@ input, select, textarea {
   padding: 8px 12px;
   font-size: 12px;
 }
+.password-input, .phone-input { position: relative; display: flex; align-items: center; min-width: 0; }
+.password-input input { padding-right: 76px; }
+.visibility-toggle { position: absolute; right: 8px; border: 0; background: transparent; color: var(--auth-blue); padding: 7px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.phone-input { gap: 9px; height: 43px; border: 1px solid #dbe6ee; border-radius: 10px; background: #fff; padding-left: 12px; }
+.phone-input > span { flex: 0 0 auto; color: #193551; font-size: 12px; font-weight: 700; }
+.phone-input input { height: 100%; border: 0; padding-left: 0; background: transparent; outline: none; }
 input::placeholder, textarea::placeholder { color: #74889a; }
 textarea { min-height: 54px; height: auto; resize: vertical; }
 .primary-button {

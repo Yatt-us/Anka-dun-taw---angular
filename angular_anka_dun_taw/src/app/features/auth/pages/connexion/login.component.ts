@@ -55,6 +55,7 @@ export class LoginComponent {
     motDePasse: ['', Validators.required],
   });
   readonly submitting = signal(false);
+  readonly showPassword = signal(false);
   readonly slowConnection = signal(false);
   readonly verificationRequired = signal(false);
   readonly error = signal<string | null>(

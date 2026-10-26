@@ -47,6 +47,12 @@ input {
   font-size: 12px;
 }
 input::placeholder { color: #74889a; }
+.identifier-field, .password-field { position: relative; display: flex; align-items: center; margin-bottom: 17px; }
+.identifier-field input, .password-field input { margin: 0; }
+.identifier-field.phone-entry input { padding-left: 54px; }
+.phone-prefix { position: absolute; z-index: 1; left: 13px; color: #193551; font-size: 12px; font-weight: 600; }
+.visibility-toggle { position: absolute; right: 8px; border: 0; background: transparent; color: var(--auth-blue); padding: 7px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.password-field input { padding-right: 74px; }
 input[aria-invalid='true'] { border-color: #b3473f; margin-bottom: 5px; }
 .field-error { margin-bottom: 13px; color: #ffe2dc; font-size: 11px; }
 .submit {
