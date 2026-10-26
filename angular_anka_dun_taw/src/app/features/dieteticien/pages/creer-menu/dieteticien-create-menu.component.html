@@ -1,47 +1,75 @@
 <header class="menu-header">
   <div>
-    <h1>Créer un Menu Personnalisé</h1>
-    <p>Sélectionnez des ingrédients locaux et respectez le budget de vos patients.</p>
+    <h1>Créer un menu pour un patient</h1>
+    <p>Choisissez le patient, composez ses repas, puis enregistrez ou publiez le menu.</p>
   </div>
   <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
 </header>
+
+<section class="workflow-guide" aria-label="Étapes de création d’un menu">
+  <div class="workflow-step"><span>1</span><div><strong>Patient et période</strong><small>À qui s’adresse le menu et pour quelles dates ?</small></div></div>
+  <div class="workflow-step"><span>2</span><div><strong>Repas et portions</strong><small>Choisissez les recettes, les jours et les portions.</small></div></div>
+  <div class="workflow-step"><span>3</span><div><strong>Vérifier et terminer</strong><small>Consultez le coût, puis gardez un brouillon ou publiez.</small></div></div>
+</section>
 
 @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
 @if (success()) { <div class="notice success" role="status">{{ success() }}</div> }
 
 <div class="menu-grid">
   <section class="menu-card menu-elements" aria-labelledby="menu-elements-title">
-    <h2 id="menu-elements-title">Éléments du Menu Hebdomadaire</h2>
+    <div class="section-heading"><span class="step-number">1</span><div><h2 id="menu-elements-title">Patient et période</h2><p>Les champs marqués d’un astérisque sont nécessaires pour enregistrer le menu.</p></div></div>
 
-    <label class="field patient-field">Sélectionner le patient
-      <span class="patient-picker">
-        @if (selectedPatient(); as patient) {
-          <span class="patient-avatar">
-            {{ patient.prenom[0] }}{{ patient.nom[0] }}
-            @if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }
-          </span>
-        }
-        <select name="patient" [(ngModel)]="selectedPatientId" (ngModelChange)="onPatientChange()" [disabled]="loadingPatients() || saving() || published()">
-          <option [ngValue]="null">{{ loadingPatients() ? 'Chargement des patients…' : 'Choisir un patient' }}</option>
-          @for (patient of patients(); track patient.id) {
-            <option [ngValue]="patient.id">{{ patient.prenom }} {{ patient.nom }} · n° {{ patient.id }}</option>
+    <div class="form-grid menu-settings-fields">
+      <label class="field full">Nom du menu <span class="required">*</span>
+        <input name="title" [(ngModel)]="title" maxlength="120" placeholder="Ex. Menu équilibré de la semaine" [disabled]="saving() || published()" />
+      </label>
+      <label class="field">Patient <span class="required">*</span>
+        <span class="patient-picker">
+          @if (selectedPatient(); as patient) {
+            <span class="patient-avatar">{{ patient.prenom[0] }}{{ patient.nom[0] }}
+              @if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }
+            </span>
           }
+          <select name="patient" [(ngModel)]="selectedPatientId" (ngModelChange)="onPatientChange()" [disabled]="loadingPatients() || saving() || published()">
+            <option [ngValue]="null">{{ loadingPatients() ? 'Chargement des patients…' : 'Choisir un patient' }}</option>
+            @for (patient of patients(); track patient.id) { <option [ngValue]="patient.id">{{ patient.prenom }} {{ patient.nom }} · n° {{ patient.id }}</option> }
+          </select>
+        </span>
+      </label>
+      <div class="field"><span>Région du patient <span class="required">*</span></span>
+        <div class="region-value" [class.region-missing]="!zone">
+          @if (selectedPatientId && zone) { {{ zoneName() }} · reprise du profil nutritionnel }
+          @else if (selectedPatientId) { Région non renseignée dans le profil du patient }
+          @else { Choisissez un patient pour charger sa région }
+        </div>
+      </div>
+      <label class="field">Date de début <span class="required">*</span>
+        <input name="dateDebut" type="date" [(ngModel)]="dateDebut" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()" />
+      </label>
+      <label class="field">Date de fin
+        <input name="dateFin" type="date" [(ngModel)]="dateFin" [min]="dateDebut" [disabled]="saving() || published()" />
+      </label>
+      <label class="field">Type de menu
+        <select name="type" [(ngModel)]="type" [disabled]="saving() || published() || !profile()">
+          <option value="PERSONNALISE" [disabled]="profile()?.modeBudget === 'PETIT_BUDGET'">Personnalisé</option><option value="PETIT_BUDGET" [disabled]="profile()?.modeBudget !== 'PETIT_BUDGET'">Petit budget</option><option value="FAMILIAL" [disabled]="profile()?.modeBudget === 'PETIT_BUDGET'">Familial</option>
         </select>
-      </span>
-    </label>
+        @if (profile()?.modeBudget === 'PETIT_BUDGET') { <small class="field-help">Le profil du patient est en mode petit budget : ce type est sélectionné automatiquement.</small> }
+      </label>
+    </div>
+
     @if (selectedPatient(); as patient) {
-      <p class="patient-context">Patient n° {{ patient.id }}
+      <p class="patient-context">Menu destiné à <strong>{{ patient.prenom }} {{ patient.nom }}</strong>
         @if (activeBudget(); as budget) { · Budget actif : {{ money(budget.montant) }} / {{ budget.periode?.toLowerCase() || 'période non précisée' }} }
       </p>
     }
 
+    <div class="section-heading meal-section-heading"><span class="step-number">2</span><div><h2>Composer les repas</h2><p>Ajoutez une recette pour chaque repas, puis précisez le jour et le nombre de portions.</p></div></div>
+
     @for (meal of meals; track meal.key; let index = $index) {
       <div class="meal-card">
-        @if (meals.length > 1) {
-          <div class="meal-top"><strong>Repas {{ index + 1 }}</strong>
-            <button type="button" class="remove-meal" (click)="removeMeal(meal.key)" [disabled]="saving() || published()">Retirer</button>
-          </div>
-        }
+        <div class="meal-top"><strong>Repas {{ index + 1 }}</strong>
+          @if (meals.length > 1) { <button type="button" class="remove-meal" (click)="removeMeal(meal.key)" [disabled]="saving() || published()">Retirer</button> }
+        </div>
         <label class="field recipe-field">Recette locale conseillée
           <select [name]="'recipe' + meal.key" [(ngModel)]="meal.recetteId" (ngModelChange)="onRecipeChange(meal)" [disabled]="loadingRecipes() || saving() || published()">
             <option [ngValue]="null">{{ loadingRecipes() ? 'Chargement des recettes…' : 'Choisir une recette locale' }}</option>
@@ -65,51 +93,21 @@
         } @else {
           <p class="ingredient-empty">Choisissez une recette pour voir ses ingrédients et ajuster les portions.</p>
         }
-        <details class="meal-schedule"><summary>Jour et moment du repas</summary>
-          <div class="form-grid meal-fields">
-            <label class="field">Jour du menu
-              <input [name]="'day' + meal.key" type="number" min="1" max="31" [(ngModel)]="meal.jour" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()" />
-            </label>
-            <label class="field">Moment du repas
-              <select [name]="'mealType' + meal.key" [(ngModel)]="meal.typeRepas" [disabled]="saving() || published()">
-                <option value="PETIT_DEJEUNER">Petit déjeuner</option>
-                <option value="DEJEUNER">Déjeuner</option>
-                <option value="DINER">Dîner</option>
-                <option value="COLLATION">Collation</option>
-              </select>
-            </label>
-          </div>
-        </details>
+        <div class="form-grid meal-fields">
+          <label class="field">Jour après le début <span class="required">*</span>
+            <input [name]="'day' + meal.key" type="number" min="1" max="31" [(ngModel)]="meal.jour" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()" [attr.aria-describedby]="'meal-day-help-' + meal.key" />
+            <small [id]="'meal-day-help-' + meal.key" class="field-help">1 = date de début ({{ dateDebut }}) ; 2 = le lendemain.</small>
+          </label>
+          <label class="field">Moment du repas <span class="required">*</span>
+            <select [name]="'mealType' + meal.key" [(ngModel)]="meal.typeRepas" [disabled]="saving() || published()">
+              <option value="PETIT_DEJEUNER">Petit déjeuner</option><option value="DEJEUNER">Déjeuner</option><option value="DINER">Dîner</option><option value="COLLATION">Collation</option>
+            </select>
+          </label>
+        </div>
       </div>
     }
     <div class="menu-tools">
       <button class="add-meal" type="button" (click)="addMeal()" [disabled]="saving() || published()"><app-icon name="plus" /> Ajouter un repas</button>
-      <details #menuSettings class="menu-settings"><summary>Paramètres du menu</summary>
-      <div class="form-grid">
-        <label class="field full">Nom du menu
-          <input name="title" [(ngModel)]="title" maxlength="120" placeholder="Ex. Menu de la semaine" [disabled]="saving() || published()" />
-        </label>
-        <label class="field">Début
-          <input name="dateDebut" type="date" [(ngModel)]="dateDebut" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()" />
-        </label>
-        <label class="field">Fin
-          <input name="dateFin" type="date" [(ngModel)]="dateFin" [min]="dateDebut" [disabled]="saving() || published()" />
-        </label>
-        <label class="field">Zone du patient
-          <select name="zone" [(ngModel)]="zone" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()">
-            <option value="">Choisir une zone</option>
-            @for (item of zones(); track item.code) { <option [value]="item.code">{{ item.libelle }}</option> }
-          </select>
-        </label>
-        <label class="field">Type de menu
-          <select name="type" [(ngModel)]="type" [disabled]="saving() || published()">
-            <option value="PERSONNALISE">Personnalisé</option>
-            <option value="PETIT_BUDGET">Petit budget</option>
-            <option value="FAMILIAL">Familial</option>
-          </select>
-        </label>
-      </div>
-      </details>
     </div>
   </section>
 
@@ -132,15 +130,16 @@
       <a routerLink="/espaces/dieteticien/portions-couts" class="text-link">Voir les portions et coûts</a>
     </section>
     <section class="menu-card advice-card" aria-labelledby="advice-title">
-      <h2 id="advice-title">Conseils Nutritionnels Maliens</h2>
+      <div class="section-heading"><span class="step-number">3</span><div><h2 id="advice-title">Vérifier et terminer</h2><p>Le coût est estimatif. Le contrôle nutritionnel final reste de votre responsabilité.</p></div></div>
       <p>Privilégiez les produits locaux disponibles dans la zone du patient et adaptez les portions à ses besoins.</p>
       <label class="field advice-field"><span>Conseil personnalisé</span>
         <textarea name="recommendations" [(ngModel)]="recommendations" rows="4" maxlength="2000" [placeholder]="selectedPatient() ? 'Ajouter une consigne personnalisée pour ' + selectedPatient()!.prenom + '…' : 'Ajouter une consigne personnalisée…'" [disabled]="saving() || published()"></textarea>
       </label>
       <div class="actions">
-        <button class="primary-action" type="button" (click)="save(true)" [disabled]="saving() || published()">{{ saving() ? 'Enregistrement…' : published() ? 'Menu publié' : 'Valider et publier le menu' }}</button>
-        <button class="secondary-action" type="button" (click)="save(false)" [disabled]="saving() || published() || validatedMenuId() !== null">Sauvegarder le brouillon</button>
+        <button class="primary-action" type="button" (click)="save(true)" [disabled]="saving() || published()">{{ saving() ? 'Enregistrement…' : published() ? 'Menu publié' : 'Enregistrer et publier pour le patient' }}</button>
+        <button class="secondary-action" type="button" (click)="save(false)" [disabled]="saving() || published() || validatedMenuId() !== null">Enregistrer comme brouillon</button>
       </div>
+      <p class="workflow-note"><strong>Publier :</strong> le menu est enregistré, validé puis rendu visible au patient. <strong>Brouillon :</strong> il reste privé et pourra être repris dans « Mes menus » avant publication.</p>
     </section>
   </aside>
 </div>
