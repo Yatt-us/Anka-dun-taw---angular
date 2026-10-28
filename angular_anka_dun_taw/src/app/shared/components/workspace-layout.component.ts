@@ -52,6 +52,13 @@ export class WorkspaceLayoutComponent {
 
   toggleGroup(path: string): void {
     this.expandedGroup.update((current) => current === path ? null : path);
+    if (this.expandedGroup() === path) {
+      // L'ouverture se fait en bas du rail : on défile uniquement la liste des liens.
+      requestAnimationFrame(() => {
+        const navigation = document.getElementById('workspace-primary-navigation');
+        navigation?.scrollTo({ top: navigation.scrollHeight, behavior: 'smooth' });
+      });
+    }
   }
 
   toggleProfessionalSidebar(): void {
