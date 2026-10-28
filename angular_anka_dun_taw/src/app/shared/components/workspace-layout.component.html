@@ -3,6 +3,13 @@
     <button class="scrim" aria-label="Fermer le menu" (click)="menuOpen.set(false)"></button>
   }
   <aside class="sidebar">
+    @if (actor().id === 'admin') {
+      <!-- Cette zone fixe réserve l'espace de la découpe supérieure de la maquette. -->
+      <div class="admin-sidebar-header" aria-hidden="true"></div>
+      <button type="button" class="admin-sidebar-close" aria-label="Fermer le menu" (click)="menuOpen.set(false)">
+        <app-icon name="close" />
+      </button>
+    }
     @if (actor().id !== 'admin') {
       <button type="button" class="pro-sidebar-toggle" [attr.aria-label]="professionalSidebarOpen() ? 'Réduire le menu aux icônes' : 'Afficher les noms des rubriques'"
         [attr.aria-expanded]="professionalSidebarOpen()" aria-controls="workspace-primary-navigation" (click)="toggleProfessionalSidebar()">
