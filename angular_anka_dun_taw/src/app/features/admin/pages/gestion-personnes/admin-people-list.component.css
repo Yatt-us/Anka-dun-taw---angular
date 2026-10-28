@@ -43,12 +43,12 @@
 .accounts-table .status-cell{display:flex;align-items:center;gap:7px;overflow:visible;white-space:normal}
 .status-toggle-button{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 8px;border:1px solid #d94d45;border-radius:6px;background:#fff;color:#b53d36;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer}
 .status-toggle-button:hover{background:#fff0ed}
-.status-toggle-button.reactivate{border-color:#40916c;color:#2d6a4f}
-.status-toggle-button.reactivate:hover{background:#eaf5ee}
+.status-toggle-button.reactivate{border-color:var(--brand-blue);color:var(--brand-blue)}
+.status-toggle-button.reactivate:hover{background:#e8f4fa}
 .status-toggle-button:disabled{opacity:.55;cursor:wait}
 .row-action{display:inline-grid;place-items:center;width:23px;height:23px;padding:0;border:1px solid #eedbca;border-radius:5px;background:#fff;color:#e14e47;cursor:pointer}
-.row-action.reactivate-action{display:inline-flex;width:auto;min-width:0;height:28px;padding:0 9px;border-color:#40916c;color:#2d6a4f;font:inherit;font-size:11px;font-weight:600;white-space:nowrap}
-.row-action.reactivate-action:hover{background:#eaf5ee}
+.row-action.reactivate-action{display:inline-flex;width:auto;min-width:0;height:28px;padding:0 9px;border-color:var(--brand-blue);color:var(--brand-blue);font:inherit;font-size:11px;font-weight:600;white-space:nowrap}
+.row-action.reactivate-action:hover{background:#e8f4fa}
 .row-action:hover{background:#fff0ed}.row-action app-icon{width:13px;height:13px}
 .no-accounts{text-align:center;color:#728079!important;white-space:normal!important}
 .accounts-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;color:#697b74;font-size:10px}

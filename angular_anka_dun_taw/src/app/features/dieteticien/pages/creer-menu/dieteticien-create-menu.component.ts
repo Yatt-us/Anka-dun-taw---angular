@@ -12,8 +12,9 @@ interface ApiPage<T> { content: T[]; number: number; totalPages: number }
 interface Patient { id: number; prenom: string; nom: string; photoProfilUrl?: string | null }
 interface Ingredient { id: number; alimentNom: string; quantite: number; unite: string }
 interface Recipe { id: number; nom: string; nombrePersonnes: number | null; ingredients?: Ingredient[] | null }
-interface PatientProfile { zone: string | null; objectifId: number | null; budgetActifId: number | null; modeBudget: string | null }
+interface PatientProfile { nom: string | null; zone: string | null; objectifId: number | null; budgetActifId: number | null; modeBudget: string | null }
 interface Budget { id: number; montant: number; devise: string; periode: string; actif: boolean }
+interface DailyBudget { montantDisponible: number }
 interface RecipeCost { coutEstime: number; devise: string }
 interface CreatedMenu { id: number }
 interface MealDraft { key: number; recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
@@ -28,6 +29,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
   private costRequest = 0;
+  private dailyBudgetRequest = 0;
   private nextMealKey = 2;
 
   readonly patients = signal<Patient[]>([]);
@@ -35,6 +37,8 @@ export class DieteticienCreateMenuComponent implements OnInit {
   readonly recipeDetails = signal<Record<number, Recipe>>({});
   readonly profile = signal<PatientProfile | null>(null);
   readonly budgets = signal<Budget[]>([]);
+  readonly dailyBudgets = signal<Record<string, number | null>>({});
+  readonly dailyBudgetsLoading = signal(false);
   readonly costs = signal<Record<number, number | null>>({});
   readonly loadingPatients = signal(true);
   readonly loadingRecipes = signal(true);
@@ -49,7 +53,10 @@ export class DieteticienCreateMenuComponent implements OnInit {
   readonly dateLabel = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
-  readonly activeBudget = computed(() => this.budgets().find((item) => item.id === this.selectedBudgetId) ?? null);
+  readonly activeBudget = computed(() => {
+    const id = this.profile()?.budgetActifId;
+    return this.budgets().find((item) => item.id === id && item.actif) ?? null;
+  });
   readonly totalCost = computed(() => {
     const selected = this.meals.filter((meal) => meal.recetteId);
     if (!selected.length) return null;
@@ -96,9 +103,12 @@ export class DieteticienCreateMenuComponent implements OnInit {
 
   onPatientChange(): void {
     ++this.costRequest;
+    ++this.dailyBudgetRequest;
     this.error.set('');
     this.profile.set(null);
     this.budgets.set([]);
+    this.dailyBudgets.set({});
+    this.dailyBudgetsLoading.set(false);
     this.selectedBudgetId = null;
     this.zone = '';
     this.type = 'PERSONNALISE';
@@ -109,21 +119,21 @@ export class DieteticienCreateMenuComponent implements OnInit {
     const base = `${API_BASE_URL}/professionnel/beneficiaires/${id}`;
     forkJoin({
       profile: this.http.get<PatientProfile>(`${base}/profil-nutritionnel`),
-      budgets: this.http.get<ApiPage<Budget>>(`${base}/budgets`, {
-        params: new HttpParams().set('page', '0').set('size', '100'),
-      }).pipe(catchError(() => of({ content: [] as Budget[] }))),
+      budgets: this.allPages<Budget>(`/professionnel/beneficiaires/${id}/budgets`, 'dateDebut,desc'),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ profile, budgets }) => {
         if (this.selectedPatientId !== id) return;
         this.profile.set(profile);
-        this.budgets.set(budgets.content);
+        this.budgets.set(budgets);
         this.zone = profile.zone ?? '';
         // Le type du menu suit le mode du profil pour éviter le conflit de validation côté API.
         this.type = profile.modeBudget === 'PETIT_BUDGET' ? 'PETIT_BUDGET' : 'PERSONNALISE';
         this.selectedBudgetId = profile.modeBudget === 'AVEC_BUDGET'
-          ? budgets.content.find((item) => item.id === profile.budgetActifId)?.id
-            ?? budgets.content.find((item) => item.actif)?.id ?? null
+          ? budgets.find((item) => item.id === profile.budgetActifId && item.actif)?.id ?? null
           : null;
+        if (profile.modeBudget === 'AVEC_BUDGET' && !this.selectedBudgetId) {
+          this.error.set('Le profil actif du patient indique un budget, mais son budget actif est introuvable. Demandez au patient de le vérifier.');
+        }
         this.refreshCosts();
       },
       error: () => {
@@ -148,6 +158,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
 
   addMeal(): void {
     this.meals.push({ key: this.nextMealKey++, recetteId: null, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1 });
+    this.refreshCosts();
   }
   removeMeal(key: number): void {
     if (this.meals.length === 1) return;
@@ -180,38 +191,95 @@ export class DieteticienCreateMenuComponent implements OnInit {
   money(amount: number | null | undefined): string {
     return amount == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} FCFA`;
   }
-  readonly budgetMessage = computed(() => {
+  budgetMessage(): string {
     const cost = this.totalCost();
     const budget = this.activeBudget();
     if (cost == null) return 'Sélectionnez une recette et une zone pour afficher un coût estimé.';
-    if (!budget) return 'Aucun budget actif lié à ce patient. Le coût reste indicatif.';
-    // Le libellé affiché est FCFA, mais le budget reçu de l'API porte le code ISO XOF.
+    if (this.profile()?.modeBudget === 'PETIT_BUDGET') {
+      if (this.dailyBudgetsLoading()) return 'Chargement des montants disponibles pour les jours du menu…';
+      if (!this.budgetComparable()) return 'Le patient doit renseigner son montant disponible pour chaque jour du menu.';
+      return this.overBudget()
+        ? 'Un ou plusieurs jours dépassent le montant disponible. Réduisez les portions ou choisissez des recettes moins chères.'
+        : 'Les repas saisis respectent les montants quotidiens connus. La validation tiendra compte des autres menus publiés.';
+    }
+    if (!budget) return 'Aucun budget actif lié au profil actuel du patient. Vérifiez son dossier avant publication.';
+    // L'API utilise XOF ; l'interface affiche son libellé usuel FCFA.
     if (budget.devise !== 'XOF') return 'Le budget du patient utilise une autre devise.';
-    if (!this.budgetComparable()) return 'Budget affiché pour référence : la période ne correspond pas aux repas saisis.';
-    return cost <= budget.montant
-      ? 'Les repas saisis restent sous le budget indiqué pour cette période.'
-      : 'Les repas saisis dépassent le budget indiqué pour cette période.';
-  });
+    if (!this.budgetComparable()) return 'Le budget ne peut pas être comparé aux repas saisis.';
+    return this.overBudget()
+      ? 'Au moins une période dépasse le budget du profil actif. Adaptez les recettes ou les portions.'
+      : 'Les repas saisis respectent le budget par période. La validation tiendra compte des autres menus publiés.';
+  }
 
   budgetComparable(): boolean {
+    if (this.totalCost() === null) return false;
+    if (this.profile()?.modeBudget === 'PETIT_BUDGET') {
+      return !this.dailyBudgetsLoading() && this.budgetLines().every((line) => line.limit !== null);
+    }
     const budget = this.activeBudget();
-    if (!budget || budget.devise !== 'XOF' || !this.meals.length) return false;
-    const days = this.meals.map((meal) => meal.jour);
-    const span = Math.max(...days) - Math.min(...days) + 1;
-    const period = budget.periode?.toUpperCase() ?? '';
-    return (period.includes('JOUR') && span === 1) ||
-      (period.includes('SEMAINE') && span <= 7) ||
-      (period.includes('MOIS') && span <= 31);
+    return !!budget && budget.devise === 'XOF' && ['JOUR', 'SEMAINE', 'MOIS'].includes(budget.periode);
   }
 
   overBudget(): boolean {
-    const cost = this.totalCost();
+    return this.budgetComparable() && this.budgetLines().some((line) => line.limit !== null && line.cost > line.limit);
+  }
+
+  /** Regroupe les repas par période réelle du budget, comme le contrôle backend. */
+  budgetLines(): Array<{ date: string; cost: number; limit: number | null }> {
+    const mode = this.profile()?.modeBudget;
     const budget = this.activeBudget();
-    return cost !== null && !!budget && this.budgetComparable() && cost > budget.montant;
+    if (mode !== 'PETIT_BUDGET' && !budget) return [];
+    const lines = new Map<string, { date: string; cost: number; limit: number | null }>();
+    for (const meal of this.meals.filter((item) => item.recetteId)) {
+      const date = this.mealDate(meal.jour);
+      const cost = this.costs()[meal.key];
+      if (!date || cost == null) continue;
+      const period = mode === 'PETIT_BUDGET' ? 'JOUR' : budget!.periode;
+      const key = this.periodStart(date, period);
+      const limit = mode === 'PETIT_BUDGET' ? this.dailyBudgets()[date] ?? null : budget!.montant;
+      const line = lines.get(key) ?? { date: key, cost: 0, limit };
+      line.cost += cost;
+      lines.set(key, line);
+    }
+    return [...lines.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  private periodStart(dateValue: string, period: string): string {
+    const date = new Date(`${dateValue}T12:00:00`);
+    if (period === 'SEMAINE') date.setDate(date.getDate() - (date.getDay() + 6) % 7);
+    if (period === 'MOIS') date.setDate(1);
+    return this.localDate(date);
+  }
+
+  private refreshDailyBudgets(): void {
+    const requestId = ++this.dailyBudgetRequest;
+    this.dailyBudgets.set({});
+    const patientId = this.selectedPatientId;
+    if (!patientId || this.profile()?.modeBudget !== 'PETIT_BUDGET' || !this.dateDebut) {
+      this.dailyBudgetsLoading.set(false);
+      return;
+    }
+    const dates = [...new Set(this.meals.map((meal) => this.mealDate(meal.jour)).filter((date): date is string => !!date))];
+    if (!dates.length) {
+      this.dailyBudgetsLoading.set(false);
+      return;
+    }
+    this.dailyBudgetsLoading.set(true);
+    forkJoin(dates.map((date) => this.http.get<DailyBudget>(
+      `${API_BASE_URL}/professionnel/beneficiaires/${patientId}/petit-budget/jours/${date}`,
+    ).pipe(
+      map((result) => ({ date, amount: result.montantDisponible as number | null })),
+      catchError(() => of({ date, amount: null as number | null })),
+    ))).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((results) => {
+      if (requestId !== this.dailyBudgetRequest || patientId !== this.selectedPatientId) return;
+      this.dailyBudgets.set(Object.fromEntries(results.map((result) => [result.date, result.amount])));
+      this.dailyBudgetsLoading.set(false);
+    });
   }
 
   refreshCosts(): void {
     const requestId = ++this.costRequest;
+    this.refreshDailyBudgets();
     const selected = this.meals.filter((meal) => meal.recetteId != null);
     if (!this.zone || !this.dateDebut || !selected.length) {
       this.costs.set({});
@@ -267,6 +335,14 @@ export class DieteticienCreateMenuComponent implements OnInit {
     if (publish && prixObligatoires && (this.costsLoading() || this.meals.some((meal) =>
       meal.recetteId != null && this.costs()[meal.key] == null))) {
       this.error.set('Publication impossible : le coût d’au moins un repas n’est pas vérifiable pour la région et la date choisies. Vérifiez les prix des ingrédients, la région et la saison, puis réessayez.');
+      return;
+    }
+    if (publish && modeBudget === 'PETIT_BUDGET' && !this.budgetComparable()) {
+      this.error.set('Publication impossible : le patient doit renseigner son budget disponible pour chaque jour du menu.');
+      return;
+    }
+    if (publish && this.overBudget()) {
+      this.error.set('Publication impossible : le coût estimé dépasse le budget du profil actif. Adaptez les recettes ou les portions.');
       return;
     }
     this.error.set('');

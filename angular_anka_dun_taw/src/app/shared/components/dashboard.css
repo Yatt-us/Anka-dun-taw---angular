@@ -295,8 +295,8 @@
   cursor: pointer;
 }
 .button.primary {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
   color: white;
 }
 .button:hover {

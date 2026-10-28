@@ -59,7 +59,9 @@
 
     @if (selectedPatient(); as patient) {
       <p class="patient-context">Menu destiné à <strong>{{ patient.prenom }} {{ patient.nom }}</strong>
+        @if (profile()?.nom) { · Profil actif : {{ profile()!.nom }} }
         @if (activeBudget(); as budget) { · Budget actif : {{ money(budget.montant) }} / {{ budget.periode?.toLowerCase() || 'période non précisée' }} }
+        @if (profile()?.modeBudget === 'PETIT_BUDGET') { · Petit budget quotidien }
       </p>
     }
 
@@ -127,6 +129,23 @@
       @if (activeBudget(); as budget) {
         <div class="budget-details"><span>Budget actif <strong>{{ money(budget.montant) }}</strong></span><span>Période <strong>{{ budget.periode }}</strong></span></div>
       }
+      @if (profile()?.modeBudget === 'PETIT_BUDGET') {
+        <p class="budget-caption">Budget disponible par jour, défini par le patient :</p>
+        @for (line of budgetLines(); track line.date) {
+          <div class="budget-day" [class.over-budget]="line.limit !== null && line.cost > line.limit">
+            <span>{{ line.date }} · {{ money(line.cost) }} estimés</span>
+            <strong>{{ line.limit === null ? 'Montant non renseigné' : money(line.limit) + ' disponibles' }}</strong>
+          </div>
+        }
+      } @else if (activeBudget()) {
+        <p class="budget-caption">Coût des repas saisis par période :</p>
+        @for (line of budgetLines(); track line.date) {
+          <div class="budget-day" [class.over-budget]="line.limit !== null && line.cost > line.limit">
+            <span>Dès le {{ line.date }}</span><strong>{{ money(line.cost) }} / {{ money(line.limit) }}</strong>
+          </div>
+        }
+      }
+      <p class="budget-caption">La validation finale tient aussi compte des autres menus publiés du patient.</p>
       <a routerLink="/espaces/dieteticien/portions-couts" class="text-link">Voir les portions et coûts</a>
     </section>
     <section class="menu-card advice-card" aria-labelledby="advice-title">

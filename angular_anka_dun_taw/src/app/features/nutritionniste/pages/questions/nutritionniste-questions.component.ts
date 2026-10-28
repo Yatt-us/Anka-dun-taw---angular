@@ -28,6 +28,7 @@ export class NutritionnisteQuestionsComponent {
   readonly search = signal('');
   readonly filter = signal<'all' | 'unread'>('all');
   readonly selected = signal<ProfessionalConversation | null>(null);
+  readonly requestedPatientId = signal<number | null>(null);
   readonly messages = signal<ProfessionalMessage[]>([]);
   readonly messagesLoading = signal(false);
   readonly messagesError = signal(false);
@@ -44,7 +45,14 @@ export class NutritionnisteQuestionsComponent {
     });
   });
 
-  constructor() { this.load(); }
+  constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const patientId = Number(params.get('patient'));
+      this.requestedPatientId.set(Number.isInteger(patientId) && patientId > 0 ? patientId : null);
+      this.selectRequestedConversation(Number(params.get('conversation')));
+    });
+    this.load();
+  }
 
   load(): void {
     this.loading.set(true);
@@ -53,9 +61,7 @@ export class NutritionnisteQuestionsComponent {
       next: (items) => {
         this.conversations.set([...items].sort((a, b) => (b.dernierMessageA || '').localeCompare(a.dernierMessageA || '')));
         this.loading.set(false);
-        const requested = Number(this.route.snapshot.queryParamMap.get('conversation'));
-        const selected = items.find((item) => item.id === requested);
-        if (selected) this.select(selected);
+        this.selectRequestedConversation(Number(this.route.snapshot.queryParamMap.get('conversation')));
       },
       error: () => { this.error.set(true); this.loading.set(false); },
     });
@@ -63,6 +69,10 @@ export class NutritionnisteQuestionsComponent {
 
   name(item: ProfessionalConversation): string {
     return [item.interlocuteurPrenom, item.interlocuteurNom].filter(Boolean).join(' ') || `Utilisateur n° ${item.interlocuteurId}`;
+  }
+  hasRequestedPatientConversation(): boolean {
+    const patientId = this.requestedPatientId();
+    return patientId != null && this.conversations().some((item) => item.interlocuteurId === patientId);
   }
   initials(item: ProfessionalConversation): string {
     return [item.interlocuteurPrenom, item.interlocuteurNom].filter(Boolean).map((part) => part![0].toLocaleUpperCase('fr')).join('') || '?';
@@ -79,6 +89,17 @@ export class NutritionnisteQuestionsComponent {
   }
   close(): void { this.selected.set(null); }
 
+  private selectRequestedConversation(conversationId: number): void {
+    const conversations = this.conversations();
+    if (!conversations.length) return;
+    const byConversation = conversations.find((item) => item.id === conversationId);
+    const patientId = this.requestedPatientId();
+    const byPatient = patientId == null ? undefined : conversations.find((item) => item.interlocuteurId === patientId);
+    const target = byConversation || byPatient;
+    if (target && this.selected()?.id !== target.id) this.select(target);
+    else if (!target) this.selected.set(null);
+  }
+
   private loadMessages(id: number): void {
     this.messagesLoading.set(true);
     this.messagesError.set(false);
@@ -87,6 +108,10 @@ export class NutritionnisteQuestionsComponent {
         if (this.selected()?.id !== id) return;
         this.messages.set(page.content);
         this.messagesLoading.set(false);
+        // Le GET marque les messages reçus comme lus côté serveur ; refléter ce statut dans la liste.
+        this.conversations.update((items) => items.map((item) => item.id === id
+          ? { ...item, messagesNonLus: 0 }
+          : item));
       },
       error: () => { if (this.selected()?.id === id) { this.messagesError.set(true); this.messagesLoading.set(false); } },
     });
@@ -94,7 +119,11 @@ export class NutritionnisteQuestionsComponent {
 
   isOwn(message: ProfessionalMessage): boolean {
     const own = this.auth.currentUser();
-    return Boolean(own && message.auteurNom === own.nom && message.auteurPrenom === own.prenom);
+    if (!own) return false;
+    // L'identifiant est stable, contrairement aux noms qui peuvent être identiques.
+    return message.auteurId != null
+      ? message.auteurId === own.id
+      : message.auteurNom === own.nom && message.auteurPrenom === own.prenom;
   }
 
   send(): void {

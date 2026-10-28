@@ -15,6 +15,7 @@ const PATHS: Record<string, string> = {
   chart: 'M3 3v18h18M7 17v-5m5 5V7m5 10v-8',
   check: 'm5 12 4 4L19 6',
   plus: 'M12 4v16M4 12h16',
+  menu: 'M4 6h16M4 12h16M4 18h16',
   refresh: 'M20 7v5h-5M4 17v-5h5m-4-5a8 8 0 0 1 13-2l2 3M4 16l2 3a8 8 0 0 0 13-2',
   user: 'M20 21v-2a8 8 0 0 0-16 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
   mail: 'M3 5h18v14H3Zm0 0 9 8 9-8',

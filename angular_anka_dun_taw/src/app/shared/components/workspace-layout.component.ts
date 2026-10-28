@@ -32,6 +32,8 @@ export class WorkspaceLayoutComponent {
   });
   readonly primaryNavigation = computed(() => this.actor().navigation);
   readonly menuOpen = signal(false);
+  // Le rail professionnel reste compact tant que l'utilisateur ne demande pas les libellés.
+  readonly professionalSidebarOpen = signal(false);
   // Les groupes secondaires commencent fermés ; un clic sur leur titre inverse leur état.
   readonly expandedGroup = signal<string | null>(null);
   readonly logoutError = signal<string | null>(null);
@@ -52,13 +54,21 @@ export class WorkspaceLayoutComponent {
     this.expandedGroup.update((current) => current === path ? null : path);
   }
 
+  toggleProfessionalSidebar(): void {
+    this.professionalSidebarOpen.update((open) => !open);
+  }
+
   logout(): void {
     this.logoutError.set(null);
     this.auth.logout().subscribe({
       next: () => {
         void this.router.navigateByUrl('/connexion');
       },
-      error: () => this.logoutError.set('Déconnexion impossible. Votre session reste active.'),
+      error: () => {
+        this.logoutError.set('Déconnexion impossible. Votre session reste active.');
+        // Dévoile le message même si le rail professionnel était réduit.
+        if (this.actor().id !== 'admin') this.professionalSidebarOpen.set(true);
+      },
     });
   }
 }

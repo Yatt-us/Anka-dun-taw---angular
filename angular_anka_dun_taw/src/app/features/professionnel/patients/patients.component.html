@@ -19,7 +19,10 @@
           <article class="profile-detail">
             <div class="profile-identity"><span class="patient-avatar large">{{ initials(patient.name) }}@if (patient.photoProfilUrl) { <img [src]="patient.photoProfilUrl" alt="" (error)="hideBrokenImage($event)" /> }</span>
               <div><h2>{{ patient.name }}</h2><p>{{ age(selectedDetails()) || 'Âge non renseigné' }} · {{ profile()?.zone || 'Zone non renseignée' }} · Patient n° {{ patient.id }}</p></div>
-              <a [routerLink]="'/espaces/nutritionniste/rendez-vous'" class="new-consultation">Voir les consultations</a>
+              <div class="profile-actions">
+                <a [routerLink]="'/espaces/nutritionniste/questions'" [queryParams]="{ patient: patient.id }" class="new-consultation">Écrire au patient</a>
+                <a [routerLink]="'/espaces/nutritionniste/rendez-vous'" class="new-consultation">Voir les consultations</a>
+              </div>
             </div>
             @if (detailLoading()) { <p class="table-state" role="status">Chargement du dossier…</p> }
             @else {
