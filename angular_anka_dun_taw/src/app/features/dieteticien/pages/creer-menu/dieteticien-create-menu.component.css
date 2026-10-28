@@ -72,6 +72,10 @@ textarea { min-height: 82px; resize: vertical; line-height: 1.55; }
 .budget-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 17px 0 0; padding-top: 15px; border-top: 1px solid #eae8e0; }
 .budget-details span { display: grid; gap: 4px; color: #7d8a82; font-size: 10px; }
 .budget-details strong { color: #286b53; font-size: 12px; }
+.budget-caption { margin: 12px 0 6px; color: #66756e; font-size: 10px; line-height: 1.45; }
+.budget-day { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; padding: 7px 0; border-top: 1px solid #eae8e0; color: #526a5e; font-size: 11px; }
+.budget-day strong { color: #286b53; font-weight: 600; }
+.budget-day.over-budget, .budget-day.over-budget strong { color: #a35a37; }
 .text-link { display: inline-block; margin-top: 12px; color: var(--brand-blue); font-size: 10px; font-weight: 600; text-decoration: none; }
 .text-link:hover { text-decoration: underline; }
 .advice-card { min-height: 340px; }

@@ -1,4 +1,4 @@
-<div class="app-frame" [class.admin]="actor().id === 'admin'" [class.dieteticien]="actor().id === 'dieteticien'" [class.nutritionniste]="actor().id === 'nutritionniste'" [class.menu-open]="menuOpen()">
+<div class="app-frame" [class.admin]="actor().id === 'admin'" [class.dieteticien]="actor().id === 'dieteticien'" [class.nutritionniste]="actor().id === 'nutritionniste'" [class.menu-open]="menuOpen()" [class.pro-sidebar-expanded]="professionalSidebarOpen()">
   @if (menuOpen()) {
     <button class="scrim" aria-label="Fermer le menu" (click)="menuOpen.set(false)"></button>
   }
@@ -36,8 +36,8 @@
     </nav>
     <div class="sidebar-bottom">
       <a class="change-space" routerLink="/espaces" title="Mon espace" aria-label="Mon espace"><app-icon name="grid" />Mon espace</a>
-      <button mat-button class="change-space" type="button" (click)="logout()" title="Se déconnecter" aria-label="Se déconnecter">
-        <app-icon name="logout" />Se déconnecter
+      <button mat-button class="change-space logout-button" type="button" (click)="logout()" title="Se déconnecter" aria-label="Se déconnecter">
+        <app-icon name="logout" /><span class="logout-label">Déconnexion</span>
       </button>
       @if (logoutError()) {
         <small class="logout-error" role="alert">{{ logoutError() }}</small>

@@ -35,8 +35,9 @@ input:invalid:not(:placeholder-shown) { border-color: var(--red); }
 .correct { display: flex; align-items: center; gap: 6px; padding-bottom: 12px; white-space: nowrap; }
 .correct input { width: auto; }
 footer { margin-top: 26px; justify-content: flex-end; }
-.submit { border: 0; border-radius: 9px; color: white; background: var(--green); min-height: 42px; padding: 0 23px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: transform .18s, background .18s, box-shadow .18s; }
-.submit:hover:not(:disabled) { transform: translateY(-2px); background: var(--green-dark); box-shadow: 0 7px 14px #2e7d5b33; }
+/* Les actions principales sont bleues dans les trois espaces. */
+.submit { border: 0; border-radius: 9px; color: white; background: var(--brand-blue); min-height: 42px; padding: 0 23px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: transform .18s, background .18s, box-shadow .18s; }
+.submit:hover:not(:disabled) { transform: translateY(-2px); background: #005d92; box-shadow: 0 7px 14px #006aa433; }
 .submit:disabled { opacity: .6; cursor: wait; }
 .close-form { color: var(--muted); }
 @media (max-width: 850px) { .repeat-row, .meal-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

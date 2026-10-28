@@ -47,10 +47,13 @@ export interface FoodPrice {
 
 export interface ProfessionalMessage {
   id: number;
+  conversationId?: number;
+  auteurId?: number;
   contenu: string;
   auteurNom?: string;
   auteurPrenom?: string;
   dateEnvoi?: string;
+  luA?: string | null;
 }
 
 export interface WorkspaceAction {
