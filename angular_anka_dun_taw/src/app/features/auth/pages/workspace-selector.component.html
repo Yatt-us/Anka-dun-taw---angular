@@ -1,16 +1,35 @@
-<main class="chooser-page" animate.enter="adt-screen-enter">
+<main class="chooser-page" [class.verification-active]="!!verificationView()" animate.enter="adt-screen-enter">
       <header class="chooser-header">
-        <a class="brand" routerLink="/espaces"
-          ><span class="brand-mark"><app-icon name="leaf" /></span
-          ><span
-            ><strong>Anka Dùn Taw</strong><small>PLATEFORME DE SANTÉ NUTRITIONNELLE</small></span
-          ></a
-        >
+        <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, accueil des espaces">
+          <img src="/images/logo-anka-dun-taw.png" alt="Anka Dùn Taw" />
+        </a>
         <div class="account-actions">
           <span class="demo-chip"><i></i> {{ displayName() }}</span>
           <button class="logout-action" type="button" (click)="logout()">Se déconnecter</button>
         </div>
       </header>
+      @if (verificationView(); as verification) {
+        <section class="verification-content" [attr.data-state]="verification.kind" aria-live="polite">
+          <div class="verification-heading">
+            <h1>{{ verification.heading }}<br /><em>{{ verification.accent }}</em></h1>
+          </div>
+          <div class="access-notice" role="status">
+            <span class="notice-icon" aria-hidden="true">!</span>
+            <div class="access-copy">
+              <strong>{{ verification.noticeTitle }}</strong>
+              <p>{{ verification.description }}</p>
+            </div>
+            @if (verification.kind === 'error') {
+              <button class="retry" type="button" (click)="retryVerification()" [disabled]="checkingStatus()">
+                {{ checkingStatus() ? 'Vérification…' : 'Réessayer' }}
+              </button>
+            }
+          </div>
+          @if (logoutError()) {
+            <p class="verification-error" role="alert">{{ logoutError() }}</p>
+          }
+        </section>
+      } @else {
       <section class="chooser-content">
         <div class="welcome-copy">
           <span class="kicker">BIENVENUE SUR VOTRE ESPACE DE TRAVAIL</span>
@@ -92,6 +111,7 @@
           </div>
         }
       </section>
+      }
       <footer class="chooser-footer">
         <span>ANKA DÙN TAW</span><span>Une alimentation locale, personnalisée et accessible</span
         ><span>© 2026</span>

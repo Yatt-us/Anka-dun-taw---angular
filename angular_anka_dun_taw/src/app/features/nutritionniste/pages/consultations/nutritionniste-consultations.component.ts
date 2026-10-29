@@ -52,7 +52,8 @@ export class NutritionnisteConsultationsComponent {
   select(item: ProfessionalAppointment): void { this.selectedId.set(item.id); this.actionError.set(''); }
   name(item: ProfessionalAppointment): string {
     const linked = this.beneficiaries().find((person) => person.id === item.utilisateurId);
-    return [item.utilisateurPrenom || linked?.prenom, item.utilisateurNom || linked?.nom].filter(Boolean).join(' ') || `Patient n° ${item.utilisateurId}`;
+    const name = [item.utilisateurPrenom || linked?.prenom, item.utilisateurNom || linked?.nom].filter(Boolean).join(' ');
+    return name ? `${name} · n° ${item.utilisateurId}` : `Patient n° ${item.utilisateurId}`;
   }
   initials(item: ProfessionalAppointment): string { return this.name(item).split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toLocaleUpperCase('fr'); }
   status(item: ProfessionalAppointment): string { return item.statut === 'DEMANDE' ? 'En attente' : item.statut === 'ACCEPTE' ? 'Acceptée' : 'Refusée'; }

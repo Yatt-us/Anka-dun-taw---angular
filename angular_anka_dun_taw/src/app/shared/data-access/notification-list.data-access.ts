@@ -11,6 +11,10 @@ interface Notification { id: number; titre?: string; message?: string; dateRecep
 export class NotificationListDataAccess {
   private readonly http = inject(HttpClient);
 
+  unreadCount(): Observable<number> {
+    return this.http.get<number>(`${API_BASE_URL}/me/notifications/non-lues/count`);
+  }
+
   load(page: number, size: number): Observable<WorkspacePageResult> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<ApiPage<Notification>>(`${API_BASE_URL}/me/notifications`, { params }).pipe(

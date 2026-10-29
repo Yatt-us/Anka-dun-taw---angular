@@ -11,6 +11,7 @@ const PATHS: Record<string, string> = {
     'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8m0-6v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2',
   clock: 'M12 8v5l3 2m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
   message: 'M21 11a9 9 0 0 1-9 9H4l-3 2 2-7a9 9 0 1 1 18-4Zm-13 0h8m-8 4h5',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12h4',
   calendar: 'M3 5h18v16H3ZM7 2v6m10-6v6M3 11h18',
   chart: 'M3 3v18h18M7 17v-5m5 5V7m5 10v-8',
   check: 'm5 12 4 4L19 6',
