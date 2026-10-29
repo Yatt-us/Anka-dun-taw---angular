@@ -9,8 +9,7 @@
       <button type="button" class="admin-sidebar-close" aria-label="Fermer le menu" (click)="menuOpen.set(false)">
         <app-icon name="close" />
       </button>
-    }
-    @if (actor().id !== 'admin') {
+    } @else {
       <button type="button" class="pro-sidebar-toggle" [attr.aria-label]="professionalSidebarOpen() ? 'Réduire le menu aux icônes' : 'Afficher les noms des rubriques'"
         [attr.aria-expanded]="professionalSidebarOpen()" aria-controls="workspace-primary-navigation" (click)="toggleProfessionalSidebar()">
         <app-icon [name]="professionalSidebarOpen() ? 'close' : 'menu'" />
