@@ -56,6 +56,8 @@ export class AdminFoodsComponent {
   readonly pagePrices = signal<Record<number, FoodPrice | null>>({});
   readonly pagePricesError = signal(false);
   readonly priceEditorFood = signal<AdminFood | null>(null);
+  readonly priceEditorExisting = signal<FoodPrice | null>(null);
+  readonly priceEditorData = signal<Record<string, unknown>>({});
   readonly pricesLoading = signal(false);
   readonly pricesError = signal(false);
   readonly pendingDeactivate = signal<AdminFood | null>(null);
@@ -171,10 +173,26 @@ export class AdminFoodsComponent {
     void this.router.navigate([], { relativeTo: this.route, queryParams: { vue: mode === 'prices' ? 'prix' : null }, queryParamsHandling: 'merge' });
   }
 
-  openPriceEditor(food: AdminFood): void { this.priceEditorFood.set(food); }
-  closePriceEditor(): void { this.priceEditorFood.set(null); }
-  priceSaved(): void {
+  openPriceEditor(food: AdminFood): void {
+    // Le filtre fixe la région éditée ; un prix actuel ouvre une modification.
+    const current = this.pagePrices()[food.id];
+    const existing = current?.zone === this.priceZone() ? current : null;
+    this.priceEditorExisting.set(existing);
+    this.priceEditorData.set(existing ? {
+      zone: existing.zone, prix: existing.prix,
+      quantiteReference: existing.quantiteReference,
+      unite: existing.unite, dateDebut: existing.dateDebut,
+      dateFin: existing.dateFin ?? null, source: existing.source ?? '',
+    } : { zone: this.priceZone() });
+    this.priceEditorFood.set(food);
+  }
+  closePriceEditor(): void {
     this.priceEditorFood.set(null);
+    this.priceEditorExisting.set(null);
+    this.priceEditorData.set({});
+  }
+  priceSaved(): void {
+    this.closePriceEditor();
     this.message.set('Prix enregistré. Les données ont été actualisées.');
     this.retry();
   }

@@ -9,8 +9,9 @@ import { zoneLabel } from '../../../../shared/data-access/zones.data-access';
 import { Budget, CreatedMenu, DieteticienMenuDataAccess, Ingredient, Patient, PatientProfile, Recipe } from '../../data-access/dieteticien-menu.data-access';
 
 interface MealDraft { key: number; recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
+interface BudgetLine { date: string; cost: number | null; limit: number | null }
 
-  @Component({
+@Component({
   selector: 'app-dieteticien-create-menu',
   imports: [FormsModule, RouterLink, UiIconComponent],
   templateUrl: './dieteticien-create-menu.component.html',
@@ -168,55 +169,77 @@ export class DieteticienCreateMenuComponent implements OnInit {
   money(amount: number | null | undefined): string {
     return amount == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} FCFA`;
   }
-  budgetMessage(): string {
-    const cost = this.totalCost();
+  budgetPeriodName(period: string): string {
+    return { JOUR: 'jour', SEMAINE: 'semaine', MOIS: 'mois' }[period] ?? 'période';
+  }
+  /** Le backend exige un budget actif pour chaque date de repas publiée. */
+  budgetValidityError(): string | null {
     const budget = this.activeBudget();
-    if (cost == null) return 'Sélectionnez une recette et une zone pour afficher un coût estimé.';
-    if (this.profile()?.modeBudget === 'PETIT_BUDGET') {
-      if (this.dailyBudgetsLoading()) return 'Chargement des montants disponibles pour les jours du menu…';
-      if (!this.budgetComparable()) return 'Le patient doit renseigner son montant disponible pour chaque jour du menu.';
-      return this.overBudget()
-        ? 'Un ou plusieurs jours dépassent le montant disponible. Réduisez les portions ou choisissez des recettes moins chères.'
-        : 'Les repas saisis respectent les montants quotidiens connus. La validation tiendra compte des autres menus publiés.';
+    if (this.profile()?.modeBudget !== 'AVEC_BUDGET' || !budget) return null;
+    for (const meal of this.meals.filter((item) => item.recetteId)) {
+      const date = this.mealDate(meal.jour);
+      if (date && ((budget.dateDebut && date < budget.dateDebut) ||
+        (budget.dateFin && date > budget.dateFin))) {
+        return `Le budget actif du patient ne couvre pas le repas du ${date}. Modifiez les dates du menu ou demandez au patient d'actualiser son budget.`;
+      }
     }
-    if (!budget) return 'Aucun budget actif lié au profil actuel du patient. Vérifiez son dossier avant publication.';
-    // L'API utilise XOF ; l'interface affiche son libellé usuel FCFA.
-    if (budget.devise !== 'XOF') return 'Le budget du patient utilise une autre devise.';
-    if (!this.budgetComparable()) return 'Le budget ne peut pas être comparé aux repas saisis.';
+    return null;
+  }
+  budgetMessage(): string {
+    const mode = this.profile()?.modeBudget;
+    if (!this.selectedPatientId) return 'Choisissez un patient pour charger le budget de son profil actif.';
+    if (!this.profile()) return 'Chargement du profil nutritionnel actif du patient…';
+    if (mode === 'SANS_BUDGET') return 'Ce profil ne définit pas de budget. Le coût estimé reste visible, sans plafond à comparer.';
+    if (mode === 'AVEC_BUDGET' && !this.activeBudget()) return 'Le budget actif du profil est introuvable. Demandez au patient de le vérifier.';
+    if (mode === 'AVEC_BUDGET' && this.activeBudget()?.devise !== 'XOF') return 'Le budget du patient doit être exprimé en FCFA.';
+    if (this.budgetValidityError()) return this.budgetValidityError()!;
+    if (mode === 'PETIT_BUDGET' && this.dailyBudgetsLoading()) return 'Chargement des montants disponibles pour les jours du menu…';
+    if (!this.meals.some((meal) => meal.recetteId)) return 'Choisissez une recette pour comparer son prix au budget du patient.';
+    if (this.costsLoading() || this.totalCost() === null) return 'Le coût d’au moins un repas est inconnu pour cette région et cette date. Vérifiez les prix des ingrédients.';
+    if (!this.budgetComparable()) return mode === 'PETIT_BUDGET'
+      ? 'Le patient doit renseigner son montant disponible pour chaque jour du menu.'
+      : 'Le budget ne peut pas être comparé aux repas saisis.';
     return this.overBudget()
-      ? 'Au moins une période dépasse le budget du profil actif. Adaptez les recettes ou les portions.'
-      : 'Les repas saisis respectent le budget par période. La validation tiendra compte des autres menus publiés.';
+      ? 'Le coût dépasse le budget du profil actif. Réduisez les portions ou choisissez des recettes moins chères.'
+      : 'Les repas saisis respectent le budget affiché. La validation tiendra aussi compte des autres menus publiés.';
   }
 
   budgetComparable(): boolean {
-    if (this.totalCost() === null) return false;
-    if (this.profile()?.modeBudget === 'PETIT_BUDGET') {
-      return !this.dailyBudgetsLoading() && this.budgetLines().every((line) => line.limit !== null);
-    }
+    if (this.totalCost() === null || this.budgetValidityError()) return false;
+    const lines = this.budgetLines();
+    if (!lines.length || lines.some((line) => line.cost === null || line.limit === null)) return false;
+    if (this.profile()?.modeBudget === 'PETIT_BUDGET') return !this.dailyBudgetsLoading();
     const budget = this.activeBudget();
     return !!budget && budget.devise === 'XOF' && ['JOUR', 'SEMAINE', 'MOIS'].includes(budget.periode);
   }
 
   overBudget(): boolean {
-    return this.budgetComparable() && this.budgetLines().some((line) => line.limit !== null && line.cost > line.limit);
+    return this.budgetComparable() && this.budgetLines().some((line) =>
+      line.cost !== null && line.limit !== null && line.cost > line.limit);
   }
 
-  /** Regroupe les repas par période réelle du budget, comme le contrôle backend. */
-  budgetLines(): Array<{ date: string; cost: number; limit: number | null }> {
+  /** Compare les repas par période du profil ; un prix inconnu reste visible comme tel. */
+  budgetLines(): BudgetLine[] {
     const mode = this.profile()?.modeBudget;
     const budget = this.activeBudget();
     if (mode !== 'PETIT_BUDGET' && !budget) return [];
-    const lines = new Map<string, { date: string; cost: number; limit: number | null }>();
+    const lines = new Map<string, BudgetLine>();
     for (const meal of this.meals.filter((item) => item.recetteId)) {
       const date = this.mealDate(meal.jour);
-      const cost = this.costs()[meal.key];
-      if (!date || cost == null) continue;
+      if (!date) continue;
       const period = mode === 'PETIT_BUDGET' ? 'JOUR' : budget!.periode;
       const key = this.periodStart(date, period);
-      const limit = mode === 'PETIT_BUDGET' ? this.dailyBudgets()[date] ?? null : budget!.montant;
-      const line = lines.get(key) ?? { date: key, cost: 0, limit };
-      line.cost += cost;
-      lines.set(key, line);
+      const available = this.dailyBudgets()[date] ?? null;
+      // Le mode petit budget applique le plus petit des deux plafonds : jour et profil.
+      const ceiling = this.profile()?.plafondPetitBudget;
+      const limit = mode === 'PETIT_BUDGET'
+        ? available === null ? null : ceiling == null ? available : Math.min(available, ceiling)
+        : budget!.montant;
+      const cost = this.costs()[meal.key] ?? null;
+      const line = lines.get(key);
+      lines.set(key, { date: key, limit,
+        cost: cost === null || line?.cost === null ? null : (line?.cost ?? 0) + cost,
+      });
     }
     return [...lines.values()].sort((a, b) => a.date.localeCompare(b.date));
   }
@@ -370,6 +393,10 @@ export class DieteticienCreateMenuComponent implements OnInit {
     const prixObligatoires = this.type === 'PETIT_BUDGET' || modeBudget === 'AVEC_BUDGET';
     if (publish && modeBudget === 'AVEC_BUDGET' && !this.selectedBudgetId) {
       return 'Publication impossible : ce patient est en mode « Avec budget », mais aucun budget actif n’est sélectionné. Vérifiez son budget dans son profil.';
+    }
+    if (publish && this.budgetValidityError()) return this.budgetValidityError();
+    if (publish && modeBudget === 'AVEC_BUDGET' && this.activeBudget()?.devise !== 'XOF') {
+      return 'Publication impossible : le budget actif du patient doit être exprimé en FCFA.';
     }
     if (publish && prixObligatoires && (this.costsLoading() || this.meals.some((meal) =>
       meal.recetteId != null && this.costs()[meal.key] == null))) {

@@ -44,6 +44,7 @@ export interface FoodPrice {
   unite?: string;
   dateDebut?: string;
   dateFin?: string;
+  source?: string;
 }
 
 export interface ProfessionalMessage {
