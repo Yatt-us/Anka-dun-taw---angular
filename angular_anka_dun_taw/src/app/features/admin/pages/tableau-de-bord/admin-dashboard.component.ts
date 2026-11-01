@@ -82,6 +82,13 @@ export class AdminDashboardComponent implements OnInit {
         tone: 'orange',
       },
       {
+        label: 'Professionnels à vérifier',
+        value: value(statistics?.professionnelsEnAttente),
+        detail: this.statisticsError() ? detail : 'Dossiers en attente de validation',
+        icon: 'clock',
+        tone: 'yellow',
+      },
+      {
         label: 'Aliments locaux disponibles',
         value: value(statistics?.alimentsLocauxDisponibles),
         detail: statistics ? 'Disponibles dans le catalogue local' : detail,
@@ -101,6 +108,22 @@ export class AdminDashboardComponent implements OnInit {
         detail: this.createdMenusError() ? 'Données indisponibles' : '',
         icon: 'grid',
         tone: 'blue',
+      },
+      {
+        label: 'Menus publiés',
+        value: value(statistics?.menusPublies),
+        detail: this.statisticsError() ? detail : 'Actuellement accessibles aux bénéficiaires',
+        icon: 'book',
+        tone: 'green',
+      },
+      {
+        label: 'Rendez-vous demandés',
+        value: value(statistics?.rendezVousDemandes),
+        detail: statistics
+          ? `${this.numberFormat.format(statistics.rendezVousAcceptes)} acceptés · ${this.numberFormat.format(statistics.rendezVousTermines)} terminés`
+          : detail,
+        icon: 'calendar',
+        tone: 'orange',
       },
       {
         label: 'Contenus éducatifs',
