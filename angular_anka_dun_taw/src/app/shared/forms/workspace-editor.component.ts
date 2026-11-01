@@ -176,7 +176,7 @@ export class WorkspaceEditorComponent {
       if (kind === 'food') this.loadCategoryChoices();
       if (kind === 'recipe') this.api.choices('aliments', true).subscribe({ next: (page) => this.foods.set(page.content), error: () => this.error.set('Chargement des aliments impossible.') });
       if (kind === 'menu') this.api.choices('recettes').subscribe({ next: (page) => this.recipes.set(page.content), error: () => this.error.set('Chargement des recettes impossible.') });
-      if (id && initialData) {
+      if (initialData) {
         this.hydrate(kind, initialData);
       } else if (kind === 'profile' || (id && kind !== 'price')) {
         this.loading.set(true);

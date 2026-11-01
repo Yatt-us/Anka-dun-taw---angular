@@ -112,7 +112,7 @@
                     <td data-label="Glucides">{{ formatMetric(food.glucides, 'g') }}</td>
                   }
                   <td data-label="Actions" class="actions-cell">
-                    <button class="row-action edit" type="button" (click)="viewMode() === 'prices' ? openPriceEditor(food) : openEditor(food)" [attr.aria-label]="(viewMode() === 'prices' ? 'Ajouter un prix pour ' : 'Modifier ') + food.nom" [title]="(viewMode() === 'prices' ? 'Ajouter un prix pour ' : 'Modifier ') + food.nom"><app-icon name="edit" /></button>
+                    <button class="row-action edit" type="button" (click)="viewMode() === 'prices' ? openPriceEditor(food) : openEditor(food)" [disabled]="viewMode() === 'prices' && pagePrices()[food.id] === undefined" [attr.aria-label]="viewMode() === 'prices' ? (pagePrices()[food.id] ? 'Modifier le prix de ' : 'Ajouter un prix pour ') + food.nom + ' à ' + zoneName(priceZone()) : 'Modifier ' + food.nom" [title]="viewMode() === 'prices' ? (pagePrices()[food.id] ? 'Modifier le prix de ' : 'Ajouter un prix pour ') + food.nom + ' à ' + zoneName(priceZone()) : 'Modifier ' + food.nom"><app-icon name="edit" /></button>
                     @if (food.disponible) {
                       <button class="row-action deactivate" type="button" (click)="confirmDeactivate(food)" [attr.aria-label]="'Désactiver ' + food.nom" [title]="'Désactiver ' + food.nom"><app-icon name="trash" /></button>
                     } @else {
@@ -150,8 +150,8 @@
 
 @if (priceEditorFood(); as food) {
   <div class="foods-backdrop" role="presentation" (click)="closePriceEditor()" (keydown.escape)="closePriceEditor()">
-    <section class="foods-modal editor-modal" role="dialog" aria-modal="true" [attr.aria-label]="'Ajouter un prix pour ' + food.nom" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
-      <app-workspace-editor kind="price" [relatedId]="food.id" (saved)="priceSaved()" (cancelled)="closePriceEditor()" />
+    <section class="foods-modal editor-modal" role="dialog" aria-modal="true" [attr.aria-label]="(priceEditorExisting() ? 'Modifier le prix de ' : 'Ajouter un prix pour ') + food.nom + ' à ' + zoneName(priceZone())" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (click)="$event.stopPropagation()">
+      <app-workspace-editor kind="price" [relatedId]="food.id" [entityId]="priceEditorExisting()?.id" [initialData]="priceEditorData()" (saved)="priceSaved()" (cancelled)="closePriceEditor()" />
     </section>
   </div>
 }

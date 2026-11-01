@@ -26,7 +26,10 @@ export class WorkspaceEditorService {
 
   save(kind: EditorKind, payload: object, id?: number, relatedId?: number): Observable<unknown> {
     if (kind === 'profile') return this.http.put(`${API_BASE_URL}/professionnels/me`, payload);
-    if (kind === 'price') return this.http.post(`${API_BASE_URL}/aliments/${relatedId}/prix`, payload);
+    if (kind === 'price') {
+      const path = `${API_BASE_URL}/aliments/${relatedId}/prix`;
+      return id ? this.http.put(`${path}/${id}`, payload) : this.http.post(path, payload);
+    }
     const path = `${API_BASE_URL}${this.path(kind)}`;
     // La disponibilité est pilotée uniquement par Désactiver/Réactiver ; ne jamais la réécrire avec le formulaire.
     const body = kind === 'food'
