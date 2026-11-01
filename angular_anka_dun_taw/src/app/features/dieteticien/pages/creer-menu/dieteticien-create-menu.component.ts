@@ -1,22 +1,13 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { EMPTY, catchError, expand, forkJoin, map, Observable, of, reduce, switchMap, tap } from 'rxjs';
-import { API_BASE_URL } from '../../../../core/config/api.config';
+import { catchError, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { zoneLabel } from '../../../../shared/data-access/zones.data-access';
+import { Budget, CreatedMenu, DieteticienMenuDataAccess, Ingredient, Patient, PatientProfile, Recipe } from '../../data-access/dieteticien-menu.data-access';
 
-interface ApiPage<T> { content: T[]; number: number; totalPages: number }
-interface Patient { id: number; prenom: string; nom: string; photoProfilUrl?: string | null }
-interface Ingredient { id: number; alimentNom: string; quantite: number; unite: string }
-interface Recipe { id: number; nom: string; nombrePersonnes: number | null; ingredients?: Ingredient[] | null }
-interface PatientProfile { nom: string | null; zone: string | null; objectifId: number | null; budgetActifId: number | null; modeBudget: string | null }
-interface Budget { id: number; montant: number; devise: string; periode: string; actif: boolean }
-interface DailyBudget { montantDisponible: number }
-interface RecipeCost { coutEstime: number; devise: string }
-interface CreatedMenu { id: number }
 interface MealDraft { key: number; recetteId: number | null; jour: number; typeRepas: string; nombrePortions: number }
 
   @Component({
@@ -26,7 +17,7 @@ interface MealDraft { key: number; recetteId: number | null; jour: number; typeR
   styleUrl: './dieteticien-create-menu.component.css',
 })
 export class DieteticienCreateMenuComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly menusApi = inject(DieteticienMenuDataAccess);
   private readonly destroyRef = inject(DestroyRef);
   private costRequest = 0;
   private dailyBudgetRequest = 0;
@@ -77,28 +68,18 @@ export class DieteticienCreateMenuComponent implements OnInit {
   meals: MealDraft[] = [{ key: 1, recetteId: null, jour: 1, typeRepas: 'DEJEUNER', nombrePortions: 1 }];
 
   ngOnInit(): void {
-    this.allPages<Patient>('/professionnel/beneficiaires', 'prenom,asc')
+    this.menusApi.patients()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => { this.patients.set(items); this.loadingPatients.set(false); },
         error: () => { this.error.set('Impossible de charger les patients liés à votre compte.'); this.loadingPatients.set(false); },
       });
-    this.allPages<Recipe>('/recettes', 'nom,asc')
+    this.menusApi.recipes()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => { this.recipes.set(items); this.loadingRecipes.set(false); },
         error: () => { this.error.set('Impossible de charger les recettes publiées.'); this.loadingRecipes.set(false); },
       });
-  }
-
-  private allPages<T>(path: string, sort: string): Observable<T[]> {
-    const getPage = (page: number) => this.http.get<ApiPage<T>>(`${API_BASE_URL}${path}`, {
-      params: new HttpParams().set('page', String(page)).set('size', '100').set('sort', sort),
-    });
-    return getPage(0).pipe(
-      expand((result) => result.number + 1 < result.totalPages ? getPage(result.number + 1) : EMPTY),
-      reduce((all, result) => all.concat(result.content), [] as T[]),
-    );
   }
 
   onPatientChange(): void {
@@ -116,11 +97,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
     this.costsLoading.set(false);
     const id = this.selectedPatientId;
     if (!id) return;
-    const base = `${API_BASE_URL}/professionnel/beneficiaires/${id}`;
-    forkJoin({
-      profile: this.http.get<PatientProfile>(`${base}/profil-nutritionnel`),
-      budgets: this.allPages<Budget>(`/professionnel/beneficiaires/${id}/budgets`, 'dateDebut,desc'),
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.menusApi.patientContext(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ profile, budgets }) => {
         if (this.selectedPatientId !== id) return;
         this.profile.set(profile);
@@ -172,7 +149,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
   onRecipeChange(meal: MealDraft): void {
     const id = meal.recetteId;
     if (id && !this.recipeDetails()[id]) {
-      this.http.get<Recipe>(`${API_BASE_URL}/recettes/${id}`)
+      this.menusApi.recipe(id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (recipe) => this.recipeDetails.update((details) => ({ ...details, [id]: recipe })),
@@ -265,9 +242,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
       return;
     }
     this.dailyBudgetsLoading.set(true);
-    forkJoin(dates.map((date) => this.http.get<DailyBudget>(
-      `${API_BASE_URL}/professionnel/beneficiaires/${patientId}/petit-budget/jours/${date}`,
-    ).pipe(
+    forkJoin(dates.map((date) => this.menusApi.dailyBudget(patientId, date).pipe(
       map((result) => ({ date, amount: result.montantDisponible as number | null })),
       catchError(() => of({ date, amount: null as number | null })),
     ))).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((results) => {
@@ -291,9 +266,7 @@ export class DieteticienCreateMenuComponent implements OnInit {
       const recipe = this.recipeFor(meal.recetteId);
       const date = this.mealDate(meal.jour);
       if (!recipe || !date) return of({ key: meal.key, cost: null as number | null });
-      return this.http.get<RecipeCost | null>(`${API_BASE_URL}/recettes/${recipe.id}/cout-estime`, {
-        params: new HttpParams().set('zone', this.zone).set('date', date),
-      }).pipe(
+      return this.menusApi.recipeCost(recipe.id, this.zone, date).pipe(
         map((result) => ({
           key: meal.key,
           cost: result?.devise === 'XOF'
@@ -312,37 +285,9 @@ export class DieteticienCreateMenuComponent implements OnInit {
 
   save(publish: boolean): void {
     if (this.saving() || this.published() || (this.validatedMenuId() !== null && !publish)) return;
-    if (!this.selectedPatientId || !this.profile() || !this.title.trim() || !this.dateDebut || !this.zone ||
-      !this.meals.length || this.meals.some((meal) => !meal.recetteId || !Number.isInteger(meal.jour) ||
-        meal.jour < 1 || meal.jour > 31 || !Number.isFinite(meal.nombrePortions) || meal.nombrePortions <= 0)) {
-      this.error.set('Complétez les champs obligatoires : nom du menu, patient, région, date de début, recette et jour de chaque repas. Attendez le chargement du profil du patient.');
-      return;
-    }
-    if (this.dateFin && this.dateFin < this.dateDebut) {
-      this.error.set('La date de fin doit suivre la date de début.');
-      return;
-    }
-    if (this.dateFin && this.meals.some((meal) => (this.mealDate(meal.jour) ?? '') > this.dateFin)) {
-      this.error.set('Un repas tombe après la date de fin. Augmentez la période ou corrigez le jour du repas.');
-      return;
-    }
-    const modeBudget = this.profile()?.modeBudget;
-    const prixObligatoires = this.type === 'PETIT_BUDGET' || modeBudget === 'AVEC_BUDGET';
-    if (publish && modeBudget === 'AVEC_BUDGET' && !this.selectedBudgetId) {
-      this.error.set('Publication impossible : ce patient est en mode « Avec budget », mais aucun budget actif n’est sélectionné. Vérifiez son budget dans son profil.');
-      return;
-    }
-    if (publish && prixObligatoires && (this.costsLoading() || this.meals.some((meal) =>
-      meal.recetteId != null && this.costs()[meal.key] == null))) {
-      this.error.set('Publication impossible : le coût d’au moins un repas n’est pas vérifiable pour la région et la date choisies. Vérifiez les prix des ingrédients, la région et la saison, puis réessayez.');
-      return;
-    }
-    if (publish && modeBudget === 'PETIT_BUDGET' && !this.budgetComparable()) {
-      this.error.set('Publication impossible : le patient doit renseigner son budget disponible pour chaque jour du menu.');
-      return;
-    }
-    if (publish && this.overBudget()) {
-      this.error.set('Publication impossible : le coût estimé dépasse le budget du profil actif. Adaptez les recettes ou les portions.');
+    const validationError = this.saveValidationError(publish);
+    if (validationError) {
+      this.error.set(validationError);
       return;
     }
     this.error.set('');
@@ -368,9 +313,8 @@ export class DieteticienCreateMenuComponent implements OnInit {
     const initial: Observable<CreatedMenu> = existing
       ? this.validatedMenuId() === existing
         ? of({ id: existing })
-        : this.http.put<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${existing}`, payload)
-          .pipe(map((menu) => menu ?? { id: existing }))
-      : this.http.post<CreatedMenu>(`${API_BASE_URL}/professionnel/menus`, payload);
+        : this.menusApi.update(existing, payload)
+      : this.menusApi.create(payload);
     let phase: 'enregistrement' | 'validation' | 'publication' = 'enregistrement';
     initial.pipe(
       switchMap((menu) => {
@@ -379,12 +323,12 @@ export class DieteticienCreateMenuComponent implements OnInit {
         phase = 'validation';
         const validation = this.validatedMenuId() === menu.id
           ? of(menu)
-          : this.http.post<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${menu.id}/valider`, {}).pipe(
+          : this.menusApi.validate(menu.id).pipe(
             tap(() => this.validatedMenuId.set(menu.id)),
           );
         return validation.pipe(switchMap(() => {
           phase = 'publication';
-          return this.http.post<CreatedMenu | null>(`${API_BASE_URL}/professionnel/menus/${menu.id}/publier`, {})
+          return this.menusApi.publish(menu.id)
             .pipe(map((published) => published ?? menu));
         }));
       }),
@@ -408,6 +352,36 @@ export class DieteticienCreateMenuComponent implements OnInit {
         this.error.set(`Brouillon n° ${this.createdMenuId()} conservé, mais l’étape de ${etape} a échoué : ${detail}`);
       },
     });
+  }
+
+  private saveValidationError(publish: boolean): string | null {
+    if (!this.selectedPatientId || !this.profile() || !this.title.trim() || !this.dateDebut || !this.zone ||
+      !this.meals.length || this.meals.some((meal) => !meal.recetteId || !Number.isInteger(meal.jour) ||
+        meal.jour < 1 || meal.jour > 31 || !Number.isFinite(meal.nombrePortions) || meal.nombrePortions <= 0)) {
+      return 'Complétez les champs obligatoires : nom du menu, patient, région, date de début, recette et jour de chaque repas. Attendez le chargement du profil du patient.';
+    }
+    if (this.dateFin && this.dateFin < this.dateDebut) {
+      return 'La date de fin doit suivre la date de début.';
+    }
+    if (this.dateFin && this.meals.some((meal) => (this.mealDate(meal.jour) ?? '') > this.dateFin)) {
+      return 'Un repas tombe après la date de fin. Augmentez la période ou corrigez le jour du repas.';
+    }
+    const modeBudget = this.profile()?.modeBudget;
+    const prixObligatoires = this.type === 'PETIT_BUDGET' || modeBudget === 'AVEC_BUDGET';
+    if (publish && modeBudget === 'AVEC_BUDGET' && !this.selectedBudgetId) {
+      return 'Publication impossible : ce patient est en mode « Avec budget », mais aucun budget actif n’est sélectionné. Vérifiez son budget dans son profil.';
+    }
+    if (publish && prixObligatoires && (this.costsLoading() || this.meals.some((meal) =>
+      meal.recetteId != null && this.costs()[meal.key] == null))) {
+      return 'Publication impossible : le coût d’au moins un repas n’est pas vérifiable pour la région et la date choisies. Vérifiez les prix des ingrédients, la région et la saison, puis réessayez.';
+    }
+    if (publish && modeBudget === 'PETIT_BUDGET' && !this.budgetComparable()) {
+      return 'Publication impossible : le patient doit renseigner son budget disponible pour chaque jour du menu.';
+    }
+    if (publish && this.overBudget()) {
+      return 'Publication impossible : le coût estimé dépasse le budget du profil actif. Adaptez les recettes ou les portions.';
+    }
+    return null;
   }
 
   /** Lit les formats d’erreur Spring et proxy sans remplacer le vrai motif par un message générique. */

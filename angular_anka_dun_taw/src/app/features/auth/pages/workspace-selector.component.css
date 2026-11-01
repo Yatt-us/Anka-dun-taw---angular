@@ -301,3 +301,126 @@
           display: none;
         }
       }
+      /* Redirection pro : composition alignée sur la maquette fournie. */
+      .chooser-page.verification-active { background: #fffaf2; }
+      .chooser-page.verification-active .chooser-header {
+        height: 82px;
+        flex: none;
+        padding-inline: clamp(24px, 3.5vw, 52px);
+        border-bottom-color: #d7d3cb;
+        background: #fff;
+      }
+      .chooser-page.verification-active .brand { display: block; }
+      .chooser-page.verification-active .brand img {
+        display: block;
+        width: 86px;
+        height: 66px;
+        object-fit: contain;
+      }
+      .chooser-page.verification-active .demo-chip {
+        min-height: 49px;
+        padding: 0 15px;
+        border-color: #cbd3cf;
+        border-radius: 28px;
+        color: #87958f;
+        font-size: 16px;
+      }
+      .chooser-page.verification-active .demo-chip i {
+        width: 10px;
+        height: 10px;
+        background: var(--yellow);
+      }
+      .chooser-page.verification-active .logout-action {
+        min-width: 196px;
+        min-height: 50px;
+        padding-inline: 24px;
+        border-color: var(--brand-blue);
+        border-radius: 28px;
+        color: var(--brand-blue);
+        font-size: 15px;
+      }
+      .chooser-page.verification-active .logout-action:hover { background: #f2f9fc; }
+      .verification-content {
+        width: min(1084px, calc(100% - 56px));
+        flex: 1;
+        margin: 0 auto;
+        padding: clamp(170px, 27.8vh, 285px) 0 48px;
+      }
+      .verification-heading { margin: 0 0 48px; text-align: center; }
+      .verification-heading h1 {
+        margin: 0;
+        color: #080808;
+        font-size: clamp(34px, 3vw, 42px);
+        font-weight: 700;
+        line-height: 1.19;
+        letter-spacing: -.8px;
+      }
+      .verification-heading em { color: #40916c; font-style: normal; }
+      .access-notice {
+        display: flex;
+        align-items: center;
+        gap: 17px;
+        min-height: 102px;
+        padding: 18px 33px;
+        border-radius: 12px;
+        background: #faeac9;
+      }
+      .access-notice .notice-icon {
+        width: 36px;
+        height: 36px;
+        flex: none;
+        border-radius: 50%;
+        background: #e8ad2c;
+        color: #111;
+        font-size: 23px;
+      }
+      .access-copy { min-width: 0; }
+      .access-copy strong {
+        display: block;
+        margin-bottom: 3px;
+        color: #090909;
+        font-size: 23px;
+        line-height: 1.25;
+      }
+      .access-copy p {
+        margin: 0;
+        color: #111;
+        font-size: clamp(15px, 1.35vw, 19px);
+        line-height: 1.45;
+      }
+      .chooser-page.verification-active .retry {
+        flex: none;
+        margin-left: auto;
+        border-color: #d7ad56;
+        color: #765713;
+      }
+      .chooser-page.verification-active .chooser-footer { display: none; }
+      .verification-error {
+        margin: 16px 0 0;
+        color: #a6423d;
+        font-size: 13px;
+        text-align: center;
+      }
+      @media (max-width: 760px) {
+        .chooser-page.verification-active .chooser-header { height: 72px; padding-inline: 16px; }
+        .chooser-page.verification-active .brand img { width: 72px; height: 58px; }
+        .chooser-page.verification-active .account-actions { gap: 8px; }
+        .chooser-page.verification-active .demo-chip { display: none; }
+        .chooser-page.verification-active .logout-action {
+          min-width: 0;
+          min-height: 42px;
+          padding-inline: 15px;
+          font-size: 12px;
+        }
+        .verification-content {
+          width: calc(100% - 32px);
+          padding-top: clamp(130px, 24vh, 210px);
+        }
+        .verification-heading { margin-bottom: 34px; }
+        .verification-heading h1 { font-size: clamp(29px, 8vw, 36px); }
+        .access-notice { align-items: flex-start; gap: 12px; padding: 18px; }
+        .access-notice .notice-icon { width: 31px; height: 31px; font-size: 20px; }
+        .access-copy strong { font-size: 18px; }
+        .access-copy p { font-size: 14px; }
+        .chooser-page.verification-active .retry { margin: 12px 0 0; }
+      }

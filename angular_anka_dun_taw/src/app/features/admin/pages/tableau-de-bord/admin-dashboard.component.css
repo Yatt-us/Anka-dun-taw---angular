@@ -16,6 +16,7 @@
   letter-spacing: -.8px;
 }
 .dashboard-header p { color: #262a2b; font-size: 18px; }
+.data-freshness { display: block; margin-top: 6px; color: #60726a; font-size: 13px; }
 .header-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 14px; padding-top: 10px; }
 .approval {
   display: inline-flex;

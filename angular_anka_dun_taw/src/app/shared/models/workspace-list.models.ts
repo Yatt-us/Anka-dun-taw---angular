@@ -31,6 +31,7 @@ export interface WorkspacePageResult {
 export interface ApiPage<T> {
   content: T[];
   totalElements: number;
+  totalPages?: number;
 }
 
 export interface FoodPrice {

@@ -10,6 +10,13 @@
         <app-icon name="close" />
       </button>
     } @else {
+      <button type="button" class="pro-sidebar-toggle" [attr.aria-label]="professionalSidebarOpen() ? 'Réduire le menu aux icônes' : 'Afficher les noms des rubriques'"
+        [attr.aria-expanded]="professionalSidebarOpen()" aria-controls="workspace-primary-navigation" (click)="toggleProfessionalSidebar()">
+        <app-icon [name]="professionalSidebarOpen() ? 'close' : 'menu'" />
+      </button>
+      <button type="button" class="pro-sidebar-close" aria-label="Fermer le menu" (click)="menuOpen.set(false)">
+        <app-icon name="close" />
+      </button>
       <a class="brand" routerLink="/espaces" aria-label="Anka Dùn Taw, choisir un espace">
         <svg class="brand-logo" viewBox="206 64 263 198" aria-hidden="true" focusable="false">
           <image href="/images/logo-anka-dun-taw.png" width="677" height="369" />
@@ -27,7 +34,7 @@
             @if (expandedGroup() === item.path) {
               <div class="nav-group-children" [id]="'workspace-group-' + item.path">
                 @for (child of item.children; track child.path) {
-                  <a [routerLink]="['/espaces', actor().id, child.path]" routerLinkActive="active"
+                  <a [routerLink]="workspaceLink(child.path)" routerLinkActive="active"
                     [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="child.label" [attr.title]="child.label"
                     ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="child.icon" /><span>{{ child.label }}</span></a>
                 }
@@ -35,9 +42,13 @@
             }
           </div>
         } @else {
-          <a [routerLink]="['/espaces', actor().id, item.path]" routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="item.label" [attr.title]="item.label"
-            ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="item.icon" /><span>{{ item.label }}</span></a>
+          <a [routerLink]="workspaceLink(item.path)" routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="item.path === 'notifications' && unreadNotificationCount() ? item.label + ', ' + unreadNotificationCount() + ' non lue(s)' : item.label" [attr.title]="item.label"
+            ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="item.icon" /><span>{{ item.label }}</span>
+            @if (item.path === 'notifications' && unreadNotificationCount() > 0) {
+              <span class="notification-badge" aria-hidden="true">{{ unreadNotificationCount() > 99 ? '99+' : unreadNotificationCount() }}</span>
+            }
+          </a>
         }
       }
     </nav>

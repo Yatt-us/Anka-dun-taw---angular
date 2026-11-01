@@ -110,7 +110,7 @@ export class NutritionnisteDashboardComponent implements OnInit {
         error: () => this.appointmentsError.set(true),
       });
     this.api.beneficiaries().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (page) => this.beneficiaries.set(page.content),
+      next: (beneficiaries) => this.beneficiaries.set(beneficiaries),
     });
   }
 
@@ -132,7 +132,9 @@ export class NutritionnisteDashboardComponent implements OnInit {
 
   appointmentName(id: number): string {
     const beneficiary = this.beneficiaries().find((person) => person.id === id);
-    return beneficiary ? [beneficiary.prenom, beneficiary.nom].filter(Boolean).join(' ') : `Patient n° ${id}`;
+    const appointment = this.appointments()?.find((item) => item.utilisateurId === id);
+    const name = [appointment?.utilisateurPrenom || beneficiary?.prenom, appointment?.utilisateurNom || beneficiary?.nom].filter(Boolean).join(' ');
+    return name ? `${name} · n° ${id}` : `Patient n° ${id}`;
   }
 
   private value(count: number | null | undefined, failed: boolean): string {

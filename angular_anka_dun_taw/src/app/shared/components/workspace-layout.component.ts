@@ -8,8 +8,9 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { catchError, map, of, switchMap, timer } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { NotificationListDataAccess } from '../data-access/notification-list.data-access';
 import { ACTORS, isActorId } from './workspace-config';
 import { UiIconComponent } from './ui-icon.component';
 
@@ -23,6 +24,14 @@ export class WorkspaceLayoutComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly auth = inject(AuthService);
+  private readonly notifications = inject(NotificationListDataAccess);
+  // Le compteur est rechargé régulièrement ; le repli à zéro masque l'indicateur si l'API est indisponible.
+  readonly unreadNotificationCount = toSignal(
+    timer(0, 30_000).pipe(
+      switchMap(() => this.notifications.unreadCount().pipe(catchError(() => of(0)))),
+    ),
+    { initialValue: 0 },
+  );
   private readonly actorId = toSignal(this.route.paramMap.pipe(map((p) => p.get('actor'))), {
     initialValue: this.route.snapshot.paramMap.get('actor'),
   });
@@ -49,6 +58,11 @@ export class WorkspaceLayoutComponent {
     return user ? `${user.prenom?.[0] ?? ''}${user.nom?.[0] ?? ''}`.toLocaleUpperCase('fr') : '';
   });
   readonly profilePhoto = computed(() => this.profilePhotoError() ? null : this.auth.currentUser()?.photoProfilUrl || null);
+
+  /** Transforme les chemins de configuration en segments Angular distincts. */
+  workspaceLink(path: string): string[] {
+    return ['/espaces', this.actor().id, ...path.split('/').filter(Boolean)];
+  }
 
   toggleGroup(path: string): void {
     this.expandedGroup.update((current) => current === path ? null : path);

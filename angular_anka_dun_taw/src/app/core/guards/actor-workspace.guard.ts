@@ -94,8 +94,10 @@ export const actorWorkspaceGuard: CanActivateFn = (route, state) => {
  */
 export const workspaceSectionGuard: CanActivateFn = (route) => {
   const router = inject(Router);
-  const actorId = route.parent?.paramMap.get('actor') ?? null;
-  const section = route.paramMap.get('section') ?? route.routeConfig?.path ?? null;
+  const actorId = route.pathFromRoot
+    .map((parent) => parent.paramMap.get('actor'))
+    .find((actor): actor is string => actor !== null) ?? null;
+  const section = route.data['section'] ?? route.paramMap.get('section') ?? route.routeConfig?.path ?? null;
 
   if (!isActorId(actorId) || !section) {
     return router.parseUrl('/espaces');

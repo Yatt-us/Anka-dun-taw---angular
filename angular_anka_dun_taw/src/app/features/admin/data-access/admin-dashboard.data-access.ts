@@ -4,6 +4,7 @@ import { forkJoin, map, Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 
 export interface AdminStatistics {
+  calculeLe: string;
   utilisateursActifs: number;
   dieteticiensActifs: number;
   nutritionnistesActifs: number;
@@ -12,6 +13,8 @@ export interface AdminStatistics {
   recettesPubliees: number;
   alimentsLocauxDisponibles: number;
   rendezVousDemandes: number;
+  rendezVousAcceptes: number;
+  rendezVousTermines: number;
 }
 
 export interface DailyRegistration {

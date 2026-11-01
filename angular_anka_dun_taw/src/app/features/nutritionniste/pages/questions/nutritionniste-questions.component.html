@@ -38,7 +38,7 @@
           <article class="message" [class.own]="isOwn(message)"><strong>{{ [message.auteurPrenom, message.auteurNom].join(' ') }}</strong><p>{{ message.contenu }}</p><footer>@if (message.dateEnvoi) { <time>{{ message.dateEnvoi | date:'short' }}</time> } @if (isOwn(message)) { <small [class.read]="!!message.luA">{{ message.luA ? 'Lu' : 'Envoyé' }}</small> }</footer></article>
         } @empty { <p>Aucun message.</p> } }
       </div>
-      <div class="reply-box"><label for="question-reply">Votre réponse</label><textarea id="question-reply" rows="3" [value]="reply()" (input)="setReply($event)" maxlength="4000"></textarea>
+      <div class="reply-box"><label for="question-reply">Votre réponse</label><textarea id="question-reply" rows="3" [value]="reply()" (input)="setReply($event)" maxlength="2000"></textarea>
         @if (sendError()) { <p role="alert">{{ sendError() }}</p> }
         <button type="button" (click)="send()" [disabled]="!reply().trim() || sending()">{{ sending() ? 'Envoi…' : 'Envoyer la réponse' }}</button>
       </div>

@@ -46,7 +46,7 @@ Au-delà de 8 secondes d'attente sur la connexion, l'écran explique que le serv
 - Les routes Angular n’ouvrent que l’espace correspondant au rôle `ADMIN`, `DIETETICIEN` ou `NUTRITIONNISTE`. Les espaces professionnels exigent aussi un profil vérifié. Le backend reste responsable de l’autorisation de chaque requête.
 - Un compte `UTILISATEUR` n’a pas d’espace dans cette application web : il relève du projet mobile.
 
-Si un professionnel est encore en attente, refusé ou suspendu, l’écran d’espace affiche son état et bloque l’ouverture de ses pages.
+Si un professionnel est encore en attente, refusé ou suspendu, `/espaces` reprend l’écran de redirection fourni : logo et compte dans l’en-tête, titre centré, puis un bandeau de statut. « En attente » indique que le dossier attend sa vérification et que l’espace sera disponible après validation. « Refusé » et « Suspendu » affichent un message adapté ; une erreur réseau propose de relancer la vérification du profil. Seul le statut `VERIFIE` affiche la sélection d’espace et permet l’accès aux routes professionnelles ; les gardes Angular et le backend conservent le contrôle d’accès.
 
 ## Écrans reliés au backend
 

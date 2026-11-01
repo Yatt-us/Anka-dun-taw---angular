@@ -7,7 +7,7 @@ import { formatApiDate, formatStatusLabel, fullPersonName, shortSummary, statusB
 import { WorkspaceAction } from '../../../shared/models/workspace-list.models';
 import { EditorKind } from '../../../shared/forms/workspace-editor.service';
 
-interface Appointment { id: number; utilisateurId?: number; dateHeure?: string; motif?: string; mode?: string; statut?: string }
+interface Appointment { id: number; utilisateurId?: number; utilisateurPrenom?: string | null; utilisateurNom?: string | null; dateHeure?: string; motif?: string; mode?: string; statut?: string }
 interface Person { id: number; nom?: string; prenom?: string; email?: string; specialite?: string; qualification?: string; statutVerification?: string }
 interface Conversation { id: number; interlocuteurNom?: string; interlocuteurPrenom?: string; dernierMessage?: string; dernierMessageA?: string; messagesNonLus?: number }
 interface Advice { id: number; titre: string; contenu?: string; imageUrl?: string | null; categorie?: string; statut?: string; validateurId?: number | null }
@@ -68,7 +68,7 @@ export class NutritionnisteWorkspaceDataAccess {
   private appointments(page: number, size: number, appointmentStatus?: string): Observable<WorkspacePageResult> {
     return this.paged<Appointment>('/professionnel/rendez-vous', page, size, (item) => ({
       key: `appointment-${item.id}`,
-      title: item.utilisateurId == null ? `Rendez-vous n° ${item.id}` : `Patient n° ${item.utilisateurId}`,
+      title: item.utilisateurId == null ? `Rendez-vous n° ${item.id}` : this.patientLabel(item.utilisateurPrenom, item.utilisateurNom, item.utilisateurId),
       subtitle: item.motif || 'Motif non renseigné',
       value: [formatApiDate(item.dateHeure), item.mode ? formatStatusLabel(item.mode) : null].filter(Boolean).join(' · '),
       ...statusBadge(item.statut),
@@ -76,6 +76,11 @@ export class NutritionnisteWorkspaceDataAccess {
         kind: 'appointment', showAppointmentComment: true, commentLabel: 'Motif du refus (si nécessaire)',
       } : undefined,
     }), appointmentStatus ? { statut: appointmentStatus } : {});
+  }
+
+  private patientLabel(prenom: string | null | undefined, nom: string | null | undefined, id: number): string {
+    const name = [prenom, nom].filter((value) => value?.trim()).join(' ').trim();
+    return name ? `${name} · n° ${id}` : `Patient n° ${id}`;
   }
 
   private profile(): Observable<WorkspacePageResult> {

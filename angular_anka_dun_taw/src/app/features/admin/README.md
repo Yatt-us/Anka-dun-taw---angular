@@ -3,6 +3,8 @@
 ## Implémenté
 
 - Le tableau de bord et ses données sont dans `pages/tableau-de-bord/` et `data-access/`.
+
+Le tableau de bord utilise les compteurs renvoyés par `GET /api/v1/admin/statistiques` : comptes actifs, professionnels en attente ou vérifiés, aliments, recettes, menus publiés et rendez-vous par statut. La date `calculeLe` indique quand les statistiques ont été produites. Le graphique d’inscriptions et le journal d’activité proviennent respectivement des routes de rapport d’activité et du journal administrateur ; aucun compteur n’est simulé dans l’interface.
 - Les listes utilisateurs/professionnels, leur fiche détaillée, la validation et la gestion des rôles sont dans `pages/gestion-personnes/` et `data-access/admin-people.data-access.ts`.
 - Les aliments locaux et leurs prix sont dans `pages/aliments/` et `data-access/admin-foods.data-access.ts`. Leur création utilise le formulaire partagé `shared/forms/workspace-editor.component.*`.
 - Les catégories actives et désactivées sont consultables depuis `pages/categories/`; les catégories désactivées sont chargées depuis l’endpoint protégé par rôle admin.

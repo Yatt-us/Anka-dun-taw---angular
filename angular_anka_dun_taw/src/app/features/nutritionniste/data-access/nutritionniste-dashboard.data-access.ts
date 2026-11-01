@@ -16,6 +16,8 @@ export interface ProfessionalConversation {
 export interface NutritionistAppointment {
   id: number;
   utilisateurId: number;
+  utilisateurPrenom?: string | null;
+  utilisateurNom?: string | null;
   dateHeure: string;
   motif: string;
   statut: 'DEMANDE' | 'ACCEPTE' | 'REFUSE' | 'ANNULE' | 'TERMINE';
@@ -76,9 +78,16 @@ export class NutritionistDashboardApi {
     });
   }
 
-  beneficiaries(): Observable<Page<BeneficiarySummary>> {
-    return this.http.get<Page<BeneficiarySummary>>(`${API_BASE_URL}/professionnel/beneficiaires`, {
-      params: new HttpParams().set('size', '100'),
+  beneficiaries(): Observable<BeneficiarySummary[]> {
+    const url = `${API_BASE_URL}/professionnel/beneficiaires`;
+    const params = new HttpParams().set('size', '100');
+    const page = (number: number) => this.http.get<Page<BeneficiarySummary>>(url, {
+      params: params.set('page', String(number)),
     });
+    // Le tableau de bord doit pouvoir nommer les patients des rendez-vous au-delà de la première page.
+    return page(0).pipe(
+      expand((result) => (result.number + 1 < result.totalPages ? page(result.number + 1) : EMPTY)),
+      reduce((all, result) => all.concat(result.content), [] as BeneficiarySummary[]),
+    );
   }
 }

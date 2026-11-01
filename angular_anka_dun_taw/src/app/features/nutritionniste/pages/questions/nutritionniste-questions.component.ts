@@ -3,6 +3,7 @@ import { A11yModule } from '@angular/cdk/a11y';
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
+import { of, switchMap } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { ProfessionalMessage } from '../../../../shared/models/workspace-list.models';
@@ -103,7 +104,14 @@ export class NutritionnisteQuestionsComponent {
   private loadMessages(id: number): void {
     this.messagesLoading.set(true);
     this.messagesError.set(false);
-    this.messaging.messages(id, 0, 100).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.messaging.messages(id, 0, 100).pipe(
+      switchMap((page) => {
+        // L'API trie les messages par ordre croissant : ouvrir la dernière page des échanges longs.
+        const lastPage = Math.max(0, (page.totalPages ?? Math.ceil(page.totalElements / 100)) - 1);
+        return lastPage > 0 ? this.messaging.messages(id, lastPage, 100) : of(page);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
       next: (page) => {
         if (this.selected()?.id !== id) return;
         this.messages.set(page.content);
@@ -130,6 +138,10 @@ export class NutritionnisteQuestionsComponent {
     const item = this.selected();
     const content = this.reply().trim();
     if (!item || !content || this.sending()) return;
+    if (content.length > 2000) {
+      this.sendError.set('Le message ne peut pas dépasser 2 000 caractères.');
+      return;
+    }
     this.sending.set(true);
     this.sendError.set('');
     this.messaging.reply(item.id, content).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

@@ -3,6 +3,9 @@
     <div class="header-copy">
       <h1>Bonjour, Administrateur</h1>
       <p>Voici le résumé de l’activité nutritionnelle au Mali aujourd’hui.</p>
+      @if (statistics()?.calculeLe; as calculeLe) {
+        <small class="data-freshness">Indicateurs calculés le {{ calculeLe | date: 'dd/MM/yyyy à HH:mm' }}</small>
+      }
     </div>
     <div class="header-actions">
       @if (statistics()?.professionnelsEnAttente; as pending) {

@@ -115,9 +115,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dieteticien/pages/validation-menus/validation-menus.component').then((m) => m.ValidationMenusComponent),
       },
       {
-        path: 'menus/creer',
-        canActivate: [workspaceSectionGuard],
-        loadComponent: () => import('./features/dieteticien/pages/creer-menu/dieteticien-create-menu.component').then((m) => m.DieteticienCreateMenuComponent),
+        path: 'menus',
+        children: [
+          {
+            path: 'creer',
+            data: { section: 'menus/creer' },
+            canActivate: [workspaceSectionGuard],
+            loadComponent: () => import('./features/dieteticien/pages/creer-menu/dieteticien-create-menu.component').then((m) => m.DieteticienCreateMenuComponent),
+          },
+        ],
       },
       {
         path: 'patients',
