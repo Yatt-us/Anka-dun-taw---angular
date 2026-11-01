@@ -4,8 +4,11 @@
   }
   <aside class="sidebar">
     @if (actor().id === 'admin') {
-      <!-- Cette zone fixe réserve l'espace de la découpe supérieure de la maquette. -->
-      <div class="admin-sidebar-header" aria-hidden="true"></div>
+      <div class="admin-sidebar-header">
+        <svg class="admin-sidebar-logo" viewBox="206 64 263 198" role="img" aria-label="Anka Dùn Taw">
+          <image href="/images/logo-anka-dun-taw.png" width="677" height="369" />
+        </svg>
+      </div>
       <button type="button" class="admin-sidebar-close" aria-label="Fermer le menu" (click)="menuOpen.set(false)">
         <app-icon name="close" />
       </button>
