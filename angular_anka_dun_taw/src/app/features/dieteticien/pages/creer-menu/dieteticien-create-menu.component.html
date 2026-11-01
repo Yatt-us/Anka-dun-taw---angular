@@ -60,9 +60,22 @@
     @if (selectedPatient(); as patient) {
       <p class="patient-context">Menu destiné à <strong>{{ patient.prenom }} {{ patient.nom }}</strong>
         @if (profile()?.nom) { · Profil actif : {{ profile()!.nom }} }
-        @if (activeBudget(); as budget) { · Budget actif : {{ money(budget.montant) }} / {{ budget.periode?.toLowerCase() || 'période non précisée' }} }
-        @if (profile()?.modeBudget === 'PETIT_BUDGET') { · Petit budget quotidien }
       </p>
+      @if (profile()) {
+        <div class="profile-budget-summary" aria-label="Budget du profil nutritionnel actif">
+          <span>Budget du profil nutritionnel actif</span>
+          @if (activeBudget(); as budget) {
+            <strong>{{ money(budget.montant) }} / {{ budgetPeriodName(budget.periode) }}</strong>
+          } @else if (profile()?.modeBudget === 'PETIT_BUDGET') {
+            <strong>Petit budget · plafond {{ money(profile()?.plafondPetitBudget) }} / jour</strong>
+            <small>Le montant disponible du patient est vérifié pour chaque jour choisi.</small>
+          } @else if (profile()?.modeBudget === 'SANS_BUDGET') {
+            <strong>Aucun plafond défini sur ce profil</strong>
+          } @else {
+            <strong>Budget actif introuvable</strong>
+          }
+        </div>
+      }
     }
 
     <div class="section-heading meal-section-heading"><span class="step-number">2</span><div><h2>Composer les repas</h2><p>Ajoutez une recette pour chaque repas, puis précisez le jour et le nombre de portions.</p></div></div>
@@ -115,10 +128,17 @@
 
   <aside class="menu-side">
     <section class="menu-card budget-card" aria-labelledby="budget-title">
-      <h2 id="budget-title">Contrôle du Coût &amp; Budget</h2>
-      <p class="muted">Coût estimatif des repas sélectionnés</p>
+      <h2 id="budget-title">Contrôle du coût et du budget</h2>
+      @if (activeBudget(); as budget) {
+        <div class="budget-limit"><span>Budget du profil actif</span><strong>{{ money(budget.montant) }} / {{ budgetPeriodName(budget.periode) }}</strong></div>
+      } @else if (profile()?.modeBudget === 'PETIT_BUDGET') {
+        <div class="budget-limit"><span>Plafond petit budget</span><strong>{{ money(profile()?.plafondPetitBudget) }} / jour</strong></div>
+      } @else if (profile()?.modeBudget === 'SANS_BUDGET') {
+        <div class="budget-limit"><span>Budget du profil actif</span><strong>Sans plafond défini</strong></div>
+      }
+      <p class="muted">Coût estimé des repas de ce menu</p>
       <strong class="budget-total">{{ costsLoading() ? 'Calcul en cours…' : money(totalCost()) }}</strong>
-      <p class="budget-state" [class.over-budget]="overBudget()" [class.pending]="totalCost() === null || !budgetComparable()">
+      <p class="budget-state" [class.over-budget]="overBudget() || !!budgetValidityError()" [class.pending]="totalCost() === null || !budgetComparable()">
         @if (totalCost() !== null && budgetComparable() && !overBudget()) {
           <app-icon name="check" />
         } @else {
@@ -126,22 +146,16 @@
         }
         {{ budgetMessage() }}
       </p>
-      @if (activeBudget(); as budget) {
-        <div class="budget-details"><span>Budget actif <strong>{{ money(budget.montant) }}</strong></span><span>Période <strong>{{ budget.periode }}</strong></span></div>
-      }
-      @if (profile()?.modeBudget === 'PETIT_BUDGET') {
-        <p class="budget-caption">Budget disponible par jour, défini par le patient :</p>
+      @if (profile()?.modeBudget === 'PETIT_BUDGET' || activeBudget()) {
+        <p class="budget-caption">Comparaison par {{ profile()?.modeBudget === 'PETIT_BUDGET' ? 'jour' : budgetPeriodName(activeBudget()!.periode) }} :</p>
         @for (line of budgetLines(); track line.date) {
-          <div class="budget-day" [class.over-budget]="line.limit !== null && line.cost > line.limit">
-            <span>{{ line.date }} · {{ money(line.cost) }} estimés</span>
-            <strong>{{ line.limit === null ? 'Montant non renseigné' : money(line.limit) + ' disponibles' }}</strong>
-          </div>
-        }
-      } @else if (activeBudget()) {
-        <p class="budget-caption">Coût des repas saisis par période :</p>
-        @for (line of budgetLines(); track line.date) {
-          <div class="budget-day" [class.over-budget]="line.limit !== null && line.cost > line.limit">
-            <span>Dès le {{ line.date }}</span><strong>{{ money(line.cost) }} / {{ money(line.limit) }}</strong>
+          <div class="budget-day" [class.over-budget]="line.cost !== null && line.limit !== null && line.cost > line.limit">
+            <div class="budget-day-values"><span>{{ line.date }} · {{ money(line.cost) }} estimés</span>
+              <strong>{{ line.limit === null ? 'Budget du jour non renseigné' : money(line.limit) + ' disponibles' }}</strong></div>
+            @if (line.cost !== null && line.limit !== null) {
+              <progress [value]="line.cost" [max]="line.limit || 1" [attr.aria-label]="'Budget du ' + line.date"></progress>
+              <small>{{ line.cost > line.limit ? 'Dépassement de ' + money(line.cost - line.limit) : 'Marge théorique ' + money(line.limit - line.cost) }} sur ce menu</small>
+            }
           </div>
         }
       }
@@ -155,7 +169,7 @@
         <textarea name="recommendations" [(ngModel)]="recommendations" rows="4" maxlength="2000" [placeholder]="selectedPatient() ? 'Ajouter une consigne personnalisée pour ' + selectedPatient()!.prenom + '…' : 'Ajouter une consigne personnalisée…'" [disabled]="saving() || published()"></textarea>
       </label>
       <div class="actions">
-        <button class="primary-action" type="button" (click)="save(true)" [disabled]="saving() || published()">{{ saving() ? 'Enregistrement…' : published() ? 'Menu publié' : 'Enregistrer et publier pour le patient' }}</button>
+        <button class="primary-action" type="button" (click)="save(true)" [disabled]="saving() || published() || overBudget() || !!budgetValidityError()">{{ saving() ? 'Enregistrement…' : published() ? 'Menu publié' : 'Enregistrer et publier pour le patient' }}</button>
         <button class="secondary-action" type="button" (click)="save(false)" [disabled]="saving() || published() || validatedMenuId() !== null">Enregistrer comme brouillon</button>
       </div>
       <p class="workflow-note"><strong>Publier :</strong> le menu est enregistré, validé puis rendu visible au patient. <strong>Brouillon :</strong> il reste privé et pourra être repris dans « Mes menus » avant publication.</p>

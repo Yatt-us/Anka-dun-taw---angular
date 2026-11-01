@@ -7,8 +7,8 @@ interface ApiPage<T> { content: T[]; number: number; totalPages: number }
 export interface Patient { id: number; prenom: string; nom: string; photoProfilUrl?: string | null }
 export interface Ingredient { id: number; alimentNom: string; quantite: number; unite: string }
 export interface Recipe { id: number; nom: string; nombrePersonnes: number | null; ingredients?: Ingredient[] | null }
-export interface PatientProfile { nom: string | null; zone: string | null; objectifId: number | null; budgetActifId: number | null; modeBudget: string | null }
-export interface Budget { id: number; montant: number; devise: string; periode: string; actif: boolean }
+export interface PatientProfile { nom: string | null; zone: string | null; objectifId: number | null; budgetActifId: number | null; modeBudget: string | null; plafondPetitBudget?: number | null }
+export interface Budget { id: number; montant: number; devise: string; periode: string; actif: boolean; dateDebut?: string | null; dateFin?: string | null }
 export interface DailyBudget { montantDisponible: number }
 export interface RecipeCost { coutEstime: number; devise: string }
 export interface CreatedMenu { id: number }
