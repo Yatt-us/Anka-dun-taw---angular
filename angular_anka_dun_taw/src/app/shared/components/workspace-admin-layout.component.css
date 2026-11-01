@@ -50,6 +50,15 @@
   z-index: 1;
   flex: 0 0 260px;
 }
+.admin-sidebar-logo {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  display: block;
+  width: 136px;
+  height: 112px;
+  transform: translateX(-50%);
+}
 .admin-sidebar-close { display: none; }
 .admin nav {
   position: relative;
@@ -163,7 +172,15 @@
   }
   .admin.menu-open .sidebar { transform: translateX(0); }
   .admin .sidebar::before, .admin .sidebar::after { display: none; }
-  .admin-sidebar-header { display: none; }
+  .admin-sidebar-header {
+    display: block;
+    flex: 0 0 86px;
+  }
+  .admin-sidebar-logo {
+    top: 0;
+    width: 104px;
+    height: 82px;
+  }
   .admin-sidebar-close {
     position: absolute;
     top: 10px;
