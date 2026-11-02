@@ -201,7 +201,7 @@
             @if (messagesLoading()) { <p>Chargement des messages…</p> }
             @else if (!messages().length) { <p>Aucun message.</p> }
             @else { @for (message of messages(); track message.id) {
-              <div class="message"><strong>{{ message.auteurPrenom }} {{ message.auteurNom }}</strong><p>{{ message.contenu }}</p><small>{{ message.dateEnvoi }}</small></div>
+              <div class="message"><strong>{{ message.auteurPrenom }} {{ message.auteurNom }}</strong><p>{{ message.contenu }}</p><small>{{ formatMessageDate(message.dateEnvoi) }}</small></div>
             } }
             <div class="message-pager"><button mat-button type="button" [disabled]="messagePage() === 0" (click)="changeMessagePage(row, -1)">Précédent</button>
               <span>Page {{ messagePage() + 1 }}</span><button mat-button type="button" [disabled]="(messagePage() + 1) * 50 >= messageTotal()" (click)="changeMessagePage(row, 1)">Suivant</button></div>
