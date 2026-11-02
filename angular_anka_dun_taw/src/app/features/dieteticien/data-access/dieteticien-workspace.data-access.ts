@@ -1,11 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { forkJoin, map, Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { ApiPage, WorkspacePageResult, WorkspaceRow } from '../../../shared/models/workspace-list.models';
 import { currencyLabel, formatApiDate, formatStatusLabel, fullPersonName, shortSummary, statusBadge } from '../../../shared/utils/workspace-formatters';
 import { WorkspaceAction } from '../../../shared/models/workspace-list.models';
 import { EditorKind } from '../../../shared/forms/workspace-editor.service';
+import { DietitianDashboardApi } from './dieteticien-dashboard.data-access';
 
 interface Menu { id: number; titre: string; description?: string; imageUrl?: string | null; type?: string; dateDebut?: string; dateFin?: string; statut?: string; beneficiaireIds?: number[]; coutTotalEstime?: number; devise?: string }
 interface Recipe { id: number; nom: string; description?: string; imageUrl?: string | null; dureePreparationMinutes?: number; nombrePersonnes?: number; statut?: string }
@@ -16,6 +17,7 @@ interface Conversation { id: number; interlocuteurNom?: string; interlocuteurPre
 @Injectable({ providedIn: 'root' })
 export class DieteticienWorkspaceDataAccess {
   private readonly http = inject(HttpClient);
+  private readonly dashboardApi = inject(DietitianDashboardApi);
 
   load(section: string, page: number, size: number): Observable<WorkspacePageResult> | null {
     switch (section) {
@@ -67,15 +69,34 @@ export class DieteticienWorkspaceDataAccess {
   }
 
   private appointments(page: number, size: number): Observable<WorkspacePageResult> {
-    return this.paged<Appointment>('/professionnel/rendez-vous', page, size, (item) => ({
-      key: `appointment-${item.id}`,
-      title: item.utilisateurId == null ? `Rendez-vous n° ${item.id}` : `Patient n° ${item.utilisateurId}`,
-      subtitle: item.motif || 'Motif non renseigné',
-      value: [formatApiDate(item.dateHeure), item.mode ? formatStatusLabel(item.mode) : null].filter(Boolean).join(' · '),
-      ...statusBadge(item.statut),
-      detail: item.statut === 'DEMANDE' ? {
-        kind: 'appointment', showAppointmentComment: true, commentLabel: 'Motif du refus (si nécessaire)',
-      } : undefined,
+    // Les rendez-vous n’exposent que l’identifiant du patient : on le rapproche
+    // de la liste des bénéficiaires pour afficher son nom dans l’espace pro.
+    return forkJoin({
+      appointments: this.paged<Appointment>('/professionnel/rendez-vous', page, size, (item) => ({
+        key: `appointment-${item.id}`,
+        title: item.utilisateurId == null ? `Rendez-vous n° ${item.id}` : `Patient n° ${item.utilisateurId}`,
+        subtitle: item.motif || 'Motif non renseigné',
+        value: [formatApiDate(item.dateHeure), item.mode ? formatStatusLabel(item.mode) : null].filter(Boolean).join(' · '),
+        ...statusBadge(item.statut),
+        data: { ...item },
+        detail: item.statut === 'DEMANDE' ? {
+          kind: 'appointment', showAppointmentComment: true, commentLabel: 'Motif du refus (si nécessaire)',
+        } : undefined,
+      })),
+      beneficiaries: this.dashboardApi.beneficiaries(),
+    }).pipe(map(({ appointments, beneficiaries }) => {
+      const names = new Map(beneficiaries.map((patient) => [
+        patient.id,
+        [patient.prenom, patient.nom].filter(Boolean).join(' '),
+      ]));
+      return {
+        ...appointments,
+        rows: appointments.rows.map((row) => {
+          const id = row.data?.['utilisateurId'];
+          const name = typeof id === 'number' ? names.get(id) : undefined;
+          return name ? { ...row, title: name } : row;
+        }),
+      };
     }));
   }
 

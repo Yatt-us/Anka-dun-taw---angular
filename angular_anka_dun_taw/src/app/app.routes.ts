@@ -118,6 +118,12 @@ export const routes: Routes = [
         path: 'menus',
         children: [
           {
+            path: '',
+            pathMatch: 'full',
+            canActivate: [workspaceSectionGuard],
+            loadComponent: () => import('./features/dieteticien/pages/menus-publies/dieteticien-published-menus.component').then((m) => m.DieteticienPublishedMenusComponent),
+          },
+          {
             path: 'creer',
             data: { section: 'menus/creer' },
             canActivate: [workspaceSectionGuard],

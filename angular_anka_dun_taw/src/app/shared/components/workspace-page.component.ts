@@ -21,7 +21,7 @@ import { WorkspaceAction } from '../models/workspace-list.models';
 import { DieteticienRecipesComponent } from '../../features/dieteticien/pages/recettes/dieteticien-recipes.component';
 import { DieteticienRecommendationsComponent } from '../../features/dieteticien/pages/recommandations/dieteticien-recommendations.component';
 import { DieteticienPublishedMenusComponent } from '../../features/dieteticien/pages/menus-publies/dieteticien-published-menus.component';
-import { currencyLabel } from '../utils/workspace-formatters';
+import { currencyLabel, formatApiDate } from '../utils/workspace-formatters';
 
 
 const SECTION_TITLES: Record<string, string> = {
@@ -73,6 +73,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'unavailable';
 })
 export class WorkspacePageComponent {
   readonly currencyLabel = currencyLabel;
+  readonly formatMessageDate = formatApiDate;
   private readonly route = inject(ActivatedRoute);
   private readonly lists = inject(WorkspaceListService);
   private readonly editorApi = inject(WorkspaceEditorService);

@@ -78,6 +78,12 @@ Les professionnels disposent de `GET /professionnel/beneficiaires`, une liste pa
 
 Les formulaires transmettent les champs attendus par les DTO Spring Boot. Les listes d’aliments, catégories et recettes alimentent les sélecteurs, tandis que les numéros des bénéficiaires du menu sont à renseigner depuis les dossiers connus du professionnel. Le formulaire d'aliment signale les champs invalides, propose de recharger les catégories et accepte une image HTTPS ou un chemin local produit par le téléversement. Les actions affichent le message d’erreur du backend et actualisent la liste après succès. Une réponse refusant un rendez-vous peut contenir un commentaire.
 
+## Vérifications croisées Angular / Flutter
+
+La route `/espaces/dieteticien/menus` affiche la liste des menus publiés, brouillons et archivés ; `/espaces/dieteticien/menus/creer` reste dédiée à la création. La liste des rendez-vous rapproche l’identifiant du bénéficiaire de `/professionnel/beneficiaires` pour afficher son nom. Les dates des messages sont formatées en français dans le détail de conversation.
+
+Pour un test Flutter dans le navigateur local contre Render, l’appel direct peut être refusé par CORS, même si l’API fonctionne. Utiliser une origine qui relaie déjà `/api/**` (par exemple le proxy Vercel) ou un relais local limité à `127.0.0.1`. L’application Android native n’est pas soumise aux règles CORS du navigateur. Vérifier séparément l’état de santé Render et les routes métier : l’indicateur readiness peut être dégradé alors qu’une route publique répond encore.
+
 Les montants sont affichés en **FCFA** dans les écrans et les exports destinés aux utilisateurs. L'API et les comparaisons de devises continuent d'utiliser le code ISO `XOF` : remplacer ce code dans une requête provoquerait un refus du backend. Le formulaire d'aliment ne transmet pas `disponible` ; ce statut est modifié uniquement par les actions dédiées Désactiver/Réactiver.
 
 Le formulaire de menu exige au moins un bénéficiaire et un repas. Une recette exige au moins un ingrédient. Une adaptation acceptée soumet un **menu révisé complet** avec le demandeur comme bénéficiaire ; une demande refusée reçoit une réponse. Le conseil reste au statut `BROUILLON` après sa validation dans le backend ; la liste l’affiche « Validé » grâce à `validateurId`, afin de rendre ensuite l’action « Publier » disponible.
