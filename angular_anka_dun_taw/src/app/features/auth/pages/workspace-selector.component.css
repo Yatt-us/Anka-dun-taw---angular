@@ -20,11 +20,28 @@
         background: #ffffffb5;
       }
       .brand {
+        position: relative;
         display: flex;
+        flex: 0 0 108px;
+        width: 108px;
+        height: 74px;
         align-items: center;
         gap: 11px;
+        overflow: hidden;
         color: inherit;
         text-decoration: none;
+      }
+      /* Le PNG contient beaucoup de transparence : on le recadre dans ce
+         cadre fixe pour éviter qu’il déborde sur les actions du compte. */
+      .brand img {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        display: block;
+        width: 180px;
+        max-width: none;
+        height: auto;
+        transform: translateX(-50%);
       }
       .brand-mark {
         width: 42px;
@@ -268,6 +285,15 @@
           height: 68px;
           padding-inline: 17px;
         }
+        .brand {
+          flex-basis: 96px;
+          width: 96px;
+          height: 62px;
+        }
+        .brand img {
+          top: -12px;
+          width: 168px;
+        }
         .demo-chip {
           display: none;
         }
@@ -311,12 +337,6 @@
         background: #fff;
       }
       .chooser-page.verification-active .brand { display: block; }
-      .chooser-page.verification-active .brand img {
-        display: block;
-        width: 86px;
-        height: 66px;
-        object-fit: contain;
-      }
       .chooser-page.verification-active .demo-chip {
         min-height: 49px;
         padding: 0 15px;
@@ -403,7 +423,6 @@
       }
       @media (max-width: 760px) {
         .chooser-page.verification-active .chooser-header { height: 72px; padding-inline: 16px; }
-        .chooser-page.verification-active .brand img { width: 72px; height: 58px; }
         .chooser-page.verification-active .account-actions { gap: 8px; }
         .chooser-page.verification-active .demo-chip { display: none; }
         .chooser-page.verification-active .logout-action {
