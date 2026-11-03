@@ -1,19 +1,24 @@
 <header class="menu-header">
   <div>
     <h1>Créer un menu pour un patient</h1>
-    <p>Choisissez le patient, composez ses repas, puis enregistrez ou publiez le menu.</p>
+    <p>Choisissez un patient : sa région et son budget actif seront chargés automatiquement. Composez ses repas, puis choisissez comment terminer.</p>
   </div>
   <span class="date-chip"><app-icon name="calendar" /> {{ dateLabel }}</span>
 </header>
 
 <section class="workflow-guide" aria-label="Étapes de création d’un menu">
-  <div class="workflow-step"><span>1</span><div><strong>Patient et période</strong><small>À qui s’adresse le menu et pour quelles dates ?</small></div></div>
-  <div class="workflow-step"><span>2</span><div><strong>Repas et portions</strong><small>Choisissez les recettes, les jours et les portions.</small></div></div>
-  <div class="workflow-step"><span>3</span><div><strong>Vérifier et terminer</strong><small>Consultez le coût, puis gardez un brouillon ou publiez.</small></div></div>
+  <div class="workflow-step"><span>1</span><div><strong>Choisir le patient</strong><small>Son profil actif fournit automatiquement sa région et son budget.</small></div></div>
+  <div class="workflow-step"><span>2</span><div><strong>Composer le menu</strong><small>Ajoutez une recette par repas, puis réglez le jour et les portions.</small></div></div>
+  <div class="workflow-step"><span>3</span><div><strong>Contrôler et terminer</strong><small>Vérifiez le coût et choisissez la publication ou le brouillon.</small></div></div>
 </section>
 
 @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
-@if (success()) { <div class="notice success" role="status">{{ success() }}</div> }
+@if (success()) {
+  <div class="notice success" role="status">
+    <span>{{ success() }}</span>
+    @if (!published() && createdMenuId()) { <a routerLink="../validation-menus">Ouvrir la validation des menus</a> }
+  </div>
+}
 
 <div class="menu-grid">
   <section class="menu-card menu-elements" aria-labelledby="menu-elements-title">
@@ -109,7 +114,7 @@
           <p class="ingredient-empty">Choisissez une recette pour voir ses ingrédients et ajuster les portions.</p>
         }
         <div class="form-grid meal-fields">
-          <label class="field">Jour après le début <span class="required">*</span>
+          <label class="field">Jour du menu <span class="required">*</span>
             <input [name]="'day' + meal.key" type="number" min="1" max="31" [(ngModel)]="meal.jour" (ngModelChange)="refreshCosts()" [disabled]="saving() || published()" [attr.aria-describedby]="'meal-day-help-' + meal.key" />
             <small [id]="'meal-day-help-' + meal.key" class="field-help">1 = date de début ({{ dateDebut }}) ; 2 = le lendemain.</small>
           </label>
@@ -169,10 +174,10 @@
         <textarea name="recommendations" [(ngModel)]="recommendations" rows="4" maxlength="2000" [placeholder]="selectedPatient() ? 'Ajouter une consigne personnalisée pour ' + selectedPatient()!.prenom + '…' : 'Ajouter une consigne personnalisée…'" [disabled]="saving() || published()"></textarea>
       </label>
       <div class="actions">
-        <button class="primary-action" type="button" (click)="save(true)" [disabled]="saving() || published() || overBudget() || !!budgetValidityError()">{{ saving() ? 'Enregistrement…' : published() ? 'Menu publié' : 'Enregistrer et publier pour le patient' }}</button>
-        <button class="secondary-action" type="button" (click)="save(false)" [disabled]="saving() || published() || validatedMenuId() !== null">Enregistrer comme brouillon</button>
+        <button class="primary-action" type="button" (click)="save(true)" [disabled]="saving() || published() || overBudget() || !!budgetValidityError()">{{ saving() ? 'Enregistrement…' : published() ? 'Menu publié' : 'Publier maintenant' }}</button>
+        <button class="secondary-action" type="button" (click)="save(false)" [disabled]="saving() || published() || validatedMenuId() !== null">Garder en brouillon</button>
       </div>
-      <p class="workflow-note"><strong>Publier :</strong> le menu est enregistré, validé puis rendu visible au patient. <strong>Brouillon :</strong> il reste privé et pourra être repris dans « Mes menus » avant publication.</p>
+      <p class="workflow-note"><strong>Publier maintenant :</strong> le menu est enregistré, contrôlé par le serveur, puis rendu visible au patient. <strong>Garder en brouillon :</strong> le menu reste privé ; ouvrez ensuite « Validation des menus » pour le relire, le corriger et le publier. Vérifiez toujours les allergènes et l’adéquation nutritionnelle.</p>
     </section>
   </aside>
 </div>

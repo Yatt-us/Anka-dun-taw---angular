@@ -11,6 +11,30 @@ function screen(): DieteticienCreateMenuComponent {
 }
 
 describe('Budget du menu du diététicien', () => {
+  it('recalcule le total après la sélection de la première recette', () => {
+    const component = screen();
+    expect(component.totalCost()).toBeNull();
+
+    component.meals[0].recetteId = 4;
+    component.costs.set({ 1: 38 });
+
+    expect(component.totalCost()).toBe(38);
+  });
+
+  it('distingue un calcul en cours d’un prix réellement indisponible', () => {
+    const component = screen();
+    component.selectedPatientId = 3;
+    component.profile.set({ nom: 'Profil actif', zone: 'TOMBOUCTOU', objectifId: null,
+      budgetActifId: 7, modeBudget: 'AVEC_BUDGET' });
+    component.budgets.set([{ id: 7, montant: 10000, devise: 'XOF', periode: 'SEMAINE', actif: true }]);
+    component.meals[0].recetteId = 4;
+    component.costsLoading.set(true);
+
+    expect(component.budgetMessage()).toContain('en cours');
+    component.costsLoading.set(false);
+    expect(component.budgetMessage()).toContain('inconnu');
+  });
+
   it('compare les repas par semaine du budget actif, et non au total global du menu', () => {
     const component = screen();
     component.selectedPatientId = 3;

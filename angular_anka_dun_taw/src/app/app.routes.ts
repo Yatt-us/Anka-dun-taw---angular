@@ -120,6 +120,7 @@ export const routes: Routes = [
           {
             path: '',
             pathMatch: 'full',
+            data: { section: 'menus' },
             canActivate: [workspaceSectionGuard],
             loadComponent: () => import('./features/dieteticien/pages/menus-publies/dieteticien-published-menus.component').then((m) => m.DieteticienPublishedMenusComponent),
           },

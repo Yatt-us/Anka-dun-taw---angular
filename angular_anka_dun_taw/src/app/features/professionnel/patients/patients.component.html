@@ -27,9 +27,9 @@
             @if (detailLoading()) { <p class="table-state" role="status">Chargement du dossier…</p> }
             @else {
               <div class="profile-sections">
-                <section><h3>Informations physiques</h3><div class="info-box"><div><span>Taille</span><strong>{{ profile()?.tailleCm != null ? profile()!.tailleCm + ' cm' : 'Non renseignée' }}</strong></div><div><span>Poids actuel</span><strong>{{ profile()?.poidsKg != null ? profile()!.poidsKg + ' kg' : 'Non renseigné' }}</strong></div><div><span>IMC</span><strong>{{ profile()?.imc ?? '—' }}</strong></div></div></section>
-                <section><h3>Objectifs nutritionnels</h3><div class="info-box goals-box">@for (goal of goals(); track goal.id) { <p><app-icon name="check" />{{ goal.description || goal.type }}</p> } @empty { <p>Aucun objectif renseigné.</p> }</div></section>
-                <section><h3>Budget alimentaire disponible</h3><div class="info-box"><div><span>Budget actif</span><strong class="green">{{ activeBudget(selectedDetails()) ? money(activeBudget(selectedDetails())!.montant, activeBudget(selectedDetails())!.devise) : 'Non renseigné' }}</strong></div><div><span>Période</span><strong>{{ activeBudget(selectedDetails())?.periode || '—' }}</strong></div></div></section>
+                <section><h3>Informations physiques</h3><div class="info-box"><div><span>Taille</span><strong>{{ profile()?.tailleCm != null ? profile()!.tailleCm + ' cm' : 'Non renseignée' }}</strong></div><div><span>Poids actuel</span><strong>{{ profile()?.poidsKg != null ? profile()!.poidsKg + ' kg' : 'Non renseigné' }}</strong></div><div><span>IMC</span><strong>{{ imcLabel(profile()?.imc) }}</strong></div></div></section>
+                <section><h3>Objectifs nutritionnels</h3><div class="info-box goals-box">@for (goal of goals(); track goal.id) { <p><app-icon name="check" />{{ goalLabel(goal) }}</p> } @empty { <p>Aucun objectif renseigné.</p> }</div></section>
+                <section><h3>Budget alimentaire disponible</h3><div class="info-box"><div><span>Budget actif</span><strong class="green">{{ activeBudget(selectedDetails()) ? money(activeBudget(selectedDetails())!.montant, activeBudget(selectedDetails())!.devise) : 'Non renseigné' }}</strong></div><div><span>Période</span><strong>{{ budgetPeriodLabel(activeBudget(selectedDetails())?.periode) }}</strong></div></div></section>
                 <section><h3>Préférences et allergies</h3><div class="info-box preferences-box">@for (item of profile()?.preferences || []; track item.type + item.valeur) { <p><strong>{{ item.type === 'AIME' ? 'Aime' : item.type === 'ALLERGIE' ? 'Allergie' : 'Évite' }} :</strong> {{ item.valeur }}</p> } @empty { <p>Aucune préférence renseignée.</p> }
                   @if (profile()?.allergies?.length) { <p><strong>Allergies :</strong> {{ profile()!.allergies!.join(', ') }}</p> }
                 </div></section>
@@ -161,22 +161,24 @@
           <div class="stats">
             <span>Zone <strong>{{ data.zone || '—' }}</strong></span>
             <span>Poids <strong>{{ data.poidsKg ?? '—' }} kg</strong></span>
-            <span>IMC <strong>{{ data.imc ?? '—' }}</strong></span>
-            <span>Activité <strong>{{ data.niveauActivite || '—' }}</strong></span>
-            <span>Mode budget <strong>{{ data.modeBudget || '—' }}</strong></span>
+            <span>IMC <strong>{{ imcLabel(data.imc) }}</strong></span>
+            <span>Activité <strong>{{ activityLabel(data.niveauActivite) }}</strong></span>
+            <span>Mode budget <strong>{{ budgetModeLabel(data.modeBudget) }}</strong></span>
           </div>
           <p>Allergies : {{ data.allergies?.join(', ') || 'aucune déclarée' }}</p>
           @if (data.commentaireSante) { <p>{{ data.commentaireSante }}</p> }
         }
         <h3>Objectifs</h3>
-        @for (goal of goals(); track goal.id) { <p class="detail-item">{{ goal.description || goal.type }} · {{ goal.statut }} · {{ goal.progressionPourcentage ?? 0 }} %</p> }
+        @for (goal of goals(); track goal.id) { <p class="detail-item">{{ goalLabel(goal) }} · {{ goalStatusLabel(goal.statut) }} · {{ goal.progressionPourcentage ?? 0 }} %</p> }
         @if (!goals().length) { <p>Aucun objectif enregistré.</p> }
         <h3>Budgets</h3>
-        @for (budget of budgets(); track budget.id) { <p class="detail-item">{{ money(budget.montant, budget.devise) }} / {{ budget.periode }} {{ budget.actif ? '· actif' : '' }}</p> }
+        @for (budget of budgets(); track budget.id) { <p class="detail-item">{{ money(budget.montant, budget.devise) }} / {{ budgetPeriodLabel(budget.periode) }} {{ budget.actif ? '· actif' : '' }}</p> }
         @if (!budgets().length) { <p>Aucun budget enregistré.</p> }
-        <div class="day"><label>Budget petit montant du jour <input type="date" [(ngModel)]="selectedDate" /></label>
-          <button type="button" (click)="loadDay(patient.id)">Consulter</button></div>
-        @if (dailyBudget(); as budget) { <p class="detail-item">{{ budget.date }} : {{ money(budget.montantDisponible, budget.devise) }} disponibles sur {{ money(budget.plafond, budget.devise) }}.</p> }
+        @if (profile()?.modeBudget === 'PETIT_BUDGET') {
+          <div class="day"><label>Budget petit montant du jour <input type="date" [(ngModel)]="selectedDate" /></label>
+            <button type="button" (click)="loadDay(patient.id)">Consulter</button></div>
+          @if (dailyBudget(); as budget) { <p class="detail-item">{{ budget.date }} : {{ money(budget.montantDisponible, budget.devise) }} disponibles sur {{ money(budget.plafond, budget.devise) }}.</p> }
+        }
       }
     </section>
   </div>
