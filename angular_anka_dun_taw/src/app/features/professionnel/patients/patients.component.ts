@@ -228,11 +228,42 @@ export class PatientsComponent {
     const goal = details?.goals.find((item) => item.id === details.profile?.objectifId)
       ?? details?.goals.find((item) => item.statut === 'EN_COURS')
       ?? details?.goals[0];
-    return goal?.description || goal?.type || 'Aucun objectif disponible';
+    return goal ? this.goalLabel(goal) : 'Aucun objectif disponible';
   }
   profileLabel(details: PatientDetails | undefined): string {
     const profile = details?.profile;
     return profile?.nom?.trim() || (profile ? 'Profil nutritionnel actif' : 'Profil indisponible');
+  }
+  imcLabel(value: number | undefined): string {
+    return value != null && Number.isFinite(value)
+      ? new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(value)
+      : '—';
+  }
+  activityLabel(value: string | undefined): string {
+    const labels: Record<string, string> = {
+      SEDENTAIRE: 'Sédentaire', FAIBLE: 'Faible', MODERE: 'Modérée', ELEVE: 'Élevée', TRES_ELEVE: 'Très élevée',
+    };
+    return value ? labels[value] ?? value.replaceAll('_', ' ').toLocaleLowerCase('fr') : '—';
+  }
+  budgetModeLabel(value: string | undefined): string {
+    const labels: Record<string, string> = {
+      AVEC_BUDGET: 'Budget défini', PETIT_BUDGET: 'Petit budget', SANS_BUDGET: 'Sans budget',
+    };
+    return value ? labels[value] ?? value.replaceAll('_', ' ').toLocaleLowerCase('fr') : '—';
+  }
+  goalLabel(goal: Goal): string {
+    const labels: Record<string, string> = {
+      ALIMENTATION_EQUILIBREE: 'Alimentation équilibrée', PERTE_POIDS: 'Perte de poids',
+      PRISE_POIDS: 'Prise de poids', MAINTIEN_POIDS: 'Maintien du poids',
+    };
+    return goal.description || (goal.type ? labels[goal.type] ?? goal.type.replaceAll('_', ' ').toLocaleLowerCase('fr') : 'Objectif non renseigné');
+  }
+  goalStatusLabel(value: string | undefined): string {
+    return value ? value.replaceAll('_', ' ').toLocaleLowerCase('fr') : 'Statut inconnu';
+  }
+  budgetPeriodLabel(value: string | undefined): string {
+    const labels: Record<string, string> = { JOUR: 'jour', SEMAINE: 'semaine', MOIS: 'mois' };
+    return value ? labels[value] ?? value.toLocaleLowerCase('fr') : 'période inconnue';
   }
   age(details: PatientDetails | undefined): string {
     const date = details?.profile?.dateNaissance;

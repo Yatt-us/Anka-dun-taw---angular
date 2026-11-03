@@ -50,9 +50,11 @@ export class DieteticienCreateMenuComponent implements OnInit {
     return this.budgets().find((item) => item.id === id && item.actif) ?? null;
   });
   readonly totalCost = computed(() => {
+    // Lire le signal avant le retour anticipé : la première recette sélectionnée
+    // doit déclencher un nouveau calcul quand son prix arrive.
+    const costs = this.costs();
     const selected = this.meals.filter((meal) => meal.recetteId);
     if (!selected.length) return null;
-    const costs = this.costs();
     if (selected.some((meal) => costs[meal.key] == null)) return null;
     return selected.reduce((total, meal) => total + (costs[meal.key] ?? 0), 0);
   });
@@ -195,7 +197,8 @@ export class DieteticienCreateMenuComponent implements OnInit {
     if (this.budgetValidityError()) return this.budgetValidityError()!;
     if (mode === 'PETIT_BUDGET' && this.dailyBudgetsLoading()) return 'Chargement des montants disponibles pour les jours du menu…';
     if (!this.meals.some((meal) => meal.recetteId)) return 'Choisissez une recette pour comparer son prix au budget du patient.';
-    if (this.costsLoading() || this.totalCost() === null) return 'Le coût d’au moins un repas est inconnu pour cette région et cette date. Vérifiez les prix des ingrédients.';
+    if (this.costsLoading()) return 'Calcul des prix des repas en cours…';
+    if (this.totalCost() === null) return 'Le coût d’au moins un repas est inconnu pour cette région et cette date. Vérifiez les prix des ingrédients.';
     if (!this.budgetComparable()) return mode === 'PETIT_BUDGET'
       ? 'Le patient doit renseigner son montant disponible pour chaque jour du menu.'
       : 'Le budget ne peut pas être comparé aux repas saisis.';

@@ -6,10 +6,11 @@ import { catchError, forkJoin, from, map, mergeMap, of, toArray } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { API_BASE_URL } from '../../../../core/config/api.config';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
+import { zoneLabel } from '../../../../shared/data-access/zones.data-access';
 import { DietitianBeneficiary, DietitianDashboardApi, DietitianMenu } from '../../data-access/dieteticien-dashboard.data-access';
 
 interface ApiPage<T> { content: T[] }
-interface PatientProfile { zone?: string | null; commentaireSante?: string | null }
+interface PatientProfile { zone?: string | null; objectifId?: number | null; commentaireSante?: string | null }
 interface Budget { id: number; montant: number; devise: string; periode: string; actif: boolean }
 interface Goal { id: number; description?: string | null; type?: string | null; statut?: string | null }
 interface Meal { recetteId: number; jour: number; typeRepas: string; nombrePortions: number; commentaire?: string | null }
@@ -62,6 +63,23 @@ export class DieteticienRecommendationsComponent {
   readonly patientMenus = computed(() => this.menus().filter((menu) => menu.beneficiaireIds?.includes(this.selectedPatientId() ?? -1)));
   readonly editableMenus = computed(() => this.patientMenus().filter((menu) => menu.statut === 'BROUILLON' || menu.statut === 'EN_VALIDATION'));
   readonly selectedTheme = computed(() => this.templates.find((item) => item.id === this.selectedThemeId()) ?? this.templates[0]);
+  readonly activeGoal = computed(() => this.goals().find((goal) => goal.id === this.profile()?.objectifId)
+    ?? this.goals().find((goal) => goal.statut === 'EN_COURS') ?? this.goals()[0] ?? null);
+
+  goalName(): string {
+    const goal = this.activeGoal();
+    if (!goal) return 'Non renseigné';
+    if (goal.description) return goal.description;
+    const labels: Record<string, string> = {
+      ALIMENTATION_EQUILIBREE: 'Alimentation équilibrée', PERTE_POIDS: 'Perte de poids',
+      PRISE_POIDS: 'Prise de poids', MAINTIEN_POIDS: 'Maintien du poids',
+    };
+    return goal.type ? labels[goal.type] ?? goal.type.replaceAll('_', ' ').toLocaleLowerCase('fr') : 'Non renseigné';
+  }
+
+  regionName(): string {
+    return this.profile()?.zone ? zoneLabel(this.profile()!.zone!) : 'Non renseignée';
+  }
 
   title = '';
   content = '';
