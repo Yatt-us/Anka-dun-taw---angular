@@ -33,9 +33,9 @@ export class AdminRecipesDataAccess {
     return this.http.get<AdminRecipe>(`${API_BASE_URL}/admin/recettes/${id}`);
   }
 
-  cost(id: number): Observable<AdminRecipeCost | null> {
+  cost(id: number, zone: string): Observable<AdminRecipeCost | null> {
     return this.http.get<AdminRecipeCost | null>(`${API_BASE_URL}/recettes/${id}/cout-estime`, {
-      params: new HttpParams().set('zone', 'BAMAKO'),
+      params: new HttpParams().set('zone', zone),
     });
   }
 

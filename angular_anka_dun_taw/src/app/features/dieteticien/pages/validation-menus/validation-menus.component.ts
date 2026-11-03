@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../../../../core/config/api.config';
 import { UiIconComponent } from '../../../../shared/components/ui-icon.component';
 import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-editor.component';
 import { DietitianBeneficiary, DietitianDashboardApi, DietitianMenu } from '../../data-access/dieteticien-dashboard.data-access';
+import { describeValidationMenuError } from './validation-menu-error';
 
 interface ApiPage<T> { content: T[]; number: number; totalPages: number }
 interface Meal { id?: number; recetteId: number; jour: number; typeRepas: string; nombrePortions: number; commentaire?: string | null }
@@ -213,6 +214,6 @@ export class ValidationMenusComponent {
     return amount == null ? 'Prix indisponible' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)} ${currency === 'XOF' ? 'FCFA' : currency}`;
   }
   private describe(cause: unknown, fallback: string): string {
-    return cause instanceof HttpErrorResponse && typeof cause.error?.message === 'string' ? cause.error.message : fallback;
+    return describeValidationMenuError(cause, fallback);
   }
 }

@@ -12,6 +12,30 @@ import { WorkspaceEditorComponent } from '../../../../shared/forms/workspace-edi
 type LoadState = 'loading' | 'ready' | 'error';
 type BudgetFilter = 'all' | 'eco' | 'medium' | 'high' | 'unknown';
 
+// Les codes doivent correspondre exactement aux valeurs de l'énumération Zone du backend.
+const RECIPE_PRICE_REGIONS = [
+  { code: 'KAYES', label: 'Kayes' },
+  { code: 'KOULIKORO', label: 'Koulikoro' },
+  { code: 'SIKASSO', label: 'Sikasso' },
+  { code: 'SEGOU', label: 'Ségou' },
+  { code: 'MOPTI', label: 'Mopti' },
+  { code: 'TOMBOUCTOU', label: 'Tombouctou' },
+  { code: 'GAO', label: 'Gao' },
+  { code: 'KIDAL', label: 'Kidal' },
+  { code: 'TAOUDENIT', label: 'Taoudénit' },
+  { code: 'MENAKA', label: 'Ménaka' },
+  { code: 'NIORO', label: 'Nioro' },
+  { code: 'KITA', label: 'Kita' },
+  { code: 'DIOILA', label: 'Dioïla' },
+  { code: 'NARA', label: 'Nara' },
+  { code: 'BOUGOUNI', label: 'Bougouni' },
+  { code: 'KOUTIALA', label: 'Koutiala' },
+  { code: 'SAN', label: 'San' },
+  { code: 'DOUENTZA', label: 'Douentza' },
+  { code: 'BANDIAGARA', label: 'Bandiagara' },
+  { code: 'BAMAKO', label: 'District de Bamako' },
+] as const;
+
 @Component({
   selector: 'app-admin-recipes',
   imports: [A11yModule, UiIconComponent, WorkspaceEditorComponent],
@@ -28,6 +52,8 @@ export class AdminRecipesComponent {
   readonly status = signal<AdminRecipe['statut']>('PUBLIEE');
   readonly duration = signal(0);
   readonly budget = signal<BudgetFilter>('all');
+  readonly priceRegion = signal<string>('BAMAKO');
+  readonly priceRegions = RECIPE_PRICE_REGIONS;
   readonly allRecipes = signal<AdminRecipe[]>([]);
   readonly total = signal(0);
   readonly costs = signal<Record<number, number | null>>({});
@@ -116,6 +142,7 @@ export class AdminRecipesComponent {
     effect((onCleanup) => {
       const all = this.durationFiltered();
       const budget = this.budget();
+      const zone = this.priceRegion();
       const page = this.pageIndex();
       const targets = budget === 'all' ? all.slice(page * this.pageSize, (page + 1) * this.pageSize) : all;
       const existing = untracked(this.costs);
@@ -123,7 +150,8 @@ export class AdminRecipesComponent {
       this.costLoading.set(budget !== 'all' && missing.length > 0);
       if (!missing.length) return;
       const subscription = from(missing).pipe(
-        mergeMap((recipe) => this.api.cost(recipe.id).pipe(
+        // Le backend additionne les prix actifs des ingrédients pour cette zone précise.
+        mergeMap((recipe) => this.api.cost(recipe.id, zone).pipe(
           map((cost) => ({ id: recipe.id, value: cost?.coutEstime ?? null })),
           catchError(() => of({ id: recipe.id, value: null })),
         ), 4),
@@ -155,18 +183,28 @@ export class AdminRecipesComponent {
   setQuery(event: Event): void { this.query.set((event.target as HTMLInputElement).value); }
   setGlobalSearch(event: Event): void { this.globalSearch.set((event.target as HTMLInputElement).value); }
   setBudget(event: Event): void { this.budget.set((event.target as HTMLSelectElement).value as BudgetFilter); this.pageIndex.set(0); }
+  setPriceRegion(event: Event): void {
+    this.priceRegion.set((event.target as HTMLSelectElement).value);
+    // Les montants sont calculés avec les prix des aliments de cette région : invalider l’ancien cache.
+    this.costs.set({});
+    this.pageIndex.set(0);
+  }
   setDuration(event: Event): void { this.duration.set(Number((event.target as HTMLSelectElement).value)); this.pageIndex.set(0); }
   setStatus(event: Event): void { this.status.set((event.target as HTMLSelectElement).value as AdminRecipe['statut']); }
+  selectedRegionLabel(): string { return this.priceRegions.find((item) => item.code === this.priceRegion())?.label ?? this.priceRegion(); }
   openGlobalResult(result: AdminSearchResult): void { this.globalSearch.set(''); void this.router.navigate(['/espaces/admin', result.type]); }
   goToPage(page: number): void { if (page >= 0 && page < this.pageCount()) this.pageIndex.set(page); }
   retry(): void { this.reloadKey.update((value) => value + 1); }
   durationLabel(recipe: AdminRecipe): string { return recipe.dureePreparationMinutes == null ? 'Durée non renseignée' : `${recipe.dureePreparationMinutes} min`; }
   budgetLabel(recipe: AdminRecipe): string {
     const cost = this.costs()[recipe.id];
-    if (cost === undefined) return 'Budget : calcul…';
-    if (cost === null) return 'Budget : non renseigné';
+    const region = this.selectedRegionLabel();
+    if (cost === undefined) return `Prix en cours · ${region}`;
+    if (cost === null) return `Prix indisponible · ${region}`;
     const perPerson = cost / Math.max(1, recipe.nombrePersonnes || 1);
-    return `Budget : ${perPerson <= 500 ? 'Éco' : perPerson <= 1000 ? 'Moyen' : 'Élevé'}`;
+    const format = (amount: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount);
+    const budget = perPerson <= 500 ? 'Éco' : perPerson <= 1000 ? 'Moyen' : 'Élevé';
+    return `${format(cost)} FCFA · ${format(perPerson)} / pers. · ${budget}`;
   }
   imageError(event: Event): void { (event.target as HTMLImageElement).hidden = true; }
   openEditor(recipe?: AdminRecipe): void {

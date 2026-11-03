@@ -28,11 +28,14 @@
     <label class="filter-select"><span class="sr-only">Filtrer par durée</span><select [value]="duration()" (change)="setDuration($event)">
       <option value="0">Temps: Tous</option><option value="30">30 min ou moins</option><option value="45">45 min ou moins</option><option value="60">60 min ou moins</option>
     </select></label>
+    <label class="filter-select region-select"><span class="sr-only">Région du prix de la recette</span><select [value]="priceRegion()" (change)="setPriceRegion($event)">
+      @for (region of priceRegions; track region.code) { <option [value]="region.code">Prix · {{ region.label }}</option> }
+    </select></label>
     <label class="filter-select status-select"><span class="sr-only">Filtrer par statut</span><select [value]="status()" (change)="setStatus($event)">
       <option value="PUBLIEE">Publiées</option><option value="BROUILLON">Brouillons</option><option value="ARCHIVEE">Archivées</option>
     </select></label>
   </div>
-  @if (costLoading() && budget() !== 'all') { <p class="cost-status" role="status">Estimation des coûts à Bamako en cours… Les résultats apparaissent progressivement.</p> }
+  @if (costLoading()) { <p class="cost-status" role="status">Calcul du coût à {{ selectedRegionLabel() }} à partir des prix régionaux des ingrédients…</p> }
   @if (loadingMore()) { <p class="cost-status" role="status">Chargement des autres recettes…</p> }
 
   @if (state() === 'error') {
@@ -48,7 +51,7 @@
             <span class="recipe-badge" [class.draft]="recipe.statut === 'BROUILLON'" [class.archived]="recipe.statut === 'ARCHIVEE'">{{ recipe.statut === 'PUBLIEE' ? 'Publiée' : recipe.statut === 'BROUILLON' ? 'Brouillon' : 'Archivée' }}</span>
           </div>
           <div class="recipe-card-body"><h2>{{ recipe.nom }}</h2>
-            <div class="recipe-metrics"><span><app-icon name="clock" /> {{ durationLabel(recipe) }}</span><span [title]="'Coût estimé par personne à Bamako'">{{ budgetLabel(recipe) }}</span><span>{{ recipe.nombrePersonnes ?? '—' }} pers.</span></div>
+            <div class="recipe-metrics"><span><app-icon name="clock" /> {{ durationLabel(recipe) }}</span><span [title]="'Coût calculé selon les prix des ingrédients à ' + selectedRegionLabel()">{{ budgetLabel(recipe) }}</span><span>{{ recipe.nombrePersonnes ?? '—' }} pers.</span></div>
             <div class="recipe-card-bottom"><span>{{ recipe.difficulte === 'DIFFICILE' ? 'Difficulté élevée' : recipe.difficulte === 'MOYEN' ? 'Difficulté moyenne' : 'Cuisine locale' }}</span>
               <div class="recipe-actions"><button type="button" class="row-action edit" [attr.aria-label]="'Consulter ' + recipe.nom" (click)="openDetail(recipe)"><app-icon name="edit" /></button>
                 @if (recipe.statut === 'PUBLIEE') { <button type="button" class="row-action archive" [attr.aria-label]="'Archiver ' + recipe.nom" title="Archiver" (click)="confirmArchive(recipe)"><app-icon name="archive" /></button> }
